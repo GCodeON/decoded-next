@@ -23,8 +23,10 @@ export default async function Callback(req: NextApiRequest, res: NextApiResponse
       }
     );
 
+    console.log("api token", res);
+
     // Handle the response, store tokens, and redirect to a protected route
-    // Example: res.redirect('/dashboard');
+    res.redirect('/dashboard');
   } catch (error) {
     console.error(error);
     res.status(500).send('An error occurred');
