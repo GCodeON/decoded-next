@@ -19,7 +19,7 @@ export default function Navigation ( nav: NavigationProps ) {
  
   return (
     <>
-      {nav.links.map((link: Navlink) => {
+      {nav.links.map((link: Navlink) => {a
         const isActive = pathname === link.href
  
         return (
