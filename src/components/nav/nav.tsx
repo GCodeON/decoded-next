@@ -5,7 +5,7 @@ import Link from 'next/link'
 
 
 interface NavigationProps {
-   links: [];
+   links: Navlink[];
 }
 
 interface Navlink {
@@ -13,18 +13,17 @@ interface Navlink {
     name : string;
 }
 
- 
 export default function Navigation ( nav: NavigationProps ) {
   const pathname = usePathname()
  
   return (
-    <>
-      {nav.links.map((link: Navlink) => {a
+    <div className='flex min-h-screen flex-row items-start justify-evenly'>
+      {nav.links.map((link: Navlink) => {
         const isActive = pathname === link.href
  
         return (
           <Link
-            className={isActive ? 'text-blue' : 'text-black'}
+            className={isActive ? 'text-blue' : 'text-red'}
             href={link.href}
             key={link.name}
           >
@@ -32,6 +31,6 @@ export default function Navigation ( nav: NavigationProps ) {
           </Link>
         )
       })}
-    </>
+    </div>
   )
 }

@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import axios from 'axios';
 
-export default function Dashboard() {
+export default function Artists() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-between">
