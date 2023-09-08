@@ -12,7 +12,7 @@ interface Playlists {
   items: [];
 }
 
-const FeaturedPlaylists = ({ playlists}: { playlists: Playlists }) => {
+const FeaturedPlaylists = ( playlists: Playlists ) => {
   return (
     <div>
       <h2>Featured Playlists</h2>
