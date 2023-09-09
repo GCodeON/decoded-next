@@ -33,36 +33,39 @@ export default function Player() {
     }
 
     const spotifyCallback = (state: any) => {
-        console.log('state', state);
-        if(state.type == "track_update" && state.status == "READY") {
-            let previousTrack = localStorage.getItem('active');
-            if(previousTrack){
-                compareTrack(previousTrack, state.track);
+        // console.log('state', state);
+        if(state.status == "READY") {
+            if(state.track){
+                localStorage.setItem('active', JSON.stringify(state.track));
+            }
+            if(state.type == "track_update") {
+                let previousTrack = localStorage.getItem('active');
+                if(previousTrack){
+                    compareTrack(previousTrack, state.track);
+                }
             }
         }
     }
 
     return (
         <div className="spotify_player sticky top-[100vh]">
-            {spotifyToken && (
-                <SpotifyPlayer
-                    name={'DECODED Web Player'}
-                    callback={(state) => spotifyCallback(state)}
-                    syncExternalDeviceInterval={10}
-                    persistDeviceSelection={true}
-                    syncExternalDevice={true}
-                    token={spotifyToken}
-                    styles={{
-                        activeColor       : '#fff',
-                        bgColor           : '#000',
-                        color             : '#fff',
-                        loaderColor       : '#fff',
-                        trackArtistColor  : '#ccc',
-                        trackNameColor    : '#fff',
-                        sliderHandleColor : '#fff'
-                    }}
-                />
-            )}
+            <SpotifyPlayer
+                name={'DECODED Web Player'}
+                callback={(state) => spotifyCallback(state)}
+                syncExternalDeviceInterval={10}
+                persistDeviceSelection={true}
+                syncExternalDevice={true}
+                token={spotifyToken}
+                styles={{
+                    activeColor       : '#fff',
+                    bgColor           : '#000',
+                    color             : '#fff',
+                    loaderColor       : '#fff',
+                    trackArtistColor  : '#ccc',
+                    trackNameColor    : '#fff',
+                    sliderHandleColor : '#fff'
+                }}
+            />
         </div>
     )
 }

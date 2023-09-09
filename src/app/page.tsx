@@ -1,13 +1,13 @@
 import Image from 'next/image'
 import Link from 'next/link'
 
-// import Auth from '@/components/auth'
+import Track from '@/components/track'
 
 export default function Home() {
 
   return (
       <div>
-        {/* <Auth /> */}
+        <Track />
       </div>
   )
 }
