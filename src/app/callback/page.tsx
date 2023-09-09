@@ -14,6 +14,7 @@ export default function Callback() {
         const auth = await getAccessToken(code);
         console.log('callback', auth);
         localStorage.setItem('auth', JSON.stringify(auth));
+        localStorage.setItem('access_token', auth.access_token);
         router.push('/');
       }
     }
