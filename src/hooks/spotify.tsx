@@ -3,7 +3,7 @@ import querystring from 'querystring';
 
 const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID;
 const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
-const SPOTIFY_REDIRECT_URI = process.env.SPOTIFY_REDIRECT_URI;
+const SPOTIFY_REDIRECT_URI =  process.env.SPOTIFY_REDIRECT_URI;
 
 export const useAuth = () => {
   const login = () => {
@@ -35,10 +35,9 @@ export const useAuth = () => {
 };
 
 export const getAccessToken = async (code: any) => {
+  const SPOTIFY_TOKEN_ENDPOINT = "https://accounts.spotify.com/api/token";
 
-  const SPOTIFY_TOKEN_ENDPOINT = `https://accounts.spotify.com/api/token`;
-
-  const response = await axios.post('https://accounts.spotify.com/api/token', null, {
+  const response = await axios.post(SPOTIFY_TOKEN_ENDPOINT, null, {
     params: {
         grant_type: 'authorization_code',
         code: code,
