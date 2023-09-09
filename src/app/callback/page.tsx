@@ -11,10 +11,10 @@ export default function Callback() {
   useEffect(() => {
     async function authenticate() {
       if (code) {
-        const accessToken = await getAccessToken(code);
-        console.log('callback', accessToken);
-        // localStorage.setItem('accessToken', accessToken);
-        // router.push('/');
+        const auth = await getAccessToken(code);
+        console.log('callback', auth);
+        localStorage.setItem('auth', JSON.stringify(auth));
+        router.push('/');
       }
     }
 

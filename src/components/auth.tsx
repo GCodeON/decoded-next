@@ -5,9 +5,7 @@ import { useAuth } from '@/hooks/spotify';
 import useLocalStorage from '@/hooks/useLocalStorage';
 
 const Auth = () => {
-    const [value, setValue] = useLocalStorage("spotify_token", "");
-
-    // Set the value received from the local storage to a local state
+    const [value, setValue] = useLocalStorage("auth", "");
     const [auth, setAuth] = useState(value);
 
     const onLogout = () => {

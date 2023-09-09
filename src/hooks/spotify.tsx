@@ -62,27 +62,5 @@ export const getAccessToken = async (code: any) => {
   console.log('hook access', response.data);
 
 
-  return response.data.access_token;
-
-
-  // axios({
-  //   method: 'post',
-  //   url   : SPOTIFY_TOKEN_ENDPOINT,
-  //   data: querystring.stringify({
-  //     grant_type  : 'authorization_code',
-  //     code        : code,
-  //     redirect_uri: SPOTIFY_REDIRECT_URI
-  //   }),
-  //   headers: {
-  //     Authorization: `Basic ${Buffer.from(
-  //     `${SPOTIFY_CLIENT_ID}:${SPOTIFY_CLIENT_SECRET}`
-  //     ).toString('base64')}`,
-  //     'Content-Type': 'application/x-www-form-urlencoded',
-  //   },
-  // }).then(res => {
-  //   console.log('res access', res);
-  //   return res.data.access_token;
-  // }).catch(error => {
-  //   console.log('res error', error)
-  // })
+  return response.data;
 };
