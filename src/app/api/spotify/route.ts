@@ -16,11 +16,11 @@ export async function GET(req: Request, res: NextApiResponse) {
 
   // Get access token using client credentials flow
   const authOptions = {
-    method: 'post',
-    url: SPOTIFY_API_TOKEN_URL,
+    method : 'post',
+    url    : SPOTIFY_API_TOKEN_URL,
     headers: {
       'Authorization': 'Basic ' + Buffer.from(SPOTIFY_CLIENT_ID + ':' + SPOTIFY_CLIENT_SECRET).toString('base64'),
-      'Content-Type': 'application/x-www-form-urlencoded',
+      'Content-Type' : 'application/x-www-form-urlencoded',
     },
     data: querystring.stringify({
       grant_type: 'client_credentials',
