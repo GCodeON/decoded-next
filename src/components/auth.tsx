@@ -5,17 +5,23 @@ import { useAuth } from '@/hooks/spotify';
 import useLocalStorage from '@/hooks/useLocalStorage';
 
 const Auth = () => {
-    const [value, setValue] = useLocalStorage("auth", "");
-    const [auth, setAuth] = useState(value);
+    const [auth, setAuth] = useState(false);
+
+    useEffect(() => {
+        if (localStorage.getItem('auth')) {
+            setAuth(true)
+        } 
+    },[])
+
+    const { login } = useAuth();
 
     const onLogout = () => {
         localStorage.clear();
         window.location.href = "/";
     }
-  const { login } = useAuth();
 
     const Spotify_User = () => {
-        let icon;
+        let icon = <p>loading...</p>
         if (auth) { 
             icon =
             <div className='logout' onClick={onLogout}>
@@ -35,7 +41,6 @@ const Auth = () => {
             { Spotify_User() }
         </div>
     )
-
 }
 
 export default Auth;
