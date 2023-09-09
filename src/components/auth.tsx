@@ -1,10 +1,11 @@
 'use client'
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { FaUser, FaPowerOff } from "react-icons/fa";
+
 import { useAuth } from '@/hooks/spotify';
 import useLocalStorage from '@/hooks/useLocalStorage';
 
-const Auth = () => {
+export default function Auth() {
     const [auth, setAuth] = useState(false);
 
     useEffect(() => {
@@ -42,5 +43,3 @@ const Auth = () => {
         </div>
     )
 }
-
-export default Auth;

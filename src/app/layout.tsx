@@ -2,7 +2,8 @@ import './globals.css'
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 
-import Dashboard from '../components/dashboard'
+import Dashboard from '@/components/dashboard'
+import Player from '@/components/player'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -19,6 +20,7 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
         <main className="flex min-h-screen items-center justify-center justify-items-center">
           {children}
         </main>
+        <Player />
       </body>
     </html>
   )
