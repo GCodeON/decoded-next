@@ -16,7 +16,9 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
     <html lang="en">
       <body className={inter.className}>
         <Dashboard />
-        {children}
+        <main className="flex min-h-screen items-center justify-center justify-items-center">
+          {children}
+        </main>
       </body>
     </html>
   )
