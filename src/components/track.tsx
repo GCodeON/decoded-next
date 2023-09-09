@@ -34,25 +34,25 @@ export default function Track() {
   return (
     <div className="track-info">
       { currentlyPlayingArtist &&  (
-        <div className="current">
-            <h3>Currently Playing</h3>
-            <Link className="link" href={`/song/${currentlyPlaying.id}`}>
-                <Image className="track-image" 
-                  src={currentlyPlaying.image} 
-                  alt={currentlyPlaying.name}
-                  width={150}
-                  height={150}
-                  
-                />
-                <h1 className="track-name">
-                  { currentlyPlaying.name }
-                </h1>
-            </Link>
-            <Link className="link" href={`/artist/${currentlyPlayingArtist.id}`}>
+        <div className="current flex flex-col text-center">
+          <h3>Currently Playing</h3>
+          <Link className="link" href={`/song/${currentlyPlaying.id}`}>
+              <Image className="track-image" 
+                src={currentlyPlaying.image} 
+                alt={currentlyPlaying.name}
+                width={150}
+                height={150}
+                
+              />
               <h1 className="track-name">
-                  { currentlyPlayingArtist.name }
+                { currentlyPlaying.name }
               </h1>
-            </Link>
+          </Link>
+          <Link className="link" href={`/artist/${currentlyPlayingArtist.id}`}>
+            <h1 className="track-name">
+                { currentlyPlayingArtist.name }
+            </h1>
+          </Link>
         </div>
       )}
     </ div>

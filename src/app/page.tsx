@@ -6,7 +6,7 @@ import Track from '@/components/track'
 export default function Home() {
 
   return (
-      <div>
+      <div className=''>
         <Track />
       </div>
   )
