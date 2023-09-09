@@ -2,9 +2,10 @@
 import Link from 'next/link'
 import { useState } from 'react';
 
-import Navigation from '@/components/nav'
+import Navigation from '@/components/nav';
+import Auth from '@/components/auth';
 
-import { Divide as Hamburger } from 'hamburger-react'
+import { Divide as Hamburger } from 'hamburger-react';
 
 
 export default function Dashboard () {
@@ -31,6 +32,7 @@ export default function Dashboard () {
         <Link href="/">
           <h1 className="title">DECODED</h1>
         </Link>
+        <Auth />
         <Hamburger toggled={isOpen} toggle={setOpen} rounded />
       </div>
       { isOpen && (
