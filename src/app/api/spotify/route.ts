@@ -51,7 +51,7 @@ export async function GET(req: Request, res: NextApiResponse) {
 
     // res.status(200).json(response.data);
   } catch (error: any) {
-    console.error('Error:', error.message);
+    console.error('Error:', error);
     return NextResponse.json({ error: 'An error occurred', status: error.response?.status }, { status: error.response?.status });
   }
 }

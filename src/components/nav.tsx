@@ -17,13 +17,12 @@ export default function Navigation ( nav: NavigationProps ) {
   const pathname = usePathname()
  
   return (
-    <div className='flex min-h-screen flex-row items-start justify-evenly'>
+    <div className='flex flex-col items-center'>
       {nav.links.map((link: Navlink) => {
         const isActive = pathname === link.href
- 
         return (
           <Link
-            className={isActive ? 'text-blue' : 'text-red'}
+            className={isActive ? 'text-blue' : 'text-white'}
             href={link.href}
             key={link.name}
           >
