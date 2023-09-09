@@ -39,8 +39,8 @@ export const getAccessToken = async (code: any) => {
 
   const response = await axios.post(SPOTIFY_TOKEN_ENDPOINT, null, {
     params: {
-        grant_type: 'authorization_code',
-        code: code,
+        grant_type  : 'authorization_code',
+        code        : code,
         redirect_uri: SPOTIFY_REDIRECT_URI,
     },
     headers: {
