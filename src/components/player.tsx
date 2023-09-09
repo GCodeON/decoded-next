@@ -41,7 +41,7 @@ export default function Player() {
             if(state.type == "track_update") {
                 let previousTrack = localStorage.getItem('active');
                 if(previousTrack){
-                    compareTrack(previousTrack, state.track);
+                    compareTrack(JSON.parse(previousTrack), state.track);
                 }
             }
         }
