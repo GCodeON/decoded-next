@@ -2,28 +2,25 @@ import { useRouter } from 'next/router';
 import axios from 'axios';
 
 export const useAuth = () => {
-  const router = useRouter();
+  const clientId = process.env.SPOTIFY_CLIENT_ID;
 
   const login = () => {
-    const clientId = process.env.SPOTIFY_CLIENT_ID;
-    const redirectUri = `${process.env.BASE_URL}/api/callback`;
-
-    // const scope = 'user-library-read'; // Adjust the scope as needed
+    const AuthEndPoint = 'https://accounts.spotify.com/authorize';
+    const redirectUri  = 'http://localhost:3000/callback/';
 
     const scopes = [
-        "streaming",
-        "user-read-currently-playing",
-        "user-read-recently-played",
-        "user-read-playback-state",
-        "user-modify-playback-state",
-        "user-read-playback-position",
-        "user-top-read",
-        "user-read-private",
-        "user-read-birthdate"
+      "streaming",
+      "user-read-currently-playing",
+      "user-read-recently-played",
+      "user-read-playback-state",
+      "user-modify-playback-state",
+      "user-read-playback-position",
+      "user-top-read",
+      "user-library-read"
     ];
 
 
-    const authUrl = `https://accounts.spotify.com/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scopes.join("%20")}&response_type=code`;
+    const authUrl = `${AuthEndPoint}?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scopes.join("%20")}&response_type=token&show_dialog=true`;
 
     window.location.href = authUrl;
   };

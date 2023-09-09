@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import { useState } from 'react';
 
-import Navigation from './nav'
+import Navigation from '@/components/nav'
 
 import { Divide as Hamburger } from 'hamburger-react'
 
