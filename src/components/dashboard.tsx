@@ -4,11 +4,12 @@ import { useState } from 'react';
 
 import Navigation from '@/components/nav';
 import Auth from '@/components/auth';
+import Player from '@/components/player'
 
 import { Divide as Hamburger } from 'hamburger-react';
 
 
-export default function Dashboard () {
+export default function Dashboard ({children}: {children: React.ReactNode}) {
   const [isOpen, setOpen] = useState(false)
 
   const navigationItems = [
@@ -40,5 +41,7 @@ export default function Dashboard () {
           <Navigation links={navigationItems}/>
         </div>
       )}
+      {children}
+      <Player />
     </>
   )}

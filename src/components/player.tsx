@@ -16,9 +16,9 @@ export default function Player() {
 
     useEffect(() => {
         if(songChanged) {
-            window.localStorage.setItem('active', JSON.stringify(activeTrack));
+            localStorage.setItem('active', JSON.stringify(activeTrack));
         }
-    },[songChanged, activeTrack]);
+    },[songChanged]);
 
     function compareTrack(old: any, updated: any) {
         console.log('compare track')
@@ -35,9 +35,9 @@ export default function Player() {
     const spotifyCallback = (state: any) => {
         // console.log('state', state);
         if(state.status == "READY") {
-            if(state.track){
-                localStorage.setItem('active', JSON.stringify(state.track));
-            }
+            // if(state.track){
+            //     localStorage.setItem('active', JSON.stringify(state.track));
+            // }
             if(state.type == "track_update") {
                 let previousTrack = localStorage.getItem('active');
                 if(previousTrack){

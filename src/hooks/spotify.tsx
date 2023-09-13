@@ -17,12 +17,14 @@ export const useAuth = () => {
       "user-modify-playback-state",
       "user-read-playback-position",
       "user-top-read",
-      "user-library-read"
+      "user-library-read",
+      "user-read-private",
+      "user-read-email"
     ];
 
 
     const authUrl = `${AuthEndPoint}?client_id=${SPOTIFY_CLIENT_ID}&redirect_uri=${SPOTIFY_REDIRECT_URI}&scope=${scopes.join("%20")}&response_type=code`;
-    // const authUrl = `${AuthEndPoint}?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scopes.join("%20")}&response_type=token&show_dialog=true`;
+    // const authUrl = `${AuthEndPoint}?client_id=${SPOTIFY_CLIENT_ID}&redirect_uri=${SPOTIFY_REDIRECT_URI}&scope=${scopes.join("%20")}&response_type=token&show_dialog=true`;
 
     window.location.href = authUrl;
   };

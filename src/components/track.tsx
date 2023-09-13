@@ -14,6 +14,8 @@ export default function Track() {
     if(track){
       let trackInfo = JSON.parse(track);
       setActiveTrack(trackInfo);
+    } else {
+      
     }
   }, []);
 

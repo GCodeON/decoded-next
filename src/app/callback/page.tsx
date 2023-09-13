@@ -1,5 +1,5 @@
 'use client'
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getAccessToken } from '@/hooks/spotify';
 
@@ -8,6 +8,8 @@ export default function Callback() {
   const searchParams = useSearchParams()
   const code = searchParams.get('code');
 
+  const [ access, setAccess] = useState(false);
+
   useEffect(() => {
     async function authenticate() {
       if (code) {
@@ -15,12 +17,17 @@ export default function Callback() {
         console.log('callback', auth);
         localStorage.setItem('auth', JSON.stringify(auth));
         localStorage.setItem('access_token', auth.access_token);
-        router.push('/');
+
+        setAccess(true);
       }
     }
 
     authenticate();
-  }, [router, code]);
+  }, [code]);
+
+  useEffect(() => {
+    router.push('/');
+  }, [router, access]);
 
   return <div>Authenticating...</div>;
 }

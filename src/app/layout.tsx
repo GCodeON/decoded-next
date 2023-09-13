@@ -3,7 +3,6 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 
 import Dashboard from '@/components/dashboard'
-import Player from '@/components/player'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -16,11 +15,11 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
   return (
     <html lang="en">
       <body className={`${inter.className} min-h-screen`}>
-        <Dashboard />
-        <main className="flex items-center justify-center justify-items-center">
-          {children}
-        </main>
-        <Player />
+        <Dashboard>
+          <main className="flex items-center justify-center justify-items-center">
+            {children}
+          </main>
+        </Dashboard>
       </body>
     </html>
   )
