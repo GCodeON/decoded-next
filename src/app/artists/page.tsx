@@ -36,7 +36,7 @@ export default function Artists() {
       {artists && (
         artists.map((artist: any, index: Key) => {
           return (
-            <Link className="link cursor-pointer" href={`/artist/${artist.id}`} key={index}>
+            <Link className="link cursor-pointer" href={`/artists/${artist.id}`} key={index}>
               <div className="artist bg-center bg-cover h-80 w-56 md:w-60 lg:w-80" 
               style={{backgroundImage:`url(${artist.images[0].url})`}}
               key={index}>

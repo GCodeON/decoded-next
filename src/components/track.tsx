@@ -4,12 +4,12 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image'
 import Link from 'next/link'
 
-export default function Track(props: any) {
+export default function Track({active}: {active: any}) {
   const [track, setTrack]  = useState<any>();
 
   useEffect(() => {
-    if(props) {
-      setTrack(props.active)
+    if(active) {
+      setTrack(active)
     }
   }, []);
 
@@ -31,7 +31,7 @@ export default function Track(props: any) {
               { track.name }
             </h1>
           </Link>
-          <Link className="link" href={`/artist/${track.artists[0].id}`}>
+          <Link className="link" href={`/artists/${track.artists[0].id}`}>
             <h1 className="track-name">
               { track.artists[0].name }
             </h1>
