@@ -18,10 +18,6 @@ export default function Dashboard ({children}: {children: React.ReactNode}) {
       href: '/artists' 
     },
     { 
-      name: 'Albums', 
-      href: '/albums' 
-    },
-    { 
       name: 'Songs', 
       href: '/songs' 
     }

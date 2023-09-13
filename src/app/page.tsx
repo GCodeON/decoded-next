@@ -25,7 +25,7 @@ export default function Home() {
 
 
   const currentlyPlaying = async function () {
-    const current = await spotifyApi('me/player/currently-playing', token)
+    const current = await spotifyApi('/me/player/currently-playing', token)
     if(current) {
       setTrack(current.item);
     }

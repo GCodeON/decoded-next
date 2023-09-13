@@ -25,12 +25,12 @@ export default function Auth() {
         if (auth) { 
             icon =
             <div className='logout' onClick={onLogout}>
-                <FaUser className="icon"/>
+                <FaUser className="icon cursor-pointer"/>
             </div>
         } else {
             icon =
             <div className='login' onClick={login}>
-                <FaPowerOff className="icon"/>
+                <FaPowerOff className="icon cursor-pointer"/>
             </div>
         }
         return icon;

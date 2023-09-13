@@ -58,7 +58,7 @@ export const getAccessToken = async (code: any) => {
 
 export const spotifyApi = async (endpoint: string, accessToken: string) => {
 
-  const response = await axios.get(`https://api.spotify.com/v1/${endpoint}`, {
+  const response = await axios.get(`https://api.spotify.com/v1${endpoint}`, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },
