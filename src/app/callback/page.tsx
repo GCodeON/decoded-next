@@ -13,6 +13,7 @@ export default function Callback() {
   useEffect(() => {
     async function authenticate() {
       if (code) {
+        localStorage.setItem('auth_code', code);
         const auth = await getAccessToken(code);
         console.log('callback', auth);
         localStorage.setItem('auth', JSON.stringify(auth));

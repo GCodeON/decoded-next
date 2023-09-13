@@ -49,23 +49,25 @@ export default function Player() {
 
     return (
         <div className="spotify_player sticky top-[100vh]">
-            <SpotifyPlayer
-                name={'DECODED Web Player'}
-                callback={(state) => spotifyCallback(state)}
-                syncExternalDeviceInterval={10}
-                persistDeviceSelection={true}
-                syncExternalDevice={true}
-                token={spotifyToken}
-                styles={{
-                    activeColor       : '#fff',
-                    bgColor           : '#000',
-                    color             : '#fff',
-                    loaderColor       : '#fff',
-                    trackArtistColor  : '#ccc',
-                    trackNameColor    : '#fff',
-                    sliderHandleColor : '#fff'
-                }}
-            />
+            {spotifyToken && (
+                <SpotifyPlayer
+                    name={'DECODED Web Player'}
+                    callback={(state) => spotifyCallback(state)}
+                    syncExternalDeviceInterval={10}
+                    persistDeviceSelection={true}
+                    syncExternalDevice={true}
+                    token={spotifyToken}
+                    styles={{
+                        activeColor       : '#fff',
+                        bgColor           : '#000',
+                        color             : '#fff',
+                        loaderColor       : '#fff',
+                        trackArtistColor  : '#ccc',
+                        trackNameColor    : '#fff',
+                        sliderHandleColor : '#fff'
+                    }}
+                />
+            )}
         </div>
     )
 }
