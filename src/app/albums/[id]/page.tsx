@@ -27,7 +27,7 @@ export default function Album({ params }: { params: { id: string } }) {
       {album && (
         album.map((track: any, index: Key) => {
           return (
-            <Link className="link cursor-pointer" href={`/song/${track.id}`} key={index}>
+            <Link className="link cursor-pointer" href={`/songs/${track.id}`} key={index}>
               <div className="" 
               key={index}>
                 <h3 className='p-2'>
