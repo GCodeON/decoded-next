@@ -7,7 +7,7 @@ import Track from '@/components/track'
 import { spotifyApi } from '@/hooks/spotify';
 
 export default function Home() {
-  const [track, setTrack] = useState();
+  const [currentTrack, setCurrentTrack] = useState();
   const [token, setToken] = useState('');
 
   useEffect(() => {
@@ -27,14 +27,14 @@ export default function Home() {
   const currentlyPlaying = async function () {
     const current = await spotifyApi('/me/player/currently-playing', token)
     if(current) {
-      setTrack(current.item);
+      setCurrentTrack(current.item);
     }
   }
 
   return (
-      <div className=''>
-        {track && (
-          <Track active={track}/>
+      <div className='flex justify-center'>
+        {currentTrack && (
+          <Track active={currentTrack}/>
         )}
       </div>
   )

@@ -32,12 +32,6 @@ export default function Artist({ params }: { params: { id: string } }) {
     }
   }, [artist]);
 
-  // useEffect(() => {
-  //   console.log('albums', albums)
-  //   setCenter();
-  // }, [albums]);
-
-
   const getArtist = async function () {
     const data = await spotifyApi(`/artists/${params.id}`, token)
     if(data) {
@@ -57,11 +51,22 @@ export default function Artist({ params }: { params: { id: string } }) {
 
 
   return (
-    <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 p-4'>
-        <div>Artist: {params.id}</div>
-        {artist && (
-          <h1>{ artist.name }</h1>
-        )}
+    <div className='flex flex-row flex-wrap gap-2 justify-center'>
+      {albums && (
+        albums.map((album: any, index: Key) => {
+          return (
+            <Link className="link cursor-pointer" href={`/albums/${album.id}`} key={index}>
+              <div className="album bg-center bg-cover h-80 w-56 md:w-60 lg:w-80" 
+              style={{backgroundImage:`url(${album.images[0].url})`}}
+              key={index}>
+                <h3 className='p-2'>
+                  {album.name}
+                </h3>
+              </div>
+            </Link>
+          )
+        })
+      )}
     </div>
   )
 }

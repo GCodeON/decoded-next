@@ -16,7 +16,7 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
     <html lang="en">
       <body className={`${inter.className} min-h-screen`}>
         <Dashboard>
-          <main className="flex items-center justify-center justify-items-center">
+          <main className="flex items-center justify-center min-h-75vh">
             {children}
           </main>
         </Dashboard>

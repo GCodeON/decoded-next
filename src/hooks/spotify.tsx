@@ -90,3 +90,8 @@ export const spotifyApi = async (endpoint: string, accessToken: string) => {
     console.log('error', error);
   }
 };
+
+export const checkhook = () => {
+  console.log('check hooks');
+  return true;
+}
