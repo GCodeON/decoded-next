@@ -1,5 +1,5 @@
 import axios from 'axios';
-import querystring from 'querystring';
+import api from '@/utils/axios';
 
 const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID;
 const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
@@ -74,24 +74,13 @@ export const getRefreshToken = async () => {
 };
 
 
-export const spotifyApi = async (endpoint: string, accessToken: string) => {
+export const spotifyApi = async (endpoint: string) => {
   try {
-    console.log('endpoint api', endpoint)
-    const response = await axios.get(`https://api.spotify.com/v1${endpoint}`, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
+    const response = await api.get(`https://api.spotify.com/v1${endpoint}`);
   
-    console.log('response spotify', response);
     return response.data;
 
   } catch (error) {
     console.log('error', error);
   }
 };
-
-export const checkhook = () => {
-  console.log('check hooks');
-  return true;
-}

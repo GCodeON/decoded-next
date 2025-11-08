@@ -19,7 +19,7 @@ export default function Track({active}: {active: any}) {
       { track &&  (
         <div className="current flex flex-col text-center">
           <h3>Currently Playing</h3>
-          <Link className="link" href={`/song/${track.id}`}>
+          <Link className="link" href={`/songs/${track.id}`}>
             <Image className="track-image" 
               src={track.album.images[1].url} 
               alt={track.name}

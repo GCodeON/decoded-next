@@ -7,24 +7,12 @@ import Link from 'next/link'
 import { spotifyApi } from '@/hooks/spotify';
 
 export default function Artist({ params }: { params: { id: string } }) {
-    const [token, setToken] = useState('');
-    const [artist, setArtist] = useState<any>();
-    const [albums, setAlbums] = useState <any>();
+  const [artist, setArtist] = useState<any>();
+  const [albums, setAlbums] = useState <any>();
 
   useEffect(() => {
-    const access_token = localStorage.getItem('access_token')
-    if(access_token) {
-      setToken(access_token)
-    }
+    getArtist();
   },[])
-
-  useEffect(() => {
-    if(token) {
-      getArtist();
-    }
-  },[token])
-
-
 
   useEffect(() => {
     if(artist) {
@@ -33,7 +21,7 @@ export default function Artist({ params }: { params: { id: string } }) {
   }, [artist]);
 
   const getArtist = async function () {
-    const data = await spotifyApi(`/artists/${params.id}`, token)
+    const data = await spotifyApi(`/artists/${params.id}`)
     if(data) {
       console.log('artist data', data);
       setArtist(data.items);
@@ -42,13 +30,12 @@ export default function Artist({ params }: { params: { id: string } }) {
   }
 
   const getAlbums = async function () {
-    const albums = await spotifyApi(`/artists/${params.id}/albums`, token)
+    const albums = await spotifyApi(`/artists/${params.id}/albums`)
     if(albums) {
       console.log('album data', albums);
       setAlbums(albums.items);
     }
   }
-
 
   return (
     <div className='flex flex-row flex-wrap gap-2 justify-center'>

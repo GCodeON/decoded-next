@@ -11,21 +11,12 @@ export default function Home() {
   const [token, setToken] = useState('');
 
   useEffect(() => {
-    const access_token = localStorage.getItem('access_token')
-    if(access_token) {
-      setToken(access_token)
-    }
+    currentlyPlaying();
   },[])
-
-  useEffect(() => {
-    if(token) {
-      currentlyPlaying();
-    }
-  },[token])
 
 
   const currentlyPlaying = async function () {
-    const current = await spotifyApi('/me/player/currently-playing', token)
+    const current = await spotifyApi('/me/player/currently-playing');
     if(current) {
       setCurrentTrack(current.item);
     }

@@ -7,24 +7,15 @@ import Link from 'next/link'
 import { spotifyApi } from '@/hooks/spotify';
 
 export default function Album({ params }: { params: { id: string } }) {
-    const [token, setToken] = useState('');
-    const [album, setAlbum] = useState <any>();
+  const [album, setAlbum] = useState <any>();
 
   useEffect(() => {
-    const access_token = localStorage.getItem('access_token')
-    if(access_token) {
-      setToken(access_token)
-    }
+    getAlbum();
   },[])
 
-  useEffect(() => {
-    if(token) {
-      getAlbum();
-    }
-  },[token])
-
   const getAlbum = async function () {
-    const album = await spotifyApi(`/albums/${params.id}`, token)
+    const album = await spotifyApi(`/albums/${params.id}`);
+    
     if(album) {
       console.log('album tracks', album);
       setAlbum(album.tracks.items);

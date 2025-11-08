@@ -7,24 +7,15 @@ import { spotifyApi } from '@/hooks/spotify';
 
 export default function Artists() {
   const [artists, setArtists] = useState<any>();
-  const [token, setToken] = useState('');
 
   useEffect(() => {
-    const access_token = localStorage.getItem('access_token')
-    if(access_token) {
-      setToken(access_token)
-    }
+    getTopArtists();
   },[])
-
-  useEffect(() => {
-    if(token) {
-      getTopArtists();
-    }
-  },[token])
 
 
   const getTopArtists = async function () {
-    const data = await spotifyApi('/me/top/artists', token)
+    const data = await spotifyApi('/me/top/artists');
+    
     if(data) {
       console.log('artist data', data);
       setArtists(data.items);
