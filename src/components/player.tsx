@@ -48,7 +48,7 @@ export default function Player() {
     }
 
     return (
-        <div className="spotify_player sticky top-[100vh]">
+        <>
             {spotifyToken && (
                 <SpotifyPlayer
                     name={'DECODED Web Player'}
@@ -68,6 +68,6 @@ export default function Player() {
                     }}
                 />
             )}
-        </div>
+        </>
     )
 }

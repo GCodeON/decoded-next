@@ -36,7 +36,7 @@ export const useAuth = () => {
   return { login, logout };
 };
 
-export const getAccessToken = async (code: any) => {
+export const getAccessToken = async (code: string) => {
 
   const response = await axios.post(SPOTIFY_TOKEN_ENDPOINT, null, {
     params: {
@@ -55,12 +55,12 @@ export const getAccessToken = async (code: any) => {
   return response.data;
 };
 
-export const getRefreshToken = async () => {
+export const getRefreshToken = async (code: string) => {
 
   const response = await axios.post(SPOTIFY_TOKEN_ENDPOINT, null, {
     params: {
         grant_type  : 'refresh_token',
-        refresh_token: ''
+        refresh_token: code
     },
     headers: {
         Authorization: `Basic ${Buffer.from(
@@ -69,7 +69,7 @@ export const getRefreshToken = async () => {
         'Content-Type': 'application/x-www-form-urlencoded',
     },
   });
-
+  console.log('refresh data', response.data);
   return response.data;
 };
 

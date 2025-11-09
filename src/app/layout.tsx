@@ -14,11 +14,9 @@ export const metadata: Metadata = {
 export default function RootLayout({children}: {children: React.ReactNode}) {
   return (
     <html lang="en">
-      <body className={`${inter.className} min-h-screen`}>
+      <body className={`${inter.className}`}>
         <Dashboard>
-          <main className="flex items-center justify-center min-h-75vh">
-            {children}
-          </main>
+          {children}
         </Dashboard>
       </body>
     </html>

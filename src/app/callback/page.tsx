@@ -15,9 +15,9 @@ export default function Callback() {
       if (code) {
         localStorage.setItem('auth_code', code);
         const auth = await getAccessToken(code);
-        console.log('callback', auth);
         localStorage.setItem('auth', JSON.stringify(auth));
         localStorage.setItem('access_token', auth.access_token);
+        localStorage.setItem('refresh_token', auth.refresh_token);
 
         setAccess(true);
       }
