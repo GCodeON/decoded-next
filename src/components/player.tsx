@@ -21,25 +21,21 @@ export default function Player() {
     },[songChanged]);
 
     function compareTrack(old: any, updated: any) {
-        console.log('compare track')
-        if(updated.name !== old.name) {
-            console.log('different');
+        console.log('compare track', updated.name, old.name);
+        if(updated.name == old.name) {
+            setSongChange(false);
+        } else {
+            console.log('different', updated.name, old.name);
             setActiveTrack(updated);
             setSongChange(true);
-        } else {
-            console.log('same');
-            setSongChange(false);
         }
     }
 
     const spotifyCallback = (state: any) => {
-        // console.log('state', state);
+        let previousTrack = localStorage.getItem('active');
+        console.log('spotify callback', state);
         if(state.status == "READY") {
-            // if(state.track){
-            //     localStorage.setItem('active', JSON.stringify(state.track));
-            // }
             if(state.type == "track_update") {
-                let previousTrack = localStorage.getItem('active');
                 if(previousTrack){
                     compareTrack(JSON.parse(previousTrack), state.track);
                 }
@@ -53,7 +49,7 @@ export default function Player() {
                 <SpotifyPlayer
                     name={'DECODED Web Player'}
                     callback={(state) => spotifyCallback(state)}
-                    syncExternalDeviceInterval={10}
+                    syncExternalDeviceInterval={2}
                     persistDeviceSelection={true}
                     syncExternalDevice={true}
                     token={spotifyToken}

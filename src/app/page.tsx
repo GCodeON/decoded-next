@@ -19,7 +19,8 @@ export default function Home() {
     if(current) {
       setCurrentTrack(current.item);
     } else {
-      const auth = JSON.parse(localStorage.getItem('auth') || '');
+      let storedAuth = localStorage.getItem('auth') || '{}';
+      const auth = JSON.parse(storedAuth);
 
       if (auth.refresh_token) {
         const refresh = await getRefreshToken(auth.refresh_token);
