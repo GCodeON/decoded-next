@@ -26,6 +26,7 @@
     "react-dom": "18.2.0",
     "react-icons": "^4.11.0",
     "react-spotify-web-playback": "^0.10.1",
+    "suneditor-react": "^3.6.1",
     "tailwindcss": "3.3.3",
     "typescript": "5.2.2"
   }

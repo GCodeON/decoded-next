@@ -2,23 +2,42 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
-
-import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
-
-import { db } from '@/utils/firebase-config';
 
 import { spotifyApi } from '@/hooks/spotify';
 import { useLyrics } from '@/hooks/useLyrics';
 
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { db } from '@/utils/firebase-config';
+import { htmlToLyrics, lyricsToHtml } from '@/utils/lyrics'; 
 
+import SunEditor from 'suneditor-react';
+import 'suneditor/dist/css/suneditor.min.css';
+import { FaEdit, FaPlayCircle, FaSave, FaTimes } from 'react-icons/fa';
+
+interface SavedSong {
+  title: string;
+  artist: string;
+  spotify: string;
+  lyrics: string;
+}
 
 export default function Song({ params }: { params: { id: string } }) {
   const [spotifyTrack, setSpotifyTrack] = useState<any>(null);
+  const [savedSong, setSavedSong] = useState<SavedSong | null>(null);
+  const [editMode, setEditMode] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const cleanTrackName = (name: string) => name.replace(/&/g, 'and').split('(')[0].trim();
+  const artistName = spotifyTrack?.artists?.[0]?.name || '';
+  const trackName = spotifyTrack?.name || '';
+
+  const { data: lyricsData, loading: lyricsLoading, error: lyricsError, refetch } = useLyrics(
+    artistName,
+    cleanTrackName(trackName)
+  );
 
   useEffect(() => {
-    console.log('get pararms id', params.id);
     const getSong = async () => {
       try {
         setFetchError(null);
@@ -29,35 +48,74 @@ export default function Song({ params }: { params: { id: string } }) {
         setFetchError(err.message || 'Failed to load song');
       }
     };
-
     getSong();
   }, [params.id]);
 
   useEffect(() => {
-    console.log('spotify track', spotifyTrack);
-    findorCreate(params.id);
-  }, [spotifyTrack]);
+    if (!spotifyTrack) return;
 
-  const { data: lyricsData, loading: lyricsLoading, error: lyricsError } = useLyrics(
-    spotifyTrack?.artists?.[0]?.name || '', spotifyTrack?.name || ''
-  );
+    const findOrCreateSong = async () => {
+      const songRef = doc(db, 'songs', params.id);
+      const snapshot = await getDoc(songRef);
+      const data = snapshot.data() as SavedSong | undefined;
 
-  console.log('lyrics data', lyricsData);
+      if (snapshot.exists() && data) {
+        console.log('Song found in DB:', data);
+        setSavedSong(data);
+      }
+    };
 
-  async function findorCreate(id: string) {
-    console.log('find or create', db)
-    const findSong = doc(db, "songs", id);
+    findOrCreateSong();
+  }, [spotifyTrack, params.id]);
 
-    const song = await getDoc(findSong)
+  useEffect(() => {
+    if (!lyricsData || savedSong || !spotifyTrack) return;
 
-    const savedData = song.data();
+    const saveNewSong = async () => {
+      setIsSaving(true);
+      const newSong: SavedSong = {
+        title: cleanTrackName(spotifyTrack.name),
+        artist: artistName,
+        spotify: params.id,
+        lyrics: lyricsData.lyrics,
+      };
 
-    if(song.exists()) {
-        console.log('song exists in custom db', savedData);
-    } else {
-      console.log('song does not exist in custom db');
+      try {
+        await setDoc(doc(db, 'songs', params.id), newSong);
+        setSavedSong(newSong);
+        console.log('New song saved with proper \\n');
+      } catch (err) {
+        console.error('Failed to save:', err);
+      } finally {
+        setIsSaving(false);
+      }
+    };
+
+    saveNewSong();
+  }, [lyricsData, savedSong, spotifyTrack, artistName, params.id]);
+
+  const handleLyricsUpdate = async (htmlContent: string) => {
+    if (!savedSong) return;
+
+    const plainTextLyrics = htmlToLyrics(htmlContent);
+
+    const updated = { ...savedSong, lyrics: plainTextLyrics };
+    setSavedSong(updated);
+
+    try {
+      await updateDoc(doc(db, 'songs', params.id), { lyrics: plainTextLyrics });
+      console.log('Lyrics saved with preserved line breaks');
+    } catch (err) {
+      console.error('Update failed:', err);
     }
-  }
+  };
+
+  const toggleEdit = () => setEditMode(prev => !prev);
+
+  const playSong = async () => {
+    console.log('Play song:', params.id);
+ 
+  };
 
   if (!spotifyTrack && !fetchError) {
     return (
@@ -75,6 +133,8 @@ export default function Song({ params }: { params: { id: string } }) {
     );
   }
 
+  const displayLyrics = savedSong?.lyrics || lyricsData?.lyrics || '';
+
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-8">
 
@@ -89,46 +149,74 @@ export default function Song({ params }: { params: { id: string } }) {
         </div>
 
         <div className="flex-1">
-          <h1 className="text-3xl font-bold text-gray-900">
-            {spotifyTrack.name}
-            </h1>
+          <h1 className="text-3xl font-bold text-gray-900">{spotifyTrack.name}</h1>
           <p className="text-xl text-gray-600 mt-1">
             {spotifyTrack.artists.map((a: any) => a.name).join(', ')}
           </p>
-          <p className="text-sm text-gray-500 mt-2">
-            Album: {spotifyTrack.album.name}
-          </p>
+          <p className="text-sm text-gray-500 mt-2">Album: {spotifyTrack.album.name}</p>
           <p className="text-sm text-gray-500">
             Released: {new Date(spotifyTrack.album.release_date).getFullYear()}
           </p>
         </div>
+
+        <button onClick={playSong} className="text-green-500 hover:text-green-600 transition" title="Play on Spotify">
+          <FaPlayCircle size={48} />
+        </button>
       </div>
 
-      <div className=" rounded-xl shadow-lg p-6">
-        {lyricsLoading && (
-          <p className="text-gray-600 animate-pulse">
-            Searching lyrics...
-          </p>
-        )}
+      <div className="bg-white rounded-xl shadow-lg p-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-black text-2xl font-bold">Lyrics</h2>
+          {displayLyrics && !editMode && (
+            <button onClick={toggleEdit} className="flex items-center gap-2 text-blue-600 hover:text-blue-700">
+              <FaEdit /> Edit
+            </button>
+          )}
+        </div>
 
-        {lyricsError && (
+        {isSaving && <p className="text-sm text-gray-500">Saving...</p>}
+        {lyricsLoading && !savedSong && <p className="text-gray-600 animate-pulse">Searching lyrics...</p>}
+        {lyricsError && !savedSong && (
           <p className="text-red-500">
-            {lyricsError.includes('not found')
-              ? 'Lyrics not available for this song.'
-              : `Error: ${lyricsError}`}
+            {lyricsError.includes('not found') ? 'Lyrics not available.' : `Error: ${lyricsError}`}
           </p>
         )}
+        {!lyricsLoading && !displayLyrics && <p className="text-gray-500 italic">No lyrics found.</p>}
 
-        {lyricsData && (
-          <pre className="whitespace-pre-wrap font-sans text-white-700 leading-relaxed text-2xl font-semibold">
-            {lyricsData.lyrics}
+        {displayLyrics && !editMode && (
+          <pre className="whitespace-pre-wrap break-words font-sans text-gray-700 leading-relaxed text-lg md:text-xl">
+            {displayLyrics}
           </pre>
         )}
 
-        {!lyricsLoading && !lyricsError && !lyricsData && (
-          <p className="text-gray-500 italic">
-            No lyrics found.
-          </p>
+        {editMode && (
+          <div className="space-y-4">
+            <SunEditor
+              setContents={lyricsToHtml(displayLyrics)}
+              onChange={handleLyricsUpdate}
+              setOptions={{
+                height: '500px',
+                buttonList: [
+                  ['undo', 'redo'],
+                  ['fontColor', 'hiliteColor'],
+                ],
+              }}
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={toggleEdit}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+              >
+                <FaSave /> Save
+              </button>
+              <button
+                onClick={toggleEdit}
+                className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+              >
+                <FaTimes /> Cancel
+              </button>
+            </div>
+          </div>
         )}
       </div>
     </div>
