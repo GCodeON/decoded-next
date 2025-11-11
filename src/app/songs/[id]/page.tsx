@@ -18,7 +18,10 @@ interface SavedSong {
   title: string;
   artist: string;
   spotify: string;
-  lyrics: string;
+  lyrics: {
+    plain: string,
+    colorCoded: string
+  };
 }
 
 export default function Song({ params }: { params: { id: string } }) {
@@ -51,6 +54,7 @@ export default function Song({ params }: { params: { id: string } }) {
     getSong();
   }, [params.id]);
 
+
   useEffect(() => {
     if (!spotifyTrack) return;
 
@@ -60,8 +64,19 @@ export default function Song({ params }: { params: { id: string } }) {
       const data = snapshot.data() as SavedSong | undefined;
 
       if (snapshot.exists() && data) {
-        console.log('Song found in DB:', data);
-        setSavedSong(data);
+        const lyricsObj =
+          typeof data.lyrics === 'string'
+            ? { plain: data.lyrics, colorCoded: lyricsToHtml(data.lyrics) }
+            : data.lyrics;
+
+        const migrated: SavedSong = {
+          title: data.title,
+          artist: data.artist,
+          spotify: data.spotify,
+          lyrics: lyricsObj,
+        };
+        console.log('Song found in DB:', migrated);
+        setSavedSong(migrated);
       }
     };
 
@@ -73,11 +88,15 @@ export default function Song({ params }: { params: { id: string } }) {
 
     const saveNewSong = async () => {
       setIsSaving(true);
+      const plain = lyricsData.lyrics;
       const newSong: SavedSong = {
         title: cleanTrackName(spotifyTrack.name),
         artist: artistName,
         spotify: params.id,
-        lyrics: lyricsData.lyrics,
+        lyrics: {
+          plain,
+          colorCoded: lyricsToHtml(plain),
+        },
       };
 
       try {
@@ -94,17 +113,27 @@ export default function Song({ params }: { params: { id: string } }) {
     saveNewSong();
   }, [lyricsData, savedSong, spotifyTrack, artistName, params.id]);
 
+
   const handleLyricsUpdate = async (htmlContent: string) => {
     if (!savedSong) return;
 
     const plainTextLyrics = htmlToLyrics(htmlContent);
 
-    const updated = { ...savedSong, lyrics: plainTextLyrics };
+    const updated: SavedSong = {
+        ...savedSong,
+        lyrics: {
+          plain: plainTextLyrics,
+          colorCoded: htmlContent,
+        },
+      };
     setSavedSong(updated);
 
     try {
-      await updateDoc(doc(db, 'songs', params.id), { lyrics: plainTextLyrics });
-      console.log('Lyrics saved with preserved line breaks');
+      await updateDoc(doc(db, 'songs', params.id), {
+        'lyrics.plain': plainTextLyrics,
+        'lyrics.colorCoded': htmlContent,
+      });
+      console.log('Lyrics saved');
     } catch (err) {
       console.error('Update failed:', err);
     }
@@ -133,7 +162,13 @@ export default function Song({ params }: { params: { id: string } }) {
     );
   }
 
-  const displayLyrics = savedSong?.lyrics || lyricsData?.lyrics || '';
+  const displayLyrics = savedSong?.lyrics || {
+    plain: lyricsData?.lyrics || '',
+    colorCoded: lyricsToHtml(lyricsData?.lyrics || ''),
+  };
+
+  const displayPlain = displayLyrics.plain;
+  const displayHtml  = displayLyrics.colorCoded;
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-8">
@@ -164,6 +199,7 @@ export default function Song({ params }: { params: { id: string } }) {
         </button>
       </div>
 
+
       <div className="bg-white rounded-xl shadow-lg p-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-black text-2xl font-bold">Lyrics</h2>
@@ -182,26 +218,28 @@ export default function Song({ params }: { params: { id: string } }) {
           </p>
         )}
         {!lyricsLoading && !displayLyrics && <p className="text-gray-500 italic">No lyrics found.</p>}
-
+        
         {displayLyrics && !editMode && (
-          <pre className="whitespace-pre-wrap break-words font-sans text-gray-700 leading-relaxed text-lg md:text-xl">
-            {displayLyrics}
-          </pre>
+          <div
+            className="whitespace-pre-wrap break-words font-sans text-gray-700 leading-relaxed text-lg md:text-xl"
+            dangerouslySetInnerHTML={{ __html: displayHtml }}
+          />
         )}
+        
 
         {editMode && (
           <div className="space-y-4">
-            <SunEditor
-              setContents={lyricsToHtml(displayLyrics)}
-              onChange={handleLyricsUpdate}
-              setOptions={{
-                height: '500px',
-                buttonList: [
-                  ['undo', 'redo'],
-                  ['fontColor', 'hiliteColor'],
-                ],
-              }}
-            />
+          <SunEditor
+                setContents={displayHtml}
+                onChange={handleLyricsUpdate}
+                setOptions={{
+                  height: '500px',
+                  buttonList: [
+                    ['undo', 'redo'],
+                    ['fontColor', 'hiliteColor'],
+                  ],
+                }}
+              />
             <div className="flex gap-3">
               <button
                 onClick={toggleEdit}
