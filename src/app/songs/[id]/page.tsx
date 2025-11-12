@@ -68,31 +68,19 @@ export default function Song({ params }: { params: { id: string } }) {
       const snapshot = await getDoc(songRef);
       const data = snapshot.data();
 
-      if (snapshot.exists() && data) {
-        let plain = '';
-        let synced: string | null = null;
-        let rhymeEncoded = '';
+      if (snapshot.exists() && data) {    
+        let plain = data.lyrics?.plain || '';
+        let synced = data.lyrics?.synced || null;
+        let rhymeEncoded = data.lyrics?.rhymeEncoded || lyricsToHtml(plain);
 
-        if (typeof data.lyrics === 'string') {
-          plain = data.lyrics;
-          rhymeEncoded = lyricsToHtml(plain);
-        } else if (data.lyrics?.plain || data.lyrics?.colorCoded) {
-          plain = data.lyrics.plain || '';
-          rhymeEncoded = data.lyrics.colorCoded || lyricsToHtml(plain);
-        } else {
-          plain = data.lyrics?.plain || '';
-          synced = data.lyrics?.synced || null;
-          rhymeEncoded = data.lyrics?.rhymeEncoded || lyricsToHtml(plain);
-        }
-
-        const migrated: SavedSong = {
+        const track: SavedSong = {
           title: data.title || cleanTrackName(spotifyTrack.name),
           artist: data.artist || artistName,
           spotify: params.id,
           lyrics: { plain, synced, rhymeEncoded },
         };
 
-        setSavedSong(migrated);
+        setSavedSong(track);
       }
     };
 
@@ -174,14 +162,22 @@ export default function Song({ params }: { params: { id: string } }) {
     );
   }
 
-  const displayLyrics = savedSong?.lyrics || {
-    plain: lyricsData?.lyrics.plain || '',
-    synced: lyricsData?.lyrics.synced || null,
-    rhymeEncoded: lyricsToHtml(lyricsData?.lyrics.plain || ''),
-  };
+  const displayLyrics = savedSong?.lyrics
+    ? {
+        ...savedSong.lyrics,
+        rhymeEncoded: savedSong.lyrics.rhymeEncoded || lyricsToHtml(savedSong.lyrics.plain),
+      }
+    : lyricsData?.lyrics
+      ? {
+          plain: lyricsData.lyrics.plain || '',
+          synced: lyricsData.lyrics.synced || null,
+          rhymeEncoded: lyricsToHtml(lyricsData.lyrics.plain || ''),
+        }
+      : null;
 
-  const displayHtml = displayLyrics.rhymeEncoded;
-  const hasSynced = !!displayLyrics.synced;
+  const displayHtml = displayLyrics?.rhymeEncoded || '';
+  console.log('display lyrics', displayLyrics);
+  const hasSynced = !!displayLyrics?.synced;
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-8">
