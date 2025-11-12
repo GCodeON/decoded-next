@@ -2,10 +2,14 @@ import { useState, useEffect, useCallback } from 'react';
 
 interface LyricsResult {
   title: string;
-  lyrics: string;
+  lyrics: {
+    plain: string;
+    synced: string | null;
+    rhymeEncoded: string;
+  };
 }
 
-export function useLyrics(artist: string, song: string) {
+export function useLyrics(artist: string, song: string, album: string, duration: number) {
   const [data, setData] = useState<LyricsResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -23,7 +27,7 @@ export function useLyrics(artist: string, song: string) {
 
     try {
       const res = await fetch(
-        `/api/lyrics?artist=${encodeURIComponent(artist)}&song=${encodeURIComponent(song)}`
+        `/api/lyrics?artist=${encodeURIComponent(artist)}&song=${encodeURIComponent(song)}&album=${encodeURIComponent(album)}&duration=${encodeURIComponent(duration)}`
       );
       const json = await res.json();
 

@@ -8,7 +8,9 @@ import { useLyrics } from '@/hooks/useLyrics';
 
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/utils/firebase-config';
-import { htmlToLyrics, lyricsToHtml } from '@/utils/lyrics'; 
+
+import { htmlToLyrics, lyricsToHtml } from '@/utils/lyrics';
+import { cleanTrackName, mstoSeconds } from '@/utils/track';
 
 import SunEditor from 'suneditor-react';
 import 'suneditor/dist/css/suneditor.min.css';
@@ -19,8 +21,9 @@ interface SavedSong {
   artist: string;
   spotify: string;
   lyrics: {
-    plain: string,
-    colorCoded: string
+    plain: string;
+    synced: string | null;
+    rhymeEncoded: string;
   };
 }
 
@@ -31,13 +34,16 @@ export default function Song({ params }: { params: { id: string } }) {
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  const cleanTrackName = (name: string) => name.replace(/&/g, 'and').split('(')[0].trim();
   const artistName = spotifyTrack?.artists?.[0]?.name || '';
   const trackName = spotifyTrack?.name || '';
+  const albumName = spotifyTrack?.album.name || '';
+  const trackDuration = spotifyTrack?.duration_ms || '';
 
-  const { data: lyricsData, loading: lyricsLoading, error: lyricsError, refetch } = useLyrics(
+  const { data: lyricsData, loading: lyricsLoading, error: lyricsError } = useLyrics(
     artistName,
-    cleanTrackName(trackName)
+    cleanTrackName(trackName),
+    albumName,
+    mstoSeconds(trackDuration)
   );
 
   useEffect(() => {
@@ -54,55 +60,65 @@ export default function Song({ params }: { params: { id: string } }) {
     getSong();
   }, [params.id]);
 
-
   useEffect(() => {
     if (!spotifyTrack) return;
 
     const findOrCreateSong = async () => {
       const songRef = doc(db, 'songs', params.id);
       const snapshot = await getDoc(songRef);
-      const data = snapshot.data() as SavedSong | undefined;
+      const data = snapshot.data();
 
       if (snapshot.exists() && data) {
-        const lyricsObj =
-          typeof data.lyrics === 'string'
-            ? { plain: data.lyrics, colorCoded: lyricsToHtml(data.lyrics) }
-            : data.lyrics;
+        let plain = '';
+        let synced: string | null = null;
+        let rhymeEncoded = '';
+
+        if (typeof data.lyrics === 'string') {
+          plain = data.lyrics;
+          rhymeEncoded = lyricsToHtml(plain);
+        } else if (data.lyrics?.plain || data.lyrics?.colorCoded) {
+          plain = data.lyrics.plain || '';
+          rhymeEncoded = data.lyrics.colorCoded || lyricsToHtml(plain);
+        } else {
+          plain = data.lyrics?.plain || '';
+          synced = data.lyrics?.synced || null;
+          rhymeEncoded = data.lyrics?.rhymeEncoded || lyricsToHtml(plain);
+        }
 
         const migrated: SavedSong = {
-          title: data.title,
-          artist: data.artist,
-          spotify: data.spotify,
-          lyrics: lyricsObj,
+          title: data.title || cleanTrackName(spotifyTrack.name),
+          artist: data.artist || artistName,
+          spotify: params.id,
+          lyrics: { plain, synced, rhymeEncoded },
         };
-        console.log('Song found in DB:', migrated);
+
         setSavedSong(migrated);
       }
     };
 
     findOrCreateSong();
-  }, [spotifyTrack, params.id]);
+  }, [spotifyTrack, params.id, artistName]);
 
   useEffect(() => {
     if (!lyricsData || savedSong || !spotifyTrack) return;
 
     const saveNewSong = async () => {
       setIsSaving(true);
-      const plain = lyricsData.lyrics;
+      const plain = lyricsData.lyrics.plain?.trim() || '';
+      const synced = lyricsData.lyrics.synced?.trim() || null;
+      const rhymeEncoded = lyricsToHtml(plain);
+
       const newSong: SavedSong = {
         title: cleanTrackName(spotifyTrack.name),
         artist: artistName,
         spotify: params.id,
-        lyrics: {
-          plain,
-          colorCoded: lyricsToHtml(plain),
-        },
+        lyrics: { plain, synced, rhymeEncoded },
       };
 
       try {
         await setDoc(doc(db, 'songs', params.id), newSong);
         setSavedSong(newSong);
-        console.log('New song saved with proper \\n');
+        console.log('New song saved');
       } catch (err) {
         console.error('Failed to save:', err);
       } finally {
@@ -113,38 +129,34 @@ export default function Song({ params }: { params: { id: string } }) {
     saveNewSong();
   }, [lyricsData, savedSong, spotifyTrack, artistName, params.id]);
 
-
   const handleLyricsUpdate = async (htmlContent: string) => {
     if (!savedSong) return;
 
     const plainTextLyrics = htmlToLyrics(htmlContent);
 
     const updated: SavedSong = {
-        ...savedSong,
-        lyrics: {
-          plain: plainTextLyrics,
-          colorCoded: htmlContent,
-        },
-      };
+      ...savedSong,
+      lyrics: {
+        ...savedSong.lyrics,
+        plain: plainTextLyrics,
+        rhymeEncoded: htmlContent,
+      },
+    };
     setSavedSong(updated);
 
     try {
       await updateDoc(doc(db, 'songs', params.id), {
         'lyrics.plain': plainTextLyrics,
-        'lyrics.colorCoded': htmlContent,
+        'lyrics.rhymeEncoded': htmlContent,
       });
-      console.log('Lyrics saved');
+      console.log('Lyrics updated');
     } catch (err) {
       console.error('Update failed:', err);
     }
   };
 
   const toggleEdit = () => setEditMode(prev => !prev);
-
-  const playSong = async () => {
-    console.log('Play song:', params.id);
- 
-  };
+  const playSong = () => console.log('Play song:', params.id);
 
   if (!spotifyTrack && !fetchError) {
     return (
@@ -163,12 +175,13 @@ export default function Song({ params }: { params: { id: string } }) {
   }
 
   const displayLyrics = savedSong?.lyrics || {
-    plain: lyricsData?.lyrics || '',
-    colorCoded: lyricsToHtml(lyricsData?.lyrics || ''),
+    plain: lyricsData?.lyrics.plain || '',
+    synced: lyricsData?.lyrics.synced || null,
+    rhymeEncoded: lyricsToHtml(lyricsData?.lyrics.plain || ''),
   };
 
-  const displayPlain = displayLyrics.plain;
-  const displayHtml  = displayLyrics.colorCoded;
+  const displayHtml = displayLyrics.rhymeEncoded;
+  const hasSynced = !!displayLyrics.synced;
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-8">
@@ -192,19 +205,30 @@ export default function Song({ params }: { params: { id: string } }) {
           <p className="text-sm text-gray-500">
             Released: {new Date(spotifyTrack.album.release_date).getFullYear()}
           </p>
+          {hasSynced && (
+            <p className="text-xs text-green-600 mt-2 font-medium">
+              Synced lyrics available
+            </p>
+          )}
         </div>
 
-        <button onClick={playSong} className="text-green-500 hover:text-green-600 transition" title="Play on Spotify">
+        <button
+          onClick={playSong}
+          className="text-green-500 hover:text-green-600 transition"
+          title="Play on Spotify"
+        >
           <FaPlayCircle size={48} />
         </button>
       </div>
-
 
       <div className="bg-white rounded-xl shadow-lg p-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-black text-2xl font-bold">Lyrics</h2>
           {displayLyrics && !editMode && (
-            <button onClick={toggleEdit} className="flex items-center gap-2 text-blue-600 hover:text-blue-700">
+            <button
+              onClick={toggleEdit}
+              className="flex items-center gap-2 text-blue-600 hover:text-blue-700"
+            >
               <FaEdit /> Edit
             </button>
           )}
@@ -218,28 +242,40 @@ export default function Song({ params }: { params: { id: string } }) {
           </p>
         )}
         {!lyricsLoading && !displayLyrics && <p className="text-gray-500 italic">No lyrics found.</p>}
-        
+
         {displayLyrics && !editMode && (
-          <div
-            className="whitespace-pre-wrap break-words font-sans text-gray-700 leading-relaxed text-lg md:text-xl"
-            dangerouslySetInnerHTML={{ __html: displayHtml }}
-          />
+          <div className="prose prose-lg max-w-none">
+            <div
+              className="whitespace-pre-wrap break-words font-sans text-gray-700 leading-relaxed text-lg md:text-xl"
+              dangerouslySetInnerHTML={{ __html: displayHtml }}
+            />
+
+            {hasSynced && (
+              <details className="mt-6 border-t pt-4">
+                <summary className="cursor-pointer text-sm font-medium text-gray-600 hover:text-gray-800">
+                  View synced timestamps
+                </summary>
+                <pre className="mt-3 text-xs font-mono text-gray-700 whitespace-pre-wrap bg-gray-50 p-3 rounded">
+                  {displayLyrics.synced}
+                </pre>
+              </details>
+            )}
+          </div>
         )}
-        
 
         {editMode && (
           <div className="space-y-4">
-          <SunEditor
-                setContents={displayHtml}
-                onChange={handleLyricsUpdate}
-                setOptions={{
-                  height: '500px',
-                  buttonList: [
-                    ['undo', 'redo'],
-                    ['fontColor', 'hiliteColor'],
-                  ],
-                }}
-              />
+            <SunEditor
+              setContents={displayHtml}
+              onChange={handleLyricsUpdate}
+              setOptions={{
+                height: '500px',
+                buttonList: [
+                  ['undo', 'redo'],
+                  ['fontColor', 'hiliteColor']
+                ],
+              }}
+            />
             <div className="flex gap-3">
               <button
                 onClick={toggleEdit}
