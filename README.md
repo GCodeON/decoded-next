@@ -26,6 +26,25 @@ A modern Next.js application built with React, TypeScript, and Tailwind CSS, int
 1. Clone the repository:
 2. Install dependencies:
 3. Set up environment variables: Create a `.env.local` file in the root and add:
+
+```bash
+SPOTIFY_CLIENT_ID=""
+SPOTIFY_CLIENT_SECRET=""
+SPOTIFY_REDIRECT_URI=""
+
+NEXT_PUBLIC_SPOTIFY_CLIENT_ID=
+NEXT_PUBLIC_SPOTIFY_REDIRECT_URI=
+NEXT_PUBLIC_BASE_URL=
+
+FIREBASE_API_KEY=""
+FIREBASE_AUTH_DOMAIN=""
+FIREBASE_DB_URL=""
+FIREBASE_PROJECT_ID=""
+FIREBASE_STORAGE_BUCKET=""
+FIREBASE_MESSAGING_SENDER_ID=""
+FIREBASE_APP_ID=""
+FIREBASE_MEASUREMENT_ID=""
+```
 4. Run the development server:
 
 ```bash
