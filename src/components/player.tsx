@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import SpotifyPlayer from 'react-spotify-web-playback';
 
 export default function Player() {
-    const [spotifyToken, setSpotifyToken] = useState('')
+    const [spotifyToken, setSpotifyToken] = useState('');
     const [ activeTrack, setActiveTrack] = useState({});
     const [ songChanged, setSongChange] = useState(false);
 
