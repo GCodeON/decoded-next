@@ -198,7 +198,7 @@ function usePlaybackSync(trackId: string, enabled: boolean) {
     };
 
     pollPlayback();
-    pollIntervalRef.current = setInterval(pollPlayback, 500);
+    pollIntervalRef.current = setInterval(pollPlayback, 1000);
 
     return () => {
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
@@ -447,6 +447,17 @@ export default function Song({ params }: { params: { id: string } }) {
               dangerouslySetInnerHTML={{ __html: displayHtml }}
             />
           </div>
+        )}
+
+        {hasSynced && (
+          <details className="mt-6 border-t pt-4">
+            <summary className="cursor-pointer text-sm font-medium text-gray-600 hover:text-gray-800">
+              View synced timestamps
+            </summary>
+            <pre className="mt-3 text-xs font-mono text-gray-700 whitespace-pre-wrap bg-gray-50 p-3 rounded">
+              {displayLyrics.synced}
+            </pre>
+          </details>
         )}
 
         {/* Editor */}
