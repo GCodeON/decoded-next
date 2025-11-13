@@ -1,22 +1,30 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import Image from 'next/image';
-
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/utils/firebase-config';
-
 import SunEditor from 'suneditor-react';
 import 'suneditor/dist/css/suneditor.min.css';
 import { FaEdit, FaSave, FaTimes, FaPlayCircle, FaPauseCircle } from 'react-icons/fa';
 
 import { spotifyApi } from '@/hooks/spotify';
 import { useLyrics } from '@/hooks/useLyrics';
-
 import { htmlToLyrics, lyricsToHtml } from '@/utils/lyrics';
 import { cleanTrackName, mstoSeconds } from '@/utils/track';
 
-
+// === Types ===
+interface SpotifyTrack {
+  id: string;
+  name: string;
+  artists: { name: string }[];
+  album: {
+    name: string;
+    images: { url: string }[];
+    release_date: string;
+  };
+  duration_ms: number;
+}
 interface SavedSong {
   title: string;
   artist: string;
@@ -33,81 +41,73 @@ interface SyncedLine {
   element: HTMLDivElement | null;
 }
 
-export default function Song({ params }: { params: { id: string } }) {
-  const [spotifyTrack, setSpotifyTrack] = useState<any>(null);
+// === Custom Hooks ===
+function useSpotifyTrack(trackId: string) {
+  const [track, setTrack] = useState<SpotifyTrack | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTrack = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await spotifyApi(`/tracks/${trackId}`);
+        setTrack(data);
+      } catch (err: any) {
+        setError(err.message || 'Failed to load song');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTrack();
+  }, [trackId]);
+
+  return { track, error, loading };
+}
+
+function useSavedSong(track: SpotifyTrack | null, trackId: string) {
   const [savedSong, setSavedSong] = useState<SavedSong | null>(null);
-  const [editMode, setEditMode] = useState(false);
-  const [fetchError, setFetchError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentPosition, setCurrentPosition] = useState(0);
-  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  const lyricsContainerRef = useRef<HTMLDivElement>(null);
-  const syncedLinesRef = useRef<SyncedLine[]>([]);
-
-  const artistName = spotifyTrack?.artists?.[0]?.name || '';
-  const trackName = spotifyTrack?.name || '';
-  const albumName = spotifyTrack?.album.name || '';
-  const trackDuration = spotifyTrack?.duration_ms || '';
+  const artistName = track?.artists[0]?.name || '';
+  const trackName = track?.name || '';
 
   const { data: lyricsData, loading: lyricsLoading, error: lyricsError } = useLyrics(
     artistName,
     cleanTrackName(trackName),
-    albumName,
-    mstoSeconds(trackDuration)
+    track?.album.name || '',
+    mstoSeconds(track?.duration_ms || 0)
   );
 
-  const toggleEdit = () => setEditMode(prev => !prev);
-  
-  const togglePlayback = () => {
-    console.log('onClick Play');
-  }
-
+  // Load existing song from Firestore
   useEffect(() => {
-    const getSong = async () => {
-      try {
-        setFetchError(null);
-        const data = await spotifyApi(`/tracks/${params.id}`);
-        setSpotifyTrack(data);
-      } catch (err: any) {
-        console.error('Failed to fetch song:', err);
-        setFetchError(err.message || 'Failed to load song');
-      }
-    };
-    getSong();
-  }, [params.id]);
+    if (!track) return;
 
-  useEffect(() => {
-    if (!spotifyTrack) return;
-
-    const findOrCreateSong = async () => {
-      const songRef = doc(db, 'songs', params.id);
+    const loadSavedSong = async () => {
+      const songRef = doc(db, 'songs', trackId);
       const snapshot = await getDoc(songRef);
-      const data = snapshot.data();
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        const plain = data.lyrics?.plain || '';
+        const synced = data.lyrics?.synced || null;
+        const rhymeEncoded = data.lyrics?.rhymeEncoded || lyricsToHtml(plain);
 
-      if (snapshot.exists() && data) {    
-        let plain = data.lyrics?.plain || '';
-        let synced = data.lyrics?.synced || null;
-        let rhymeEncoded = data.lyrics?.rhymeEncoded || lyricsToHtml(plain);
-
-        const track: SavedSong = {
-          title: data.title || cleanTrackName(spotifyTrack.name),
+        setSavedSong({
+          title: data.title || cleanTrackName(track.name),
           artist: data.artist || artistName,
-          spotify: params.id,
+          spotify: trackId,
           lyrics: { plain, synced, rhymeEncoded },
-        };
-
-        setSavedSong(track);
+        });
       }
     };
 
-    findOrCreateSong();
-  }, [spotifyTrack, params.id, artistName]);
+    loadSavedSong();
+  }, [track, trackId, artistName]);
 
+  // Save new song if lyrics found and not saved
   useEffect(() => {
-    if (!lyricsData || savedSong || !spotifyTrack) return;
+    if (!lyricsData || savedSong || !track) return;
 
     const saveNewSong = async () => {
       setIsSaving(true);
@@ -116,16 +116,15 @@ export default function Song({ params }: { params: { id: string } }) {
       const rhymeEncoded = lyricsToHtml(plain);
 
       const newSong: SavedSong = {
-        title: cleanTrackName(spotifyTrack.name),
+        title: cleanTrackName(track.name),
         artist: artistName,
-        spotify: params.id,
+        spotify: trackId,
         lyrics: { plain, synced, rhymeEncoded },
       };
 
       try {
-        await setDoc(doc(db, 'songs', params.id), newSong);
+        await setDoc(doc(db, 'songs', trackId), newSong);
         setSavedSong(newSong);
-        console.log('New song saved');
       } catch (err) {
         console.error('Failed to save:', err);
       } finally {
@@ -134,147 +133,257 @@ export default function Song({ params }: { params: { id: string } }) {
     };
 
     saveNewSong();
-  }, [lyricsData, savedSong, spotifyTrack, artistName, params.id]);
+  }, [lyricsData, savedSong, track, trackId, artistName]);
 
-  const handleLyricsUpdate = async (htmlContent: string) => {
-    if (!savedSong) return;
+  const updateLyrics = useCallback(
+    async (htmlContent: string) => {
+      if (!savedSong) return;
 
-    const plainTextLyrics = htmlToLyrics(htmlContent);
+      const plainTextLyrics = htmlToLyrics(htmlContent);
+      const updated: SavedSong = {
+        ...savedSong,
+        lyrics: {
+          ...savedSong.lyrics,
+          plain: plainTextLyrics,
+          rhymeEncoded: htmlContent,
+        },
+      };
 
-    const updated: SavedSong = {
-      ...savedSong,
-      lyrics: {
-        ...savedSong.lyrics,
-        plain: plainTextLyrics,
-        rhymeEncoded: htmlContent,
-      },
-    };
-    setSavedSong(updated);
+      setSavedSong(updated);
 
-    try {
-      await updateDoc(doc(db, 'songs', params.id), {
-        'lyrics.plain': plainTextLyrics,
-        'lyrics.rhymeEncoded': htmlContent,
-      });
-      console.log('Lyrics updated');
-    } catch (err) {
-      console.error('Update failed:', err);
-    }
+      try {
+        await updateDoc(doc(db, 'songs', trackId), {
+          'lyrics.plain': plainTextLyrics,
+          'lyrics.rhymeEncoded': htmlContent,
+        });
+      } catch (err) {
+        console.error('Update failed:', err);
+      }
+    },
+    [savedSong, trackId]
+  );
+
+  return {
+    savedSong,
+    isSaving,
+    lyricsLoading,
+    lyricsError,
+    updateLyrics,
   };
+}
+
+function usePlaybackSync(trackId: string, enabled: boolean) {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentPosition, setCurrentPosition] = useState(0);
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    if (!spotifyTrack) return;
-
-    const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
-    if (!token) return;
+    if (!enabled) return;
 
     const pollPlayback = async () => {
-      const data = await spotifyApi(`/me/player`);
-       console.log('get player', data);
-
-      if(data) {
-          if (data?.item?.id === params.id) {
+      try {
+        const data = await spotifyApi(`/me/player`);
+        if (data?.item?.id === trackId) {
           setIsPlaying(data.is_playing);
           setCurrentPosition(data.progress_ms / 1000);
         } else {
           setIsPlaying(false);
           setCurrentPosition(0);
         }
+      } catch (err) {
+        console.error('Playback poll failed:', err);
       }
     };
 
     pollPlayback();
-
     pollIntervalRef.current = setInterval(pollPlayback, 500);
 
     return () => {
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
     };
-  }, [spotifyTrack, params.id]);
+  }, [trackId, enabled]);
 
-  useEffect(() => {
-    if (!savedSong?.lyrics.synced || !lyricsContainerRef.current) return;
+  return { isPlaying, currentPosition, togglePlayback: () => {} };
+}
 
-    const lines = savedSong.lyrics.synced
+// === Components ===
+function SongHeader({ track, isPlaying }: { track: SpotifyTrack; isPlaying: boolean }) {
+  return (
+    <div className="flex items-center space-x-6 bg-white rounded-xl shadow-lg p-6">
+      <div className="relative w-48 h-48 flex-shrink-0">
+        <Image
+          src={track.album.images[0]?.url || '/placeholder.png'}
+          alt={track.name}
+          fill
+          className="rounded-lg object-cover"
+        />
+      </div>
+
+      <div className="flex-1">
+        <h1 className="text-3xl font-bold text-gray-900">{track.name}</h1>
+        <p className="text-xl text-gray-600 mt-1">
+          {track.artists.map((a) => a.name).join(', ')}
+        </p>
+        <p className="text-sm text-gray-500 mt-2">Album: {track.album.name}</p>
+        <p className="text-sm text-gray-500">
+          Released: {new Date(track.album.release_date).getFullYear()}
+        </p>
+      </div>
+
+      <button
+        aria-label={isPlaying ? 'Pause' : 'Play'}
+        className="text-green-500 hover:text-green-600 transition"
+      >
+        {isPlaying ? <FaPauseCircle size={48} /> : <FaPlayCircle size={48} />}
+      </button>
+    </div>
+  );
+}
+
+function SyncedLyrics({
+  syncedLyrics,
+  currentPosition,
+  isPlaying,
+}: {
+  syncedLyrics: string;
+  currentPosition: number;
+  isPlaying: boolean;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const linesRef = useRef<SyncedLine[]>([]);
+
+  const lines = useMemo(() => {
+    return syncedLyrics
       .split('\n')
-      .map(l => l.trim())
-      .filter(l => l && /^\[/.test(l));
-
-    const parsed: SyncedLine[] = lines
-      .map(line => {
+      .map((line) => line.trim())
+      .filter((line) => line && /^\[/.test(line))
+      .map((line) => {
         const m = line.match(/\[(\d+):(\d+\.\d+|\d+)\](.*)/);
         if (!m) return null;
         const [, mins, secs, txt] = m;
         const time = parseInt(mins) * 60 + parseFloat(secs);
-        return { time, text: txt.trim(), element: null };
+        return { time, text: txt.trim(), element: null as HTMLDivElement | null };
       })
       .filter(Boolean) as SyncedLine[];
+  }, [syncedLyrics]);
 
-    syncedLinesRef.current = parsed;
-
+  // Update DOM references
+  useEffect(() => {
+    linesRef.current = lines;
     requestAnimationFrame(() => {
-      const els = lyricsContainerRef.current?.querySelectorAll('.synced-line');
+      const els = containerRef.current?.querySelectorAll('.synced-line');
       els?.forEach((el, i) => {
-        if (parsed[i]) parsed[i].element = el as HTMLDivElement;
+        if (lines[i]) lines[i].element = el as HTMLDivElement;
       });
     });
-  }, [savedSong?.lyrics.synced]);
+  }, [lines]);
 
+  // Scroll to active line
   useEffect(() => {
-    if (!syncedLinesRef.current.length || !lyricsContainerRef.current || !isPlaying) return;
+    if (!isPlaying || linesRef.current.length === 0) return;
 
-    const active = syncedLinesRef.current
-      .filter(l => currentPosition >= l.time)
-      .pop();
-
+    const active = linesRef.current.filter((l) => currentPosition >= l.time).pop();
     if (!active?.element) return;
 
-    const container = lyricsContainerRef.current;
+    const container = containerRef.current!;
     const line = active.element;
 
-
-    document.querySelectorAll('.synced-line').forEach(el => {
+    // Highlight
+    container.querySelectorAll('.synced-line').forEach((el) => {
       el.classList.toggle('active', el === line);
     });
 
-    void container.offsetHeight;
-
+    // Smooth scroll
     const containerRect = container.getBoundingClientRect();
     const lineRect = line.getBoundingClientRect();
-    const containerTop = container.scrollTop;
-    const containerHeight = container.clientHeight;
-
     const lineCenterY = lineRect.top - containerRect.top + container.scrollTop + lineRect.height / 2;
-    const targetScrollTop = lineCenterY - containerHeight / 2;
-
-    const maxScroll = container.scrollHeight - containerHeight;
+    const targetScrollTop = lineCenterY - container.clientHeight / 2;
+    const maxScroll = container.scrollHeight - container.clientHeight;
     const finalScrollTop = Math.max(0, Math.min(targetScrollTop, maxScroll));
 
     if (Math.abs(container.scrollTop - finalScrollTop) > 5) {
-      container.scrollTo({
-        top: finalScrollTop,
-        behavior: 'smooth',
-      });
+      container.scrollTo({ top: finalScrollTop, behavior: 'smooth' });
     }
   }, [currentPosition, isPlaying]);
 
-  const displayLyrics = savedSong?.lyrics
-    ? {
+  return (
+    <div
+      ref={containerRef}
+      className="max-h-96 overflow-y-auto bg-gray-50 rounded-lg p-4 space-y-3"
+    >
+      {lines.map((line, i) => (
+        <div
+          key={i}
+          className="synced-line px-4 py-2 rounded-lg bg-white shadow-sm transition-all duration-300 text-black text-lg font-medium"
+        >
+          {line.text}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function LyricsEditor({
+  initialHtml,
+  onSave,
+  onCancel,
+}: {
+  initialHtml: string;
+  onSave: (html: string) => void;
+  onCancel: () => void;
+}) {
+  const [content, setContent] = useState(initialHtml);
+
+  return (
+    <div className="space-y-4">
+      <SunEditor
+        setContents={content}
+        onChange={setContent}
+        setOptions={{
+          height: '500px',
+          buttonList: [['undo', 'redo'], ['fontColor', 'hiliteColor']],
+        }}
+      />
+      <div className="flex gap-3">
+        <button
+          onClick={() => onSave(content)}
+          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+        >
+          <FaSave /> Save
+        </button>
+        <button
+          onClick={onCancel}
+          className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+        >
+          <FaTimes /> Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// === Main Component ===
+export default function Song({ params }: { params: { id: string } }) {
+  const { track, error: trackError, loading: trackLoading } = useSpotifyTrack(params.id);
+  const { savedSong, isSaving, lyricsLoading, lyricsError, updateLyrics } = useSavedSong(track, params.id);
+  const { isPlaying, currentPosition } = usePlaybackSync(params.id, !!track);
+  const [editMode, setEditMode] = useState(false);
+
+  const displayLyrics = useMemo(() => {
+    if (savedSong?.lyrics) {
+      return {
         ...savedSong.lyrics,
         rhymeEncoded: savedSong.lyrics.rhymeEncoded || lyricsToHtml(savedSong.lyrics.plain),
-      }
-    : lyricsData?.lyrics
-      ? {
-          plain: lyricsData.lyrics.plain || '',
-          synced: lyricsData.lyrics.synced || null,
-          rhymeEncoded: lyricsToHtml(lyricsData.lyrics.plain || ''),
-        }
-      : null;
+      };
+    }
+    return null;
+  }, [savedSong, track]);
 
-  const displayHtml = displayLyrics?.rhymeEncoded || '';
   const hasSynced = !!displayLyrics?.synced;
+  const displayHtml = displayLyrics?.rhymeEncoded || '';
 
-  if (!spotifyTrack && !fetchError) {
+  // Loading & Error States
+  if (trackLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <p className="text-lg">Loading song...</p>
@@ -282,58 +391,26 @@ export default function Song({ params }: { params: { id: string } }) {
     );
   }
 
-  if (fetchError) {
+  if (trackError) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen space-y-4">
-        <p className="text-red-500">Error: {fetchError}</p>
+        <p className="text-red-500">Error: {trackError}</p>
       </div>
     );
   }
 
+  if (!track) return null;
+
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-8">
+      <SongHeader track={track} isPlaying={isPlaying} />
 
-      <div className="flex items-center space-x-6 bg-white rounded-xl shadow-lg p-6">
-        <div className="relative w-48 h-48 flex-shrink-0">
-          <Image
-            src={spotifyTrack.album.images[0]?.url || '/placeholder.png'}
-            alt={spotifyTrack.name}
-            fill
-            className="rounded-lg object-cover"
-          />
-        </div>
-
-        <div className="flex-1">
-          <h1 className="text-3xl font-bold text-gray-900">{spotifyTrack.name}</h1>
-          <p className="text-xl text-gray-600 mt-1">
-            {spotifyTrack.artists.map((a: any) => a.name).join(', ')}
-          </p>
-          <p className="text-sm text-gray-500 mt-2">Album: {spotifyTrack.album.name}</p>
-          <p className="text-sm text-gray-500">
-            Released: {new Date(spotifyTrack.album.release_date).getFullYear()}
-          </p>
-          {/* {hasSynced && (
-            <p className="text-xs text-green-600 mt-2 font-medium">
-              Synced lyrics available
-            </p>
-          )} */}
-        </div>
-
-        <button
-          onClick={togglePlayback}
-          className="text-green-500 hover:text-green-600 transition"
-          title={isPlaying ? 'Pause' : 'Play'}
-        >
-          {isPlaying ? <FaPauseCircle size={48} /> : <FaPlayCircle size={48} />}
-        </button>
-      </div>
-      
       <div className="bg-white rounded-xl shadow-lg p-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-black text-2xl font-bold">Lyrics</h2>
           {displayLyrics && !editMode && (
             <button
-              onClick={toggleEdit}
+              onClick={() => setEditMode(true)}
               className="flex items-center gap-2 text-blue-600 hover:text-blue-700"
             >
               <FaEdit /> Edit
@@ -341,6 +418,7 @@ export default function Song({ params }: { params: { id: string } }) {
           )}
         </div>
 
+        {/* Status Messages */}
         {isSaving && <p className="text-sm text-gray-500">Saving...</p>}
         {lyricsLoading && !savedSong && <p className="text-gray-600 animate-pulse">Searching lyrics...</p>}
         {lyricsError && !savedSong && (
@@ -350,33 +428,16 @@ export default function Song({ params }: { params: { id: string } }) {
         )}
         {!lyricsLoading && !displayLyrics && <p className="text-gray-500 italic">No lyrics found.</p>}
 
+        {/* Synced View */}
         {displayLyrics && !editMode && hasSynced && (
-          <div
-            ref={lyricsContainerRef}
-            className="max-h-96 overflow-y-auto bg-gray-50 rounded-lg"
-            style={{ scrollBehavior: 'smooth' }}
-          >
-            <div className="p-4 space-y-3 text-lg font-medium">
-              {savedSong?.lyrics.synced
-                ?.split('\n')
-                .map((line, i) => {
-                  const m = line.match(/\[(\d+):(\d+\.\d+|\d+)\](.*)/);
-                  if (!m) return null;
-                  const txt = m[3].trim();
-                  return (
-                    <div
-                      key={i}
-                      className="synced-line px-4 py-2 rounded-lg bg-white shadow-sm transition-all duration-300 text-black"
-                    >
-                      {txt}
-                    </div>
-                  );
-                })
-                .filter(Boolean)}
-            </div>
-          </div>
+          <SyncedLyrics
+            syncedLyrics={displayLyrics.synced!}
+            currentPosition={currentPosition}
+            isPlaying={isPlaying}
+          />
         )}
 
+        {/* Plain HTML View */}
         {displayLyrics && !editMode && !hasSynced && (
           <div className="prose prose-lg max-w-none">
             <div
@@ -386,48 +447,18 @@ export default function Song({ params }: { params: { id: string } }) {
           </div>
         )}
 
-        {/* {hasSynced && (
-          <details className="mt-6 border-t pt-4">
-            <summary className="cursor-pointer text-sm font-medium text-gray-600 hover:text-gray-800">
-              View synced timestamps
-            </summary>
-            <pre className="mt-3 text-xs font-mono text-gray-700 whitespace-pre-wrap bg-gray-50 p-3 rounded">
-              {displayLyrics.synced}
-            </pre>
-          </details>
-        )} */}
-
+        {/* Editor */}
         {editMode && (
-          <div className="space-y-4">
-            <SunEditor
-              setContents={displayHtml}
-              onChange={handleLyricsUpdate}
-              setOptions={{
-                height: '500px',
-                buttonList: [
-                  ['undo', 'redo'],
-                  ['fontColor', 'hiliteColor']
-                ],
-              }}
-            />
-            <div className="flex gap-3">
-              <button
-                onClick={toggleEdit}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-              >
-                <FaSave /> Save
-              </button>
-              <button
-                onClick={toggleEdit}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
-              >
-                <FaTimes /> Cancel
-              </button>
-            </div>
-          </div>
+          <LyricsEditor
+            initialHtml={displayHtml}
+            onSave={async (html) => {
+              await updateLyrics(html);
+              setEditMode(false);
+            }}
+            onCancel={() => setEditMode(false)}
+          />
         )}
       </div>
-      
     </div>
   );
 }
