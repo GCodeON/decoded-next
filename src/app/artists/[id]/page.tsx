@@ -9,7 +9,7 @@ import { useSpotifyApi } from '@/hooks/useSpotifyApi';
 export default function Artist({ params }: { params: { id: string } }) {
   const [artist, setArtist] = useState<any>();
   const [albums, setAlbums] = useState <any>();
-  const { spotifyApi, loading } = useSpotifyApi();
+  const { spotifyApi } = useSpotifyApi();
 
   useEffect(() => {
     getArtist();

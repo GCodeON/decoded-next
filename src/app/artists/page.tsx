@@ -7,7 +7,7 @@ import { useSpotifyApi } from '@/hooks/useSpotifyApi';
 
 export default function Artists() {
   const [artists, setArtists] = useState<any>();
-  const { spotifyApi, loading } = useSpotifyApi();
+  const { spotifyApi } = useSpotifyApi();
 
   useEffect(() => {
     getTopArtists();
@@ -25,9 +25,7 @@ export default function Artists() {
 
   return (
     <div className="flex justify-center py-8">
-      {loading ? (
-        <p className="text-sm text-gray-500">Loading…</p>
-      ) : artists ? (
+      {artists ? (
        <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 p-4'>
           {artists && (
             artists.map((artist: any, index: Key) => {
@@ -46,10 +44,9 @@ export default function Artists() {
           )}
         </div>
       ) : (
-        <p className="text-sm text-gray-400">Unable to load Artists right now</p>
+        <p className="text-sm text-gray-400">Unable to load Artists</p>
       )}
     </div>
-  
   )
 };
 

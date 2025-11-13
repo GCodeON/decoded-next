@@ -1,25 +1,18 @@
-import { useState } from 'react';
+import { useCallback } from 'react';
 
 export const useSpotifyApi = () => {
-  const [loading, setLoading] = useState(false);
+  const spotifyApi = useCallback(async (endpoint: string) => {
+    const res = await fetch(`/api/spotify${endpoint}`, {
+      credentials: 'include',
+    });
 
-  const spotifyApi = async <T>(endpoint: string, init?: RequestInit): Promise<T> => {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/spotify${endpoint}`, {
-        ...init,
-        credentials: 'include',
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error ?? 'Unknown error');
-      }
-      return await res.json();
-    } finally {
-      setLoading(false);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error ?? `HTTP ${res.status}`);
     }
-  };
 
-  return { spotifyApi, loading };
+    return await res.json();
+  }, []);
+
+  return { spotifyApi };
 };
