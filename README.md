@@ -7,7 +7,6 @@ A modern Next.js application built with React, TypeScript, and Tailwind CSS, int
 - **Responsive UI**: Tailwind-powered components for seamless mobile/desktop experience.
 - **Type Safety**: Full TypeScript support for robust development.
 - **Server-Side Rendering**: Leverage Next.js for fast, SEO-friendly pages.
-- [Add any new features from last week, e.g., "Real-time audio previews" or "Search functionality"]
 
 ## Tech Stack
 - Next.js 14+
@@ -21,7 +20,7 @@ A modern Next.js application built with React, TypeScript, and Tailwind CSS, int
 ### Prerequisites
 - Node.js 18+ and npm/yarn/pnpm
 - A Spotify Developer account: [Create one here](https://developer.spotify.com/dashboard/) and note your Client ID and Client Secret.
-- (Optional) Git for cloning the repo.
+- A Google Firebase Account: [Create one here](https://console.firebase.google.com/) and add configuration variables to env file.
 
 ### Installation
 1. Clone the repository:
