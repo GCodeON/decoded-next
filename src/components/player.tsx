@@ -1,69 +1,63 @@
-'use client'
+'use client';
+
 import { useState, useEffect } from 'react';
 import SpotifyPlayer from 'react-spotify-web-playback';
 
 export default function Player() {
-    const [spotifyToken, setSpotifyToken] = useState('');
-    const [ activeTrack, setActiveTrack] = useState({});
-    const [ songChanged, setSongChange] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
+  const [isReady, setIsReady] = useState(false);
 
-    useEffect(() => {
-        const token = localStorage.getItem('access_token');
-        if (token) {
-            setSpotifyToken(token);
-        } 
-    },[]);
+  useEffect(() => {
+    const fetchToken = async () => {
+      try {
+        const res = await fetch('/api/auth/token', { credentials: 'include' });
+        if (!res.ok) throw new Error('No token');
+        const data = await res.json();
+        setToken(data.token);
+      } catch (err) {
+        console.error('Failed to get Spotify token:', err);
+      }
+    };
 
-    useEffect(() => {
-        if(songChanged) {
-            localStorage.setItem('active', JSON.stringify(activeTrack));
-        }
-    },[songChanged]);
+    fetchToken();
+    const interval = setInterval(fetchToken, 55 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
 
-    function compareTrack(old: any, updated: any) {
-        console.log('compare track', updated.name, old.name);
-        if(updated.name == old.name) {
-            setSongChange(false);
-        } else {
-            console.log('different', updated.name, old.name);
-            setActiveTrack(updated);
-            setSongChange(true);
-        }
+
+  const handleCallback = (state: any) => {
+    if (state.status === 'READY') {
+      setIsReady(true);
     }
+  };
 
-    const spotifyCallback = (state: any) => {
-        let previousTrack = localStorage.getItem('active');
-        console.log('spotify callback', state);
-        if(state.status == "READY") {
-            if(state.type == "track_update") {
-                if(previousTrack){
-                    compareTrack(JSON.parse(previousTrack), state.track);
-                }
-            }
-        }
-    }
-
+  if (!token) {
     return (
-        <>
-            {spotifyToken && (
-                <SpotifyPlayer
-                    name={'DECODED Web Player'}
-                    callback={(state) => spotifyCallback(state)}
-                    syncExternalDeviceInterval={2}
-                    persistDeviceSelection={true}
-                    syncExternalDevice={true}
-                    token={spotifyToken}
-                    styles={{
-                        activeColor       : '#fff',
-                        bgColor           : '#000',
-                        color             : '#fff',
-                        loaderColor       : '#fff',
-                        trackArtistColor  : '#ccc',
-                        trackNameColor    : '#fff',
-                        sliderHandleColor : '#fff'
-                    }}
-                />
-            )}
-        </>
-    )
+      <div className="text-center py-4 text-gray-400 text-sm">
+        Loading player...
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <SpotifyPlayer
+        token={token}
+        name="DECODED Web Player"
+        callback={handleCallback}
+        syncExternalDeviceInterval={2}
+        persistDeviceSelection={true}
+        syncExternalDevice={true}
+        styles={{
+            activeColor       : '#fff',
+            bgColor           : '#000',
+            color             : '#fff',
+            loaderColor       : '#fff',
+            trackArtistColor  : '#ccc',
+            trackNameColor    : '#fff',
+            sliderHandleColor : '#fff'
+        }}
+      />
+    </>
+  );
 }

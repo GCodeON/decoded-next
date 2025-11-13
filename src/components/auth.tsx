@@ -1,44 +1,40 @@
-'use client'
-import { useState, useEffect } from 'react';
-import { FaUser, FaPowerOff } from "react-icons/fa";
+'use client';
 
-import { useAuth } from '@/hooks/spotify';
+import { FaUser, FaPowerOff } from 'react-icons/fa';
+import { useUser } from '@/hooks/useUser';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function Auth() {
-    const [auth, setAuth] = useState(false);
+  const { authenticated, user, loading } = useUser();
+  const { login, logout } = useAuth();
 
-    useEffect(() => {
-        if (localStorage.getItem('auth')) {
-            setAuth(true)
-        } 
-    },[])
-
-    const { login } = useAuth();
-
-    const onLogout = () => {
-        localStorage.clear();
-        window.location.href = "/";
-    }
-
-    const Spotify_User = () => {
-        let icon = <p>loading...</p>
-        if (auth) { 
-            icon =
-            <div className='logout' onClick={onLogout}>
-                <FaUser className="icon cursor-pointer"/>
-            </div>
-        } else {
-            icon =
-            <div className='login' onClick={login}>
-                <FaPowerOff className="icon cursor-pointer"/>
-            </div>
-        }
-        return icon;
-    }
-
+  if (loading) {
     return (
-        <div className="settings">
-            { Spotify_User() }
+      <div className="settings">
+        <p className="text-xs text-gray-400"></p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="settings">
+      {authenticated ? (
+        <div
+          className="logout flex items-center gap-2 cursor-pointer text-white hover:text-blue-400"
+          onClick={logout}
+        >
+          <FaUser className="icon" />
+          <span className="text-sm">{user?.display_name || 'User'}</span>
         </div>
-    )
+      ) : (
+        <div
+          className="login flex items-center gap-2 cursor-pointer text-white hover:text-green-400"
+          onClick={login}
+        >
+          <FaPowerOff className="icon" />
+          <span className="text-sm"></span>
+        </div>
+      )}
+    </div>
+  );
 }

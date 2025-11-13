@@ -4,23 +4,23 @@ import { useState, useEffect, Key } from 'react';
 import Image from 'next/image'
 import Link from 'next/link'
 
-import { spotifyApi } from '@/hooks/spotify';
+import { useSpotifyApi } from '@/hooks/useSpotifyApi';
 
 export default function Album({ params }: { params: { id: string } }) {
   const [album, setAlbum] = useState <any>();
+  const { spotifyApi } = useSpotifyApi();
 
   useEffect(() => {
+    const getAlbum = async function () {
+      const album = await spotifyApi(`/albums/${params.id}`);
+    
+      if(album) {
+        console.log('album tracks', album);
+        setAlbum(album.tracks.items);
+      }
+    }
     getAlbum();
   },[])
-
-  const getAlbum = async function () {
-    const album = await spotifyApi(`/albums/${params.id}`);
-    
-    if(album) {
-      console.log('album tracks', album);
-      setAlbum(album.tracks.items);
-    }
-  }
 
   return (
     <div className='flex flex-col gap-1 justify-center'>

@@ -3,12 +3,12 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import Image from 'next/image';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
-import { db } from '@/utils/firebase-config';
+import { db } from '@/lib/firebase-config';
 import SunEditor from 'suneditor-react';
 import 'suneditor/dist/css/suneditor.min.css';
 import { FaEdit, FaSave, FaTimes, FaPlayCircle, FaPauseCircle } from 'react-icons/fa';
 
-import { spotifyApi } from '@/hooks/spotify';
+import { useSpotifyApi } from '@/hooks/useSpotifyApi';
 import { useLyrics } from '@/hooks/useLyrics';
 import { htmlToLyrics, lyricsToHtml } from '@/utils/lyrics';
 import { cleanTrackName, mstoSeconds } from '@/utils/track';
@@ -46,6 +46,7 @@ function useSpotifyTrack(trackId: string) {
   const [track, setTrack] = useState<SpotifyTrack | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const { spotifyApi } = useSpotifyApi();
 
   useEffect(() => {
     const fetchTrack = async () => {
@@ -176,6 +177,7 @@ function usePlaybackSync(trackId: string, enabled: boolean) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentPosition, setCurrentPosition] = useState(0);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const { spotifyApi } = useSpotifyApi();
 
   useEffect(() => {
     if (!enabled) return;

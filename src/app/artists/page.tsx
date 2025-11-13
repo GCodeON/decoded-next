@@ -3,10 +3,11 @@ import { useState, useEffect, Key } from 'react';
 import Image from 'next/image'
 import Link from 'next/link'
 
-import { spotifyApi } from '@/hooks/spotify';
+import { useSpotifyApi } from '@/hooks/useSpotifyApi';
 
 export default function Artists() {
   const [artists, setArtists] = useState<any>();
+  const { spotifyApi, loading } = useSpotifyApi();
 
   useEffect(() => {
     getTopArtists();
@@ -23,23 +24,32 @@ export default function Artists() {
   }
 
   return (
-    <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 p-4'>
-      {artists && (
-        artists.map((artist: any, index: Key) => {
-          return (
-            <Link className="link cursor-pointer" href={`/artists/${artist.id}`} key={index}>
-              <div className="artist bg-center bg-cover h-80 w-56 md:w-60 lg:w-80" 
-              style={{backgroundImage:`url(${artist.images[0].url})`}}
-              key={index}>
-                <h3 className='p-2'>
-                  {artist.name}
-                </h3>
-              </div>
-            </Link>
-          )
-        })
+    <div className="flex justify-center py-8">
+      {loading ? (
+        <p className="text-sm text-gray-500">Loading…</p>
+      ) : artists ? (
+       <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 p-4'>
+          {artists && (
+            artists.map((artist: any, index: Key) => {
+              return (
+                <Link className="link cursor-pointer" href={`/artists/${artist.id}`} key={index}>
+                  <div className="artist bg-center bg-cover h-80 w-56 md:w-60 lg:w-80" 
+                  style={{backgroundImage:`url(${artist.images[0].url})`}}
+                  key={index}>
+                    <h3 className='p-2'>
+                      {artist.name}
+                    </h3>
+                  </div>
+                </Link>
+              )
+            })
+          )}
+        </div>
+      ) : (
+        <p className="text-sm text-gray-400">Unable to load Artists right now</p>
       )}
     </div>
+  
   )
 };
 

@@ -1,42 +1,32 @@
-'use client'
-import { usePathname } from 'next/navigation'
-import Link from 'next/link'
+'use client';
 
-import Auth from '@/components/auth'
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import Auth from '@/components/auth';
 
 const nav = [
-  { 
-    name: 'Artists', 
-    href: '/artists' 
-  },
-  { 
-    name: 'Songs', 
-    href: '/songs' 
-  }
+  { name: 'Artists', href: '/artists' },
+  { name: 'Songs', href: '/songs' },
 ];
-interface Navlink {
-    href : string;
-    name : string;
-}
 
-export default function Navigation () {
-  const pathname = usePathname()
- 
+export default function Navigation() {
+  const pathname = usePathname();
+
   return (
-    <div className='flex flex-col gap-4'>
-      {nav.map((link: Navlink) => {
-        const isActive = pathname === link.href
+    <div className="flex flex-col gap-4">
+      {nav.map((link) => {
+        const isActive = pathname === link.href;
         return (
           <Link
-            className={isActive ? 'text-blue' : 'text-white'}
-            href={link.href}
             key={link.name}
+            href={link.href}
+            className={isActive ? 'text-blue-500' : 'text-white hover:text-gray-300'}
           >
             {link.name}
           </Link>
-        )
+        );
       })}
       <Auth />
     </div>
-  )
+  );
 }

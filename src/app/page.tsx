@@ -1,42 +1,43 @@
-'use client'
-import { useState, useEffect } from 'react';
-import Image from 'next/image'
-import Link from 'next/link'
+'use client';
 
-import Track from '@/components/track'
-import { spotifyApi, getRefreshToken } from '@/hooks/spotify';
+import { useEffect, useState } from 'react';
+import Track from '@/components/track';
+import { useSpotifyApi } from '@/hooks/useSpotifyApi';
 
 export default function Home() {
-  const [currentTrack, setCurrentTrack] = useState();
+  const [currentTrack, setCurrentTrack] = useState<any>(null);
+  const { spotifyApi, loading } = useSpotifyApi();
+
+  const fetchCurrentlyPlaying = async () => {
+    try {
+      const data = await spotifyApi('/me/player/currently-playing');
+      if (data?.item) {
+        setCurrentTrack(data.item);
+      } else {
+        setCurrentTrack(null);
+      }
+    } catch (err: any) {
+      console.error('Failed to fetch currently playing:', err.message);
+      setCurrentTrack(null);
+    }
+  };
 
   useEffect(() => {
-    currentlyPlaying();
-  },[])
+    fetchCurrentlyPlaying();
 
-
-  const currentlyPlaying = async function () {
-    const current = await spotifyApi('/me/player/currently-playing');
-    if(current) {
-      setCurrentTrack(current.item);
-    } else {
-      let storedAuth = localStorage.getItem('auth') || '{}';
-      const auth = JSON.parse(storedAuth);
-
-      if (auth.refresh_token) {
-        const refresh = await getRefreshToken(auth.refresh_token);
-
-        console.log('get refresh token', refresh);
-
-        localStorage.setItem('access_token', refresh.access_token);
-      } 
-    }
-  }
+    // const interval = setInterval(fetchCurrentlyPlaying, 30_000);
+    // return () => clearInterval(interval);
+  }, []);
 
   return (
-      <div className='flex justify-center'>
-        {currentTrack && (
-          <Track active={currentTrack}/>
-        )}
-      </div>
-  )
+    <div className="flex justify-center py-8">
+      {loading ? (
+        <p className="text-sm text-gray-500">Loading…</p>
+      ) : currentTrack ? (
+        <Track active={currentTrack} />
+      ) : (
+        <p className="text-sm text-gray-400">No track playing right now.</p>
+      )}
+    </div>
+  );
 }
