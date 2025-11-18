@@ -1,17 +1,5 @@
 import { NextRequest } from 'next/server';
-
-interface LyricsResponse {
-  title: string;
-  lyrics: {
-    plain: string | null;
-    synced: string | null;
-  };
-}
-
-interface LrcLibData {
-  syncedLyrics?: string;
-  plainLyrics?: string;
-}
+import { LyricsResponse, LrcLibData } from '@/types/lyrics';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);

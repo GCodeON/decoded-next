@@ -1,5 +1,4 @@
 'use client';
-
 import { useEffect, useState, useRef } from 'react';
 import { useSpotifyApi } from '@/hooks/useSpotifyApi';
 import Track from '@/components/track';

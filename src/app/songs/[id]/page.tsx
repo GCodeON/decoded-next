@@ -4,42 +4,21 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import Image from 'next/image';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase-config';
+
 import SunEditor from 'suneditor-react';
 import 'suneditor/dist/css/suneditor.min.css';
 import { FaEdit, FaSave, FaTimes, FaPlayCircle, FaPauseCircle } from 'react-icons/fa';
 
 import { useSpotifyApi } from '@/hooks/useSpotifyApi';
 import { useLyrics } from '@/hooks/useLyrics';
+
 import { htmlToLyrics, lyricsToHtml } from '@/utils/lyrics';
 import { cleanTrackName, mstoSeconds } from '@/utils/track';
 
-// === Types ===
-interface SpotifyTrack {
-  id: string;
-  name: string;
-  artists: { name: string }[];
-  album: {
-    name: string;
-    images: { url: string }[];
-    release_date: string;
-  };
-  duration_ms: number;
-}
-interface SavedSong {
-  title: string;
-  artist: string;
-  spotify: string;
-  lyrics: {
-    plain: string;
-    synced: string | null;
-    rhymeEncoded: string;
-  };
-}
-interface SyncedLine {
-  time: number;
-  text: string;
-  element: HTMLDivElement | null;
-}
+import { SpotifyTrack } from '@/types/spotify';
+import { SavedSong, SyncedLine } from '@/types/track';
+
+
 
 // === Custom Hooks ===
 function useSpotifyTrack(trackId: string) {

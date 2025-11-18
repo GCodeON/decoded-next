@@ -1,13 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-
-interface LyricsResult {
-  title: string;
-  lyrics: {
-    plain: string;
-    synced: string | null;
-    rhymeEncoded: string;
-  };
-}
+import { LyricsResult } from '@/types/lyrics';
 
 export function useLyrics(artist: string, song: string, album: string, duration: number) {
   const [data, setData] = useState<LyricsResult | null>(null);

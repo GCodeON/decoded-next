@@ -1,18 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-
-interface User {
-  id: string;
-  display_name: string;
-  images?: { url: string }[];
-}
-
-interface AuthState {
-  authenticated: boolean;
-  user: User | null;
-  loading: boolean;
-}
+import { User, AuthState } from '@/types/user';
 
 export const useUser = (): AuthState => {
   const [state, setState] = useState<AuthState>({
