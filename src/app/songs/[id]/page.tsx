@@ -1,18 +1,21 @@
 'use client';
 import { useState, useMemo } from 'react';
-import { FaEdit } from 'react-icons/fa';
+import { FaEdit, FaClock } from 'react-icons/fa';
 import { useSpotifyTrack, useSavedSong, usePlaybackSync } from '@/hooks/useTrack';
 import { lyricsToHtml } from '@/utils/lyrics';
 
 import SongHeader from '@/components/songHeader';
-import SyncedLyrics from '@/components/syncedLyrics';
 import LyricsEditor from '@/components/lyricsEditor';
+import SyncedLyrics from '@/components/syncedLyrics';
+import SyncLyricsEditor from '@/components/syncLyricsEditor';
 
 export default function Song({ params }: { params: { id: string } }) {
   const { track, error: trackError, loading: trackLoading } = useSpotifyTrack(params.id);
-  const { savedSong, isSaving, lyricsLoading, lyricsError, updateLyrics } = useSavedSong(track, params.id);
-  const { isPlaying, currentPosition } = usePlaybackSync(params.id, !!track);
+  const { savedSong, isSaving, lyricsLoading, lyricsError, updateLyrics, updateSynced } = useSavedSong(track, params.id);
+  const { isPlaying, currentPosition, togglePlayback } = usePlaybackSync(params.id, !!track);
+
   const [editMode, setEditMode] = useState(false);
+  const [syncMode, setSyncMode] = useState(false);
 
   const displayLyrics = useMemo(() => {
     if (savedSong?.lyrics) {
@@ -26,6 +29,7 @@ export default function Song({ params }: { params: { id: string } }) {
 
   const hasSynced = !!displayLyrics?.synced;
   const displayHtml = displayLyrics?.rhymeEncoded || '';
+  const plainLyrics = displayLyrics?.plain || '';
 
   // Loading & Error States
   if (trackLoading) {
@@ -53,13 +57,23 @@ export default function Song({ params }: { params: { id: string } }) {
       <div className="bg-white rounded-xl shadow-lg p-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-black text-2xl font-bold">Lyrics</h2>
-          {displayLyrics && !editMode && (
-            <button
-              onClick={() => setEditMode(true)}
-              className="flex items-center gap-2 text-blue-600 hover:text-blue-700"
-            >
-              <FaEdit /> Edit
-            </button>
+          {displayLyrics && !editMode && !syncMode && (
+            <div className="flex gap-4">
+              {!hasSynced && (
+                <button
+                  onClick={() => setSyncMode(true)}
+                  className="flex items-center gap-2 text-green-600 hover:text-green-700 font-semibold"
+                >
+                  <FaClock /> Sync Lyrics
+                </button>
+              )}
+              <button
+                onClick={() => setEditMode(true)}
+                className="flex items-center gap-2 text-blue-600 hover:text-blue-700"
+              >
+                <FaEdit /> Edit
+              </button>
+            </div>
           )}
         </div>
 
@@ -73,8 +87,23 @@ export default function Song({ params }: { params: { id: string } }) {
         )}
         {!lyricsLoading && !displayLyrics && <p className="text-gray-500 italic">No lyrics found.</p>}
 
+        {/* SYNC MODE */}
+        {syncMode && !hasSynced && displayLyrics && (
+          <SyncLyricsEditor
+            plainLyrics={plainLyrics}
+            currentPosition={currentPosition}
+            isPlaying={isPlaying}
+            togglePlayback={togglePlayback}
+            onSave={(lrc) => {
+              updateSynced(lrc);
+              setSyncMode(false);
+            }}
+            onCancel={() => setSyncMode(false)}
+          />
+        )}
+
         {/* Synced View */}
-        {displayLyrics && !editMode && hasSynced && (
+        {displayLyrics && !editMode && !syncMode && hasSynced && (
           <SyncedLyrics
             syncedLyrics={displayLyrics.synced!}
             currentPosition={currentPosition}
@@ -83,7 +112,7 @@ export default function Song({ params }: { params: { id: string } }) {
         )}
 
         {/* Plain HTML View */}
-        {displayLyrics && !editMode && !hasSynced && (
+        {displayLyrics && !editMode && !syncMode && !hasSynced && (
           <div className="prose prose-lg max-w-none">
             <div
               className="whitespace-pre-wrap break-words font-sans text-gray-700 leading-relaxed text-lg md:text-xl"
@@ -92,7 +121,7 @@ export default function Song({ params }: { params: { id: string } }) {
           </div>
         )}
 
-        {hasSynced && (
+        {hasSynced && !syncMode && (
           <details className="mt-6 border-t pt-4">
             <summary className="cursor-pointer text-sm font-medium text-gray-600 hover:text-gray-800">
               View synced timestamps

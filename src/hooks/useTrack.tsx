@@ -9,7 +9,7 @@ import { cleanTrackName, mstoSeconds } from '@/utils/track';
 import { htmlToLyrics, lyricsToHtml } from '@/utils/lyrics';
 
 import { SpotifyTrack } from '@/types/spotify';
-import { SavedSong, SyncedLine } from '@/types/track';
+import { SavedSong } from '@/types/track';
 
 export function useSpotifyTrack(trackId: string) {
   const [track, setTrack] = useState<SpotifyTrack | null>(null);
@@ -134,12 +134,39 @@ export function useSavedSong(track: SpotifyTrack | null, trackId: string) {
     [savedSong, trackId]
   );
 
+  const updateSynced = useCallback(
+    async (syncedLrc: string) => {
+      if (!savedSong) return;
+
+      const updated: SavedSong = {
+        ...savedSong,
+        lyrics: {
+          ...savedSong.lyrics,
+          synced: syncedLrc.trim() || null,
+        },
+      };
+
+      setSavedSong(updated);
+
+      try {
+        await updateDoc(doc(db, 'songs', trackId), {
+          'lyrics.synced': syncedLrc.trim() || null,
+        });
+      } catch (err) {
+        console.error('Failed to save synced lyrics:', err);
+      }
+    },
+    [savedSong, trackId]
+  );
+
+
   return {
     savedSong,
     isSaving,
     lyricsLoading,
     lyricsError,
     updateLyrics,
+    updateSynced
   };
 }
 
@@ -148,6 +175,22 @@ export function usePlaybackSync(trackId: string, enabled: boolean) {
   const [currentPosition, setCurrentPosition] = useState(0);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const { spotifyApi } = useSpotifyApi();
+
+  const togglePlayback = useCallback(async () => {
+    try {
+      if (isPlaying) {
+        await spotifyApi.put('/me/player/pause');
+      } else {
+
+        await spotifyApi.put('/me/player/play', {
+          uris: [`spotify:track:${trackId}`],
+          position_ms: Math.floor(currentPosition * 1000),
+        });
+      }
+    } catch (err: any) {
+      console.error('Playback toggle failed:', err.message);
+    }
+  }, [isPlaying, currentPosition, trackId, spotifyApi]);
 
   useEffect(() => {
     if (!enabled) return;
@@ -175,5 +218,5 @@ export function usePlaybackSync(trackId: string, enabled: boolean) {
     };
   }, [trackId, enabled]);
 
-  return { isPlaying, currentPosition, togglePlayback: () => {} };
+  return { isPlaying, currentPosition, togglePlayback };
 }
