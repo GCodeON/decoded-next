@@ -81,6 +81,70 @@ export default function SyncLyricsEditor({ plainLyrics, existingLrc, currentPosi
         return () => document.removeEventListener('keydown', handler);
     }, [stampCurrent, goBack, editingIndex, lines.length]);
 
+    useEffect(() => {
+        if (!existingLrc || timestamps.every(t => t === null)) return;
+
+        let closestIndex = 0;
+        let minDiff = Infinity;
+
+        timestamps.forEach((time, index) => {
+            if (time === null) return;
+            const diff = Math.abs(time - currentPosition);
+            if (diff < minDiff) {
+            minDiff = diff;
+            closestIndex = index;
+            }
+        });
+
+        setCurrentLine(closestIndex);
+
+        // Ensure DOM is ready
+        const timer = setTimeout(() => {
+            containerRef.current?.children[closestIndex]?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center',
+            });
+        }, 150);
+
+        return () => clearTimeout(timer);
+    }, []);
+
+    //LRC Playback live follow 
+    useEffect(() => {
+        if (!existingLrc || editingIndex !== null) return;
+
+        let targetIndex = 0;
+
+        // Find the line that owns the current time
+        for (let i = 0; i < timestamps.length; i++) {
+            const time = timestamps[i];
+            if (time === null) continue;
+
+            const nextTime = timestamps[i + 1];
+
+            // This line is active if:
+            // - Its time has passed
+            // - AND next line hasn't started yet (or doesn't exist)
+            if (time <= currentPosition + 0.3 && (!nextTime || currentPosition < nextTime)) {
+                targetIndex = i;
+                break;
+            }
+
+            // If we passed a line, it was the last one
+            if (time <= currentPosition) {
+                targetIndex = i;
+            }
+        }
+
+        if (targetIndex !== currentLine) {
+            setCurrentLine(targetIndex);
+            containerRef.current?.children[targetIndex]?.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center',
+            });
+        }
+    }, [currentPosition, timestamps, currentLine, existingLrc, editingIndex]);
+
     // Auto-scroll
     useEffect(() => {
         containerRef.current?.children[currentLine]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
