@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { FaPlayCircle, FaPauseCircle, FaClock } from 'react-icons/fa';
+import { parseLrcForEditing, matchLrcToPlainLines, formatTime } from '@/utils/lrc';
 
 interface Props {
   plainLyrics: string;
@@ -22,50 +23,12 @@ export default function SyncLyricsEditor({ plainLyrics, existingLrc, currentPosi
     .filter(line => line.length > 0);
   }, [plainLyrics]);
 
-  console.log('existing LRC', existingLrc);
-
   const initialTimestamps = useMemo(() => {
-    const result = new Array(lines.length).fill(null) as (number | null)[];
-
-    if (!existingLrc || !existingLrc.trim()) return result;
-
-    const lrcEntries: { time: number; text: string }[] = [];
-
-    existingLrc.split('\n').forEach(lrcLine => {
-        const match = lrcLine.match(/\[(\d+):(\d+(?:\.\d+)?)\](.*)/);
-        if (!match) return;
-
-        const mins = parseInt(match[1], 10);
-        const secs = parseFloat(match[2]);
-        const text = match[3].trim();
-
-        if (isNaN(mins) || isNaN(secs)) return;
-
-        lrcEntries.push({ time: mins * 60 + secs, text });
-    });
-
-    // Sort by time (critical for out-of-order files)
-    lrcEntries.sort((a, b) => a.time - b.time);
-
-    // Match in chronological order
-    let lrcIndex = 0;
-    for (let lineIndex = 0; lineIndex < lines.length && lrcIndex < lrcEntries.length; lineIndex++) {
-        const plainLine = lines[lineIndex];
-        const lrcEntry = lrcEntries[lrcIndex];
-
-        // Normalize for comparison
-        const cleanPlain = plainLine.replace(/[,.'"!()]/g, '').toLowerCase();
-        const cleanLrc = lrcEntry.text.replace(/[,.'"!()]/g, '').toLowerCase();
-
-        // Match if text is identical (case + punctuation tolerant)
-        if (cleanPlain === cleanLrc || plainLine === lrcEntry.text) {
-            result[lineIndex] = Number(lrcEntry.time.toFixed(2));
-            lrcIndex++;
-        }
-        // If not match → skip this plain line (could be instrumental or missing)
+    if(!existingLrc?.trim()) {
+        return new Array(lines.length).fill(null);
     }
-
-    return result;
+    const lrcEntries = parseLrcForEditing(existingLrc);
+    return matchLrcToPlainLines(lines, lrcEntries);
   }, [existingLrc, lines]);
 
   const [timestamps, setTimestamps] = useState<(number | null)[]>(initialTimestamps);
@@ -94,24 +57,18 @@ export default function SyncLyricsEditor({ plainLyrics, existingLrc, currentPosi
     setCurrentLine(prev => Math.max(0, prev - 1));
   }, []);
 
-  const formatTime = (sec: number) => {
-    const m = Math.floor(sec / 60).toString().padStart(2, '0');
-    const s = (sec % 60).toFixed(2).padStart(5, '0');
-    return `[${m}:${s}]`;
-  };
-
-    const lrc = useMemo(() => {
+  const lrc = useMemo(() => {
     return lines
         .map((line, i) => {
-        const time = timestamps[i];
-        if (time === null) return null;
-        const mins = Math.floor(time / 60).toString().padStart(2, '0');
-        const secs = (time % 60).toFixed(2).padStart(5, '0');
-        return `[${mins}:${secs}]${line}`;
+            const time = timestamps[i];
+            if (time === null) return null;
+            const mins = Math.floor(time / 60).toString().padStart(2, '0');
+            const secs = (time % 60).toFixed(2).padStart(5, '0');
+            return `[${mins}:${secs}]${line}`;
         })
         .filter(Boolean)
         .join('\n');
-    }, [lines, timestamps]);
+  }, [lines, timestamps]);
 
   const allStamped = timestamps.every(t => t !== null);
 
@@ -167,24 +124,27 @@ export default function SyncLyricsEditor({ plainLyrics, existingLrc, currentPosi
                 {time !== null ? formatTime(time) : '[--:--.--]'}
               </div>
               <div className="flex-1 font-medium text-lg text-black">{line}</div>
-              {time === null && (
-                <button
+              <button
                 onClick={() => {
-                    setTimestamps(p => {
+                setTimestamps(p => {
                     const n = [...p];
                     n[i] = Number(currentPosition.toFixed(2));
                     return n;
-                    });
-                    if (i === currentLine) {
+                });
+                if (i === currentLine) {
                     setCurrentLine(Math.min(lines.length - 1, i + 1));
-                    }
+                }
                 }}
-                className={`text-xs px-3 py-1 rounded ${time !== null ? 'bg-orange-600 hover:bg-orange-700' : 'bg-blue-600 hover:bg-blue-700'} text-white`}
-                >
+                className={`text-xs px-3 py-1 rounded font-medium text-white transition ${
+                time !== null
+                    ? 'bg-orange-600 hover:bg-orange-700'
+                    : 'bg-blue-600 hover:bg-blue-700'
+                }`}
+              >
                 <FaClock className="inline mr-1" />
                 {time !== null ? 'Re-stamp' : 'Set Now'}
-                </button>
-              )}
+              </button>
+
             </div>
           );
         })}
