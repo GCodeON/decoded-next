@@ -94,7 +94,7 @@ export default function Song({ params }: { params: { id: string } }) {
         )}
         {!lyricsLoading && !displayLyrics && <p className="text-gray-500 italic">No lyrics found.</p>}
 
-        {/* SYNC MODE */}
+        {/* Sync Mode */}
         {syncMode && displayLyrics && (
           <SyncLyricsEditor
             plainLyrics={plainLyrics}
@@ -129,17 +129,6 @@ export default function Song({ params }: { params: { id: string } }) {
           </div>
         )}
 
-        {hasSynced && !syncMode && (
-          <details className="mt-6 border-t pt-4">
-            <summary className="cursor-pointer text-sm font-medium text-gray-600 hover:text-gray-800">
-              View synced timestamps
-            </summary>
-            <pre className="mt-3 text-xs font-mono text-gray-700 whitespace-pre-wrap bg-gray-50 p-3 rounded">
-              {displayLyrics.synced}
-            </pre>
-          </details>
-        )}
-
         {/* Editor */}
         {editMode && (
           <LyricsEditor
@@ -150,6 +139,18 @@ export default function Song({ params }: { params: { id: string } }) {
             }}
             onCancel={() => setEditMode(false)}
           />
+        )}
+
+        {/* LRC Format */}
+        {hasSynced && !syncMode && !editMode && (
+          <details className="mt-6 border-t pt-4">
+            <summary className="cursor-pointer text-sm font-medium text-gray-600 hover:text-gray-800">
+              View synced timestamps
+            </summary>
+            <pre className="mt-3 text-xs font-mono text-gray-700 whitespace-pre-wrap bg-gray-50 p-3 rounded">
+              {displayLyrics.synced}
+            </pre>
+          </details>
         )}
       </div>
     </div>

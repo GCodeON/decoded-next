@@ -1,8 +1,7 @@
 'use client';
-
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { FaPlayCircle, FaPauseCircle, FaClock } from 'react-icons/fa';
-import { parseLrcForEditing, matchLrcToPlainLines, formatTime } from '@/utils/lrc';
+import { parseLrcForEditing, matchLrcToPlainLines, formatTime, parseLrcTime } from '@/utils/lrc';
 
 interface Props {
   plainLyrics: string;
@@ -36,57 +35,56 @@ export default function SyncLyricsEditor({ plainLyrics, existingLrc, currentPosi
     const firstUnstamped = initialTimestamps.findIndex(t => t === null);
     return firstUnstamped === -1 ? 0 : firstUnstamped;
   });
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editValue, setEditValue] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    setTimestamps(initialTimestamps);
-    const firstNull = initialTimestamps.findIndex(t => t === null);
-    setCurrentLine(firstNull === -1 ? 0 : firstNull);
-  }, [initialTimestamps]);
 
-  const stampCurrent = useCallback(() => {
-    setTimestamps(prev => {
-      const next = [...prev];
-      next[currentLine] = Number(currentPosition.toFixed(2));
-      return next;
-    });
-    setCurrentLine(prev => Math.min(lines.length - 1, prev + 1));
-  }, [currentLine, currentPosition, lines.length]);
+    const stampCurrent = useCallback(() => {
+        setTimestamps(prev => {
+            const next = [...prev];
+            next[currentLine] = Number(currentPosition.toFixed(2));
+            return next;
+        });
+        setCurrentLine(prev => Math.min(lines.length - 1, prev + 1));
+    }, [currentLine, currentPosition, lines.length]);
 
-  const goBack = useCallback(() => {
-    setCurrentLine(prev => Math.max(0, prev - 1));
-  }, []);
+    const goBack = useCallback(() => {
+        setCurrentLine(prev => Math.max(0, prev - 1));
+    }, []);
 
-  const lrc = useMemo(() => {
-    return lines
-        .map((line, i) => {
-            const time = timestamps[i];
-            if (time === null) return null;
-            const mins = Math.floor(time / 60).toString().padStart(2, '0');
-            const secs = (time % 60).toFixed(2).padStart(5, '0');
-            return `[${mins}:${secs}]${line}`;
-        })
-        .filter(Boolean)
-        .join('\n');
-  }, [lines, timestamps]);
+    const lrc = useMemo(() => {
+        return lines
+            .map((line, i) => {
+                const time = timestamps[i];
+                if (time === null) return null;
+                const mins = Math.floor(time / 60).toString().padStart(2, '0');
+                const secs = (time % 60).toFixed(2).padStart(5, '0');
+                return `[${mins}:${secs}]${line}`;
+            })
+            .filter(Boolean)
+            .join('\n');
+    }, [lines, timestamps]);
 
-  const allStamped = timestamps.every(t => t !== null);
+    const allStamped = timestamps.every(t => t !== null);
 
-  // Keyboard controls
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === ' ') { e.preventDefault(); stampCurrent(); }
-      if (e.key === 'Backspace' || e.key === 'ArrowUp') { e.preventDefault(); goBack(); }
-      if (e.key === 'ArrowDown') { e.preventDefault(); setCurrentLine(p => Math.min(lines.length - 1, p + 1)); }
-    };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [stampCurrent, goBack]);
+    // Keyboard controls
+    useEffect(() => {
+        if (editingIndex !== null) return;
 
-  // Auto-scroll
-  useEffect(() => {
-    containerRef.current?.children[currentLine]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }, [currentLine]);
+        const handler = (e: KeyboardEvent) => {
+        if (e.key === ' ') { e.preventDefault(); stampCurrent(); }
+        if (e.key === 'ArrowUp') { e.preventDefault(); goBack(); }
+        if (e.key === 'ArrowDown') { e.preventDefault(); setCurrentLine(p => Math.min(lines.length - 1, p + 1)); }
+        };
+        document.addEventListener('keydown', handler);
+        return () => document.removeEventListener('keydown', handler);
+    }, [stampCurrent, goBack, editingIndex, lines.length]);
+
+    // Auto-scroll
+    useEffect(() => {
+        containerRef.current?.children[currentLine]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, [currentLine]);
 
   return (
     <div className="space-y-6">
@@ -96,11 +94,11 @@ export default function SyncLyricsEditor({ plainLyrics, existingLrc, currentPosi
           <button onClick={togglePlayback} className="text-green-600 hover:scale-110 transition">
             {isPlaying ? <FaPauseCircle size={28} /> : <FaPlayCircle size={28} />}
           </button>
-          <span className="font-mono text-lg text-green">
+          <span className="font-mono text-lg text-black">
             {Math.floor(currentPosition / 60)}:{(currentPosition % 60).toFixed(0).padStart(2, '0')}
           </span>
           <span className="text-gray-600">
-            Space = Stamp • Backspace/↑ = Prev • ↓ = Next
+            Space = Stamp • ↑ = Prev • ↓ = Next
           </span>
         </div>
       </div>
@@ -119,13 +117,61 @@ export default function SyncLyricsEditor({ plainLyrics, existingLrc, currentPosi
                   ? 'bg-green-50 border-green-300'
                   : 'bg-white border-gray-300'
               }`}
+              onClick={() => setCurrentLine(i)}
             >
-              <div className="w-28 text-right font-mono text-sm text-gray-500">
-                {time !== null ? formatTime(time) : '[--:--.--]'}
-              </div>
+              <div className="w-28 text-right font-mono text-sm">
+                {time !== null ? (
+                editingIndex === i ? (
+                    <input
+                    type="text"
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                            console.log('enter new input', editValue, lrc);
+                            e.preventDefault();
+                            const parsed = parseLrcTime(editValue);
+                            if (!isNaN(parsed) && editingIndex !== null) {
+                                setTimestamps(p => {
+                                const n = [...p];
+                                n[editingIndex] = Number(parsed.toFixed(2));
+                                return n;
+                            });
+                        }
+                        setEditingIndex(null);
+                        }
+                        if (e.key === 'Escape') {
+                            e.preventDefault();
+                            setEditingIndex(null);
+                        }
+                    }}
+                    onBlur={() => setEditingIndex(null)}
+                    className="w-24 px-1 text-right font-mono text-sm border-2 border-yellow-500 rounded bg-white focus:outline-none text-black"
+                    autoFocus
+                    onFocus={(e) => e.target.select()}
+                    onClick={(e) => e.stopPropagation()}
+                    />
+                ) : (
+                    <span
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingIndex(i);
+                        setEditValue(formatTime(time));
+                    }}
+                    className="cursor-pointer hover:text-blue-700 hover:underline font-medium text-black"
+                    title="Click to edit timestamp"
+                    >
+                    {formatTime(time)}
+                    </span>
+                )
+                ) : (
+                <span className="text-gray-400">[--:--.--]</span>
+                )}
+            </div>
               <div className="flex-1 font-medium text-lg text-black">{line}</div>
               <button
-                onClick={() => {
+                onClick={(e) => {
+                e.stopPropagation();
                 setTimestamps(p => {
                     const n = [...p];
                     n[i] = Number(currentPosition.toFixed(2));
