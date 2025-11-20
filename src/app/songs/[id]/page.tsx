@@ -59,12 +59,19 @@ export default function Song({ params }: { params: { id: string } }) {
           <h2 className="text-black text-2xl font-bold">Lyrics</h2>
           {displayLyrics && !editMode && !syncMode && (
             <div className="flex gap-4">
-              {!hasSynced && (
+              {!hasSynced ? (
                 <button
                   onClick={() => setSyncMode(true)}
                   className="flex items-center gap-2 text-green-600 hover:text-green-700 font-semibold"
                 >
                   <FaClock /> Sync Lyrics
+                </button>
+              ) : (
+                <button
+                  onClick={() => setSyncMode(true)}
+                  className="flex items-center gap-2 text-orange-600 hover:text-orange-700 font-semibold"
+                >
+                  <FaClock /> Edit Sync
                 </button>
               )}
               <button
@@ -88,9 +95,10 @@ export default function Song({ params }: { params: { id: string } }) {
         {!lyricsLoading && !displayLyrics && <p className="text-gray-500 italic">No lyrics found.</p>}
 
         {/* SYNC MODE */}
-        {syncMode && !hasSynced && displayLyrics && (
+        {syncMode && displayLyrics && (
           <SyncLyricsEditor
             plainLyrics={plainLyrics}
+            existingLrc={displayLyrics.synced}
             currentPosition={currentPosition}
             isPlaying={isPlaying}
             togglePlayback={togglePlayback}

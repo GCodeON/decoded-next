@@ -5,6 +5,7 @@ import { FaPlayCircle, FaPauseCircle, FaClock } from 'react-icons/fa';
 
 interface Props {
   plainLyrics: string;
+  existingLrc?: string | null;
   currentPosition: number;
   isPlaying: boolean;
   togglePlayback: () => void;
@@ -12,16 +13,73 @@ interface Props {
   onCancel: () => void;
 }
 
-export default function SyncLyricsEditor({ plainLyrics, currentPosition, isPlaying,togglePlayback, onSave, onCancel }: Props) {
-  const lines = useMemo(() => plainLyrics.split('\n').map(l => l.trim()).filter(Boolean), [plainLyrics]);
-  const [timestamps, setTimestamps] = useState<(number | null)[]>([]);
-  const [currentLine, setCurrentLine] = useState(0);
+export default function SyncLyricsEditor({ plainLyrics, existingLrc, currentPosition, isPlaying,togglePlayback, onSave, onCancel }: Props) {
+
+  const lines = useMemo(() => {
+    return plainLyrics
+    .split('\n')
+    .map(l => l.trim())
+    .filter(line => line.length > 0);
+  }, [plainLyrics]);
+
+  console.log('existing LRC', existingLrc);
+
+  const initialTimestamps = useMemo(() => {
+    const result = new Array(lines.length).fill(null) as (number | null)[];
+
+    if (!existingLrc || !existingLrc.trim()) return result;
+
+    const lrcEntries: { time: number; text: string }[] = [];
+
+    existingLrc.split('\n').forEach(lrcLine => {
+        const match = lrcLine.match(/\[(\d+):(\d+(?:\.\d+)?)\](.*)/);
+        if (!match) return;
+
+        const mins = parseInt(match[1], 10);
+        const secs = parseFloat(match[2]);
+        const text = match[3].trim();
+
+        if (isNaN(mins) || isNaN(secs)) return;
+
+        lrcEntries.push({ time: mins * 60 + secs, text });
+    });
+
+    // Sort by time (critical for out-of-order files)
+    lrcEntries.sort((a, b) => a.time - b.time);
+
+    // Match in chronological order
+    let lrcIndex = 0;
+    for (let lineIndex = 0; lineIndex < lines.length && lrcIndex < lrcEntries.length; lineIndex++) {
+        const plainLine = lines[lineIndex];
+        const lrcEntry = lrcEntries[lrcIndex];
+
+        // Normalize for comparison
+        const cleanPlain = plainLine.replace(/[,.'"!()]/g, '').toLowerCase();
+        const cleanLrc = lrcEntry.text.replace(/[,.'"!()]/g, '').toLowerCase();
+
+        // Match if text is identical (case + punctuation tolerant)
+        if (cleanPlain === cleanLrc || plainLine === lrcEntry.text) {
+            result[lineIndex] = Number(lrcEntry.time.toFixed(2));
+            lrcIndex++;
+        }
+        // If not match → skip this plain line (could be instrumental or missing)
+    }
+
+    return result;
+  }, [existingLrc, lines]);
+
+  const [timestamps, setTimestamps] = useState<(number | null)[]>(initialTimestamps);
+  const [currentLine, setCurrentLine] = useState(() => {
+    const firstUnstamped = initialTimestamps.findIndex(t => t === null);
+    return firstUnstamped === -1 ? 0 : firstUnstamped;
+  });
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setTimestamps(new Array(lines.length).fill(null));
-    setCurrentLine(0);
-  }, [lines.length]);
+    setTimestamps(initialTimestamps);
+    const firstNull = initialTimestamps.findIndex(t => t === null);
+    setCurrentLine(firstNull === -1 ? 0 : firstNull);
+  }, [initialTimestamps]);
 
   const stampCurrent = useCallback(() => {
     setTimestamps(prev => {
@@ -42,12 +100,18 @@ export default function SyncLyricsEditor({ plainLyrics, currentPosition, isPlayi
     return `[${m}:${s}]`;
   };
 
-  const lrc = useMemo(() => {
+    const lrc = useMemo(() => {
     return lines
-      .map((line, i) => timestamps[i] !== null ? `${formatTime(timestamps[i]!)}${line}` : null)
-      .filter(Boolean)
-      .join('\n');
-  }, [lines, timestamps]);
+        .map((line, i) => {
+        const time = timestamps[i];
+        if (time === null) return null;
+        const mins = Math.floor(time / 60).toString().padStart(2, '0');
+        const secs = (time % 60).toFixed(2).padStart(5, '0');
+        return `[${mins}:${secs}]${line}`;
+        })
+        .filter(Boolean)
+        .join('\n');
+    }, [lines, timestamps]);
 
   const allStamped = timestamps.every(t => t !== null);
 
@@ -105,16 +169,20 @@ export default function SyncLyricsEditor({ plainLyrics, currentPosition, isPlayi
               <div className="flex-1 font-medium text-lg text-black">{line}</div>
               {time === null && (
                 <button
-                  onClick={() => {
+                onClick={() => {
                     setTimestamps(p => {
-                      const n = [...p];
-                      n[i] = Number(currentPosition.toFixed(2));
-                      return n;
+                    const n = [...p];
+                    n[i] = Number(currentPosition.toFixed(2));
+                    return n;
                     });
-                  }}
-                  className="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+                    if (i === currentLine) {
+                    setCurrentLine(Math.min(lines.length - 1, i + 1));
+                    }
+                }}
+                className={`text-xs px-3 py-1 rounded ${time !== null ? 'bg-orange-600 hover:bg-orange-700' : 'bg-blue-600 hover:bg-blue-700'} text-white`}
                 >
-                  <FaClock className="inline mr-1" /> Set Now
+                <FaClock className="inline mr-1" />
+                {time !== null ? 'Re-stamp' : 'Set Now'}
                 </button>
               )}
             </div>
