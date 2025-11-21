@@ -60,7 +60,7 @@ export default function SyncLyricsEditor({ plainLyrics, existingLrc, currentPosi
                 if (time === null) return null;
                 const mins = Math.floor(time / 60).toString().padStart(2, '0');
                 const secs = (time % 60).toFixed(2).padStart(5, '0');
-                return `[${mins}:${secs}]${line}`;
+                return `[${mins}:${secs}] ${line}`;
             })
             .filter(Boolean)
             .join('\n');
