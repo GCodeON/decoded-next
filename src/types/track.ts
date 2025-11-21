@@ -6,10 +6,19 @@ export interface SavedSong {
     plain: string;
     synced: string | null;
     rhymeEncoded: string;
+    rhymeEncodedLines?: string[] | null; 
   };
 }
 export interface SyncedLine {
   time: number;
   text: string;
   element: HTMLDivElement | null;
+  rhymeHtml?: string; 
+}
+
+export interface SyncedTrack {
+  syncedLyrics: string;
+  currentPosition: number;
+  isPlaying: boolean;
+  rhymeEncodedLines: string[] | null | undefined;
 }

@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+
 import SunEditor from 'suneditor-react';
 import 'suneditor/dist/css/suneditor.min.css';
 import { FaSave, FaTimes } from 'react-icons/fa';
@@ -16,7 +17,7 @@ export default function LyricsEditor({
   const [content, setContent] = useState(initialHtml);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-1">
       <SunEditor
         setContents={content}
         onChange={setContent}
@@ -24,6 +25,7 @@ export default function LyricsEditor({
           height: '500px',
           buttonList: [['undo', 'redo'], ['fontColor', 'hiliteColor']],
         }}
+        setDefaultStyle="font-size: 20px;"
       />
       <div className="flex gap-3">
         <button

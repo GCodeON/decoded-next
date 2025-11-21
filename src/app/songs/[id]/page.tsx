@@ -2,7 +2,7 @@
 import { useState, useMemo } from 'react';
 import { FaEdit, FaClock } from 'react-icons/fa';
 import { useSpotifyTrack, useSavedSong, usePlaybackSync } from '@/hooks/useTrack';
-import { lyricsToHtml } from '@/utils/lyrics';
+import { lyricsToHtml, mapLrcToRhymeHtml } from '@/utils/lyrics';
 
 import SongHeader from '@/components/songHeader';
 import LyricsEditor from '@/components/lyricsEditor';
@@ -19,11 +19,18 @@ export default function Song({ params }: { params: { id: string } }) {
 
   const displayLyrics = useMemo(() => {
     if (savedSong?.lyrics) {
-      return {
-        ...savedSong.lyrics,
-        rhymeEncoded: savedSong.lyrics.rhymeEncoded || lyricsToHtml(savedSong.lyrics.plain),
-      };
-    }
+        const lyrics = { ...savedSong.lyrics };
+
+        if (lyrics.synced && lyrics.rhymeEncoded && !lyrics.rhymeEncodedLines) {
+          lyrics.rhymeEncodedLines = mapLrcToRhymeHtml(lyrics.synced, lyrics.rhymeEncoded);
+        }
+
+        if (!lyrics.rhymeEncoded) {
+          lyrics.rhymeEncoded = savedSong.lyrics.rhymeEncoded || lyricsToHtml(savedSong.lyrics.plain);
+        }
+
+        return lyrics;
+      }
     return null;
   }, [savedSong]);
 
@@ -116,6 +123,7 @@ export default function Song({ params }: { params: { id: string } }) {
             syncedLyrics={displayLyrics.synced!}
             currentPosition={currentPosition}
             isPlaying={isPlaying}
+            rhymeEncodedLines={displayLyrics.rhymeEncodedLines}
           />
         )}
 
