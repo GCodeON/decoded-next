@@ -3,7 +3,7 @@ import { useState } from 'react';
 
 import SunEditor from 'suneditor-react';
 import 'suneditor/dist/css/suneditor.min.css';
-import { FaSave, FaTimes, FaInfoCircle } from 'react-icons/fa';
+import { FaSave, FaTimes } from 'react-icons/fa';
 
 import Legend from './legend';
 import { customColors } from '@/utils/legend'
@@ -18,8 +18,6 @@ export default function LyricsEditor({
   onCancel: () => void;
 }) {
   const [content, setContent] = useState(initialHtml);
-  const [showLegend, setShowLegend] = useState(true);
-
   return (
     <div className="w-full space-y-1">
       <div className="grid grid-cols-1 lg:grid-cols-8 gap-2 mb-4">
@@ -35,9 +33,7 @@ export default function LyricsEditor({
             setDefaultStyle="font-size: 20px;"
           />
         </div>
-        <Legend
-          toggle={showLegend}
-        />
+        <Legend/>
       </div>
       <div className="flex gap-3">
         <button

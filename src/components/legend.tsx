@@ -1,9 +1,7 @@
 'use client';
 import { vowels } from "@/utils/legend";
 
-export default function Legend({toggle}:{toggle:boolean}){
-  if(!toggle) return null;
-
+export default function Legend() {
   return (
     <div className="hidden md:block lg:col-span-3 xl:col-span-4 bg-white rounded-xl shadow-lg p-6 border border-gray-200">
       <h2 className="text-md 2xl:text-xl font-bold text-center mb-3 text-gray-800">
