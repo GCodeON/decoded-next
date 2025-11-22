@@ -3,7 +3,10 @@ import { useState } from 'react';
 
 import SunEditor from 'suneditor-react';
 import 'suneditor/dist/css/suneditor.min.css';
-import { FaSave, FaTimes } from 'react-icons/fa';
+import { FaSave, FaTimes, FaInfoCircle } from 'react-icons/fa';
+
+import Legend from './legend';
+import { customColors } from '@/utils/legend'
 
 export default function LyricsEditor({
   initialHtml,
@@ -15,18 +18,27 @@ export default function LyricsEditor({
   onCancel: () => void;
 }) {
   const [content, setContent] = useState(initialHtml);
+  const [showLegend, setShowLegend] = useState(true);
 
   return (
-    <div className="space-y-1">
-      <SunEditor
-        setContents={content}
-        onChange={setContent}
-        setOptions={{
-          height: '500px',
-          buttonList: [['undo', 'redo'], ['fontColor', 'hiliteColor']],
-        }}
-        setDefaultStyle="font-size: 20px;"
-      />
+    <div className="w-full space-y-1">
+      <div className="grid grid-cols-1 lg:grid-cols-8 gap-2 mb-4">
+        <div className="lg:col-span-5 xl:col-span-4">
+          <SunEditor
+            setContents={content}
+            onChange={setContent}
+            setOptions={{
+              height: '100%',
+              buttonList: [['undo', 'redo'], ['fontColor', 'hiliteColor']],
+              colorList: customColors
+            }}
+            setDefaultStyle="font-size: 20px;"
+          />
+        </div>
+        <Legend
+          toggle={showLegend}
+        />
+      </div>
       <div className="flex gap-3">
         <button
           onClick={() => onSave(content)}
