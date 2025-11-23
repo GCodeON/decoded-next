@@ -33,7 +33,11 @@ export default function LyricsEditor({
             setDefaultStyle="font-size: 20px;"
           />
         </div>
-        <Legend/>
+        <div className="lg:col-span-3 xl:col-span-4">
+          <div className="sticky top-0">
+            <Legend/>
+          </div>
+        </div>
       </div>
       <div className="flex gap-3">
         <button
