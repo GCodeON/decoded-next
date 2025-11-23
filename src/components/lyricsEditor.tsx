@@ -20,8 +20,8 @@ export default function LyricsEditor({
   const [content, setContent] = useState(initialHtml);
   return (
     <div className="w-full space-y-1">
-      <div className="grid grid-cols-1 lg:grid-cols-8 gap-2 mb-4">
-        <div className="lg:col-span-5 xl:col-span-4">
+      <div className="grid grid-cols-1 md:grid-cols-8 gap-2 mb-4">
+        <div className="md:col-span-5 xl:col-span-4">
           <SunEditor
             setContents={content}
             onChange={setContent}
@@ -33,7 +33,7 @@ export default function LyricsEditor({
             setDefaultStyle="font-size: 20px;"
           />
         </div>
-        <div className="lg:col-span-3 xl:col-span-4">
+        <div className="md:col-span-3 xl:col-span-4">
           <div className="sticky top-0">
             <Legend/>
           </div>
