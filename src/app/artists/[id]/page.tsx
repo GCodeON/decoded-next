@@ -52,7 +52,7 @@ export default function Artist({ params }: { params: { id: string } }) {
             albums.map((item, index) => {
               const imageUrl =  item.images[0]?.url || '/placeholder-artist.jpg';
               return (
-                <Link  href={`/artists/${item.id}`}
+                <Link  href={`/albums/${item.id}`}
                   key={index}
                   className="group relative block rounded-2xl overflow-hidden transition-all duration-300 hover:scale-102 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-green-500"
                   prefetch={false}>

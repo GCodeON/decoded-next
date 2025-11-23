@@ -13,7 +13,7 @@ interface Props {
   onCancel: () => void;
 }
 
-export default function SyncLyricsEditor({ plainLyrics, existingLrc, currentPosition, isPlaying,togglePlayback, onSave, onCancel }: Props) {
+export default function SyncLyricsEditor({ plainLyrics, existingLrc, currentPosition, isPlaying, togglePlayback, onSave, onCancel } : Props) {
 
   const lines = useMemo(() => {
     return plainLyrics
