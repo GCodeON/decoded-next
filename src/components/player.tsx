@@ -54,7 +54,7 @@ export default function Player() {
         name="DECODED Web Player"
         callback={handleCallback}
         syncExternalDeviceInterval={2}
-        persistDeviceSelection={false}
+        persistDeviceSelection={true}
         syncExternalDevice={true}
         styles={{
             activeColor       : '#fff',
