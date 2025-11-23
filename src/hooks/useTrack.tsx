@@ -185,22 +185,17 @@ export function usePlaybackSync(trackId: string, enabled: boolean) {
         });
       } else {
 
-        let webDeviceId: string | null = deviceId || null;
-
-        // if (webDeviceId) {
-        //   try {
-        //     // Transfer playback to this device (do not auto-play yet)
-        //     await spotifyApi('/me/player', {
-        //       method: 'PUT',
-        //       body: { device_ids: [webDeviceId] },
-        //     });
-        //     // Give Spotify a short moment to make the device active
-        //     await new Promise((res) => setTimeout(res, 400));
-        //   } catch (err) {
-        //     // ignore transfer errors and proceed to attempt play
-        //     console.warn('Device transfer failed', err);
-        //   }
-        // }
+        let targetDevice;
+        try {
+          const devicesRes = await spotifyApi('/me/player/devices');
+        
+          if (devicesRes && Array.isArray(devicesRes.devices)) {
+            const activeDevice = devicesRes.devices.find((d: any) => d.is_active === true);
+            targetDevice = activeDevice.id;
+          }
+        } catch (e) {
+          // ignore devices lookup errors and fall through to web player fallback
+        }
 
         let startSeconds = currentPosition;
         try {
@@ -213,7 +208,7 @@ export function usePlaybackSync(trackId: string, enabled: boolean) {
 
         }
 
-        const playEndpoint = webDeviceId ? `/me/player/play?device_id=${encodeURIComponent(webDeviceId)}` : '/me/player/play';
+        const playEndpoint = targetDevice ? `/me/player/play?device_id=${encodeURIComponent(targetDevice)}` :  `/me/player/play?device_id=${encodeURIComponent(deviceId)}`;
         await spotifyApi(playEndpoint, {
           method: 'PUT',
           body: {
