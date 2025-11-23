@@ -179,12 +179,17 @@ export function usePlaybackSync(trackId: string, enabled: boolean) {
   const togglePlayback = useCallback(async () => {
     try {
       if (isPlaying) {
-        await spotifyApi.put('/me/player/pause');
+        await spotifyApi('/me/player/pause', {
+          method: 'PUT',
+        });
       } else {
 
-        await spotifyApi.put('/me/player/play', {
-          uris: [`spotify:track:${trackId}`],
-          position_ms: Math.floor(currentPosition * 1000),
+        await spotifyApi('/me/player/play', {
+          method: 'PUT',
+          body: {
+            uris: [`spotify:track:${trackId}`],
+            position_ms: Math.floor(currentPosition * 1000)
+          }
         });
       }
     } catch (err: any) {
