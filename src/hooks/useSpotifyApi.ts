@@ -24,6 +24,7 @@ export const useSpotifyApi = () => {
         ...rest,
       });
 
+      if (res.status === 204) return null;
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error ?? `HTTP ${res.status}`);

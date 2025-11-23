@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     const client = spotifyClient();
     const res = await client.get(apiPath);
     if (res.status === 204) {
-      return NextResponse.json({}, { status: 204 });
+      return new NextResponse(null, { status: 204 });
     }
     return NextResponse.json(res.data);
   } catch (err: any) {
@@ -30,7 +30,7 @@ export async function PUT(request: NextRequest) {
     const client = spotifyClient();
     const res = await client.put(apiPath, body);
     if (res.status === 204) {
-      return NextResponse.json({}, { status: 204 });
+      return new NextResponse(null, { status: 204 });
     }
     return NextResponse.json(res.data);
   } catch (err: any) {
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     const client = spotifyClient();
     const res = await client.post(apiPath, body);
     if (res.status === 204) {
-      return NextResponse.json({}, { status: 204 });
+      return new NextResponse(null, { status: 204 });
     }
     return NextResponse.json(res.data);
   } catch (err: any) {
