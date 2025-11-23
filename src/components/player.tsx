@@ -1,11 +1,13 @@
-'use client';
+ 'use client';
 
 import { useState, useEffect } from 'react';
 import SpotifyPlayer from 'react-spotify-web-playback';
+import { useSpotifyPlayer } from '@/context/SpotifyPlayerContext';
 
 export default function Player() {
   const [token, setToken] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const { setDeviceId } = useSpotifyPlayer();
 
   useEffect(() => {
     const fetchToken = async () => {
@@ -26,7 +28,13 @@ export default function Player() {
 
 
   const handleCallback = (state: any) => {
-    if (state.status === 'READY') {
+    if (state?.status === 'READY') {
+      try {
+        const deviceId = state?.device_id || state?.deviceId || null;
+        if (deviceId) setDeviceId(deviceId);
+      } catch (e) {
+        console.log('Spotify Player callback error:', e);
+      }
       setIsReady(true);
     }
   };
@@ -46,7 +54,7 @@ export default function Player() {
         name="DECODED Web Player"
         callback={handleCallback}
         syncExternalDeviceInterval={2}
-        persistDeviceSelection={true}
+        persistDeviceSelection={false}
         syncExternalDevice={true}
         styles={{
             activeColor       : '#fff',

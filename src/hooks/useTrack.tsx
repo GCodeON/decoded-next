@@ -4,6 +4,7 @@ import { db } from '@/lib/firebase-config';
 
 import { useSpotifyApi } from '@/hooks/useSpotifyApi';
 import { useLyrics } from '@/hooks/useLyrics';
+import { useSpotifyPlayer } from '@/context/SpotifyPlayerContext';
 
 import { cleanTrackName, mstoSeconds } from '@/utils/track';
 import { htmlToLyrics, lyricsToHtml } from '@/utils/lyrics';
@@ -35,7 +36,6 @@ export function useSpotifyTrack(trackId: string) {
 
   return { track, error, loading };
 }
-
 
 export function useSavedSong(track: SpotifyTrack | null, trackId: string) {
   const [savedSong, setSavedSong] = useState<SavedSong | null>(null);
@@ -175,6 +175,7 @@ export function usePlaybackSync(trackId: string, enabled: boolean) {
   const [currentPosition, setCurrentPosition] = useState(0);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const { spotifyApi } = useSpotifyApi();
+  const { deviceId, webLastPosition, webLastTrack, setLastExternalDevice, setWebLastPosition, setWebLastTrack } = useSpotifyPlayer();
 
   const togglePlayback = useCallback(async () => {
     try {
@@ -184,18 +185,47 @@ export function usePlaybackSync(trackId: string, enabled: boolean) {
         });
       } else {
 
-        await spotifyApi('/me/player/play', {
+        let webDeviceId: string | null = deviceId || null;
+
+        // if (webDeviceId) {
+        //   try {
+        //     // Transfer playback to this device (do not auto-play yet)
+        //     await spotifyApi('/me/player', {
+        //       method: 'PUT',
+        //       body: { device_ids: [webDeviceId] },
+        //     });
+        //     // Give Spotify a short moment to make the device active
+        //     await new Promise((res) => setTimeout(res, 400));
+        //   } catch (err) {
+        //     // ignore transfer errors and proceed to attempt play
+        //     console.warn('Device transfer failed', err);
+        //   }
+        // }
+
+        let startSeconds = currentPosition;
+        try {
+          if ((!startSeconds || startSeconds === 0)) {
+            if (webLastTrack === trackId && typeof webLastPosition === 'number') {
+              startSeconds = webLastPosition;
+            }
+          }
+        } catch (e) {
+
+        }
+
+        const playEndpoint = webDeviceId ? `/me/player/play?device_id=${encodeURIComponent(webDeviceId)}` : '/me/player/play';
+        await spotifyApi(playEndpoint, {
           method: 'PUT',
           body: {
             uris: [`spotify:track:${trackId}`],
-            position_ms: Math.floor(currentPosition * 1000)
-          }
+            position_ms: Math.floor((startSeconds || 0) * 1000),
+          },
         });
       }
     } catch (err: any) {
       console.error('Playback toggle failed:', err.message);
     }
-  }, [isPlaying, currentPosition, trackId, spotifyApi]);
+  }, [isPlaying, currentPosition, trackId, spotifyApi, deviceId, webLastPosition, webLastTrack]);
 
   useEffect(() => {
     if (!enabled) return;
@@ -203,6 +233,29 @@ export function usePlaybackSync(trackId: string, enabled: boolean) {
     const pollPlayback = async () => {
       try {
         const data = await spotifyApi(`/me/player`);
+        try {
+          if (data?.device?.id) {
+            const currentDeviceId = data.device.id;
+            if (currentDeviceId) {
+              if (deviceId && currentDeviceId === deviceId) {
+                try {
+                  if (typeof data.progress_ms === 'number') {
+                    setWebLastPosition(Math.floor(data.progress_ms / 1000));
+                  }
+                  if (data?.item?.id) {
+                    setWebLastTrack(data.item.id);
+                  }
+                } catch (e) {}
+              } else {
+                try {
+                  setLastExternalDevice(currentDeviceId);
+                } catch (e) {}
+              }
+            }
+          }
+        } catch (e) {
+          console.log('Playback poll device handling error:', e);
+        }
         if (data?.item?.id === trackId) {
           setIsPlaying(data.is_playing);
           setCurrentPosition(data.progress_ms / 1000);
@@ -221,7 +274,7 @@ export function usePlaybackSync(trackId: string, enabled: boolean) {
     return () => {
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
     };
-  }, [trackId, enabled]);
+  }, [trackId, enabled, spotifyApi, deviceId, setLastExternalDevice, setWebLastPosition, setWebLastTrack]);
 
   return { isPlaying, currentPosition, togglePlayback };
 }
