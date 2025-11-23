@@ -59,7 +59,11 @@ export default function Song({ params }: { params: { id: string } }) {
 
   return (
     <div className="w-full mx-auto p-6 space-y-8">
-      <SongHeader track={track} isPlaying={isPlaying} />
+      <SongHeader 
+        track={track} 
+        isPlaying={isPlaying} 
+        togglePlayback={togglePlayback}
+      />
 
       <div className="bg-white rounded-xl shadow-lg p-6">
         <div className="flex justify-between items-center mb-4">

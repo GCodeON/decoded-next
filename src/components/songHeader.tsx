@@ -5,10 +5,12 @@ import { SpotifyTrack } from '@/types/spotify';
 
 export default function SongHeader({ 
     track, 
-    isPlaying 
+    isPlaying,
+    togglePlayback
 }: { 
     track: SpotifyTrack; 
-    isPlaying: boolean 
+    isPlaying: boolean,
+    togglePlayback: () => void;
 }) {
   return (
     <div className="flex items-center space-x-6 bg-white rounded-xl shadow-lg p-6">
@@ -33,6 +35,7 @@ export default function SongHeader({
       </div>
 
       <button
+        onClick={togglePlayback}
         aria-label={isPlaying ? 'Pause' : 'Play'}
         className="text-green-500 hover:text-green-600 transition"
       >
