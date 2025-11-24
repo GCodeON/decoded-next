@@ -35,6 +35,7 @@ export default function Player() {
       await fetchToken();
     };
     init();
+
     return () => {
       mounted = false;
     };

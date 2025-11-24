@@ -5,20 +5,32 @@ import type { NextRequest } from 'next/server';
 export async function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
 
-  if (!path.startsWith('/api/spotify') && !path.startsWith('/player')) {
+  const shouldHandle =
+    path.startsWith('/api/spotify') ||
+    path.startsWith('/player') ||
+    path.startsWith('/api/auth/token');
+
+  if (!shouldHandle) {
     return NextResponse.next();
   }
 
   const expiresAt = req.cookies.get('spotify_expires_at')?.value;
+  const accessToken = req.cookies.get('spotify_access_token')?.value;
   const now = Date.now();
-
-  if (!expiresAt || now > Number(expiresAt) - 5 * 60 * 1000) {
+  
+  if (!accessToken || !expiresAt || now > Number(expiresAt) - 5 * 60 * 1000) {
     const refresh = await fetch(new URL('/api/auth/refresh', req.url), {
       method: 'POST',
       headers: { cookie: req.headers.get('cookie') ?? '' },
     });
 
     if (!refresh.ok) {
+      // For programmatic API calls, return JSON 401 so clients don't get HTML login pages.
+      if (path.startsWith('/api')) {
+        return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+      }
+
+      // For browser page navigation, redirect to login as before.
       return NextResponse.redirect(new URL('/login', req.url));
     }
 
