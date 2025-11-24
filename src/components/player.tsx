@@ -1,7 +1,6 @@
  'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import { useSpotifyPlayer } from '@/context/SpotifyPlayerContext';
 import { useAuth } from '@/hooks/useAuth';
 import SpotifyPlayer from 'react-spotify-web-playback';
@@ -9,7 +8,6 @@ import SpotifyPlayer from 'react-spotify-web-playback';
 export default function Player() {
   const [token, setToken] = useState<string | null>(null);
   const { setDeviceId } = useSpotifyPlayer();
-  const router = useRouter();
 
   const fetchToken = useCallback(async () => {
     try {
@@ -24,7 +22,7 @@ export default function Player() {
       console.error('Failed to get Spotify token:', err);
       return null;
     }
-  }, [router]);
+  }, []);
 
   const { isChecking: isAuthChecking, isAuthenticated, checkAuth } = useAuth();
 
