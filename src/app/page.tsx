@@ -1,4 +1,4 @@
-'use client';
+"use client";
 import { useEffect, useState, useRef } from 'react';
 import { useSpotifyApi } from '@/hooks/useSpotifyApi';
 import Track from '@/components/track';
@@ -13,7 +13,6 @@ export default function Home() {
   const fetchCurrentlyPlaying = async () => {
     try {
       const data = await spotifyApi('/me/player/currently-playing');
-      console.log('data', data);
 
       const newTrack = data?.item || null;
 

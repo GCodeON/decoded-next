@@ -4,6 +4,7 @@ import { Inter } from 'next/font/google'
 
 import { SpotifyPlayerProvider } from '@/context/SpotifyPlayerContext'
 import Dashboard from '@/components/dashboard'
+import AuthGuard from '@/components/AuthGuard'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -18,7 +19,9 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
       <body className={`${inter.className}`}>
         <SpotifyPlayerProvider>
           <Dashboard>
-            {children}
+            <AuthGuard>
+              {children}
+            </AuthGuard>
           </Dashboard>
         </SpotifyPlayerProvider>
       </body>

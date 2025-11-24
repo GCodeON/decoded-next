@@ -5,7 +5,9 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-black">
       <div className="text-center">
         <h1 className="text-3xl text-white mb-8">Welcome to Decoded</h1>
-        <Auth />
+        <div className="flex justify-center items-center">
+          <Auth />
+        </div>
       </div>
     </div>
   );

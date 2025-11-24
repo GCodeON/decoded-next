@@ -1,11 +1,60 @@
-'use client';
+"use client";
 
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 export const useAuth = () => {
   const router = useRouter();
+  const [isChecking, setIsChecking] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  const login = () => {
+  const redirectToLogin = useCallback(() => {
+    try {
+      router.replace('/login');
+    } catch (e) {
+      // noop
+    }
+  }, [router]);
+
+  const checkAuth = useCallback(async () => {
+    setIsChecking(true);
+    try {
+      const res = await fetch('/api/auth/token', { credentials: 'include' });
+      const contentType = res.headers.get('content-type') || '';
+
+      if (contentType.includes('text/html')) {
+        setIsAuthenticated(false);
+        setIsChecking(false);
+        redirectToLogin();
+        return false;
+      }
+
+      if (!res.ok) {
+        setIsAuthenticated(false);
+        setIsChecking(false);
+        redirectToLogin();
+        return false;
+      }
+
+      setIsAuthenticated(true);
+      setIsChecking(false);
+      return true;
+
+    } catch (err) {
+
+      setIsAuthenticated(false);
+      setIsChecking(false);
+      redirectToLogin();
+      return false;
+      
+    }
+  }, [redirectToLogin]);
+
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
+  const login = useCallback(() => {
     const scopes = [
       'streaming',
       'user-read-currently-playing',
@@ -27,9 +76,10 @@ export const useAuth = () => {
     });
 
     window.location.href = `https://accounts.spotify.com/authorize?${params}`;
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
+    // Clear spotify-related cookies
     document.cookie.split(';').forEach((c) => {
       const [name] = c.trim().split('=');
       if (name.startsWith('spotify_')) {
@@ -37,9 +87,15 @@ export const useAuth = () => {
       }
     });
 
-    router.push('/');
-    router.refresh();
-  };
+    try {
+      router.replace('/');
+      router.refresh();
+    } catch (e) {
+      // noop
+    }
+  }, [router]);
 
-  return { login, logout };
+  return { login, logout, isChecking, isAuthenticated, checkAuth, redirectToLogin };
 };
+
+export default useAuth;

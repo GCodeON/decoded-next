@@ -22,3 +22,9 @@ export interface SpotifyTrack {
   };
   duration_ms: number;
 }
+
+export interface SpotifyRequestOptions {
+  method?: string;
+  body?: any;
+  headers?: any
+}
