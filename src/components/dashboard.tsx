@@ -1,10 +1,10 @@
 'use client'
 
-import Link from 'next/link'
+import Link from 'next/link';
 import { useState } from 'react'
-import Navigation from '@/components/nav'
-import Player from '@/components/player'
-import { Divide as Hamburger } from 'hamburger-react'
+import { Divide as Hamburger } from 'hamburger-react';
+import Navigation from '@/components/nav';
+import SpotifyWebPlayer from '@/components/spotifyWebPlayer';
 
 export default function Dashboard({ children }: { children: React.ReactNode }) {
   const [isOpen, setOpen] = useState(false)
@@ -46,7 +46,7 @@ export default function Dashboard({ children }: { children: React.ReactNode }) {
         </div>
 
         <div className="fixed bottom-0 left-0 w-full lg:left-64 lg:w-[calc(100%-16rem)] z-30">
-          <Player />
+          <SpotifyWebPlayer />
         </div>
       </main>
       

@@ -98,7 +98,16 @@ export const SpotifyPlayerProvider = ({ children }: { children: React.ReactNode 
 
   return (
     <SpotifyPlayerContext.Provider
-      value={{ deviceId, setDeviceId, lastExternalDevice, setLastExternalDevice, webLastPosition, setWebLastPosition, webLastTrack, setWebLastTrack }}
+      value={{ 
+        deviceId, 
+        setDeviceId, 
+        lastExternalDevice, 
+        setLastExternalDevice, 
+        webLastPosition, 
+        setWebLastPosition, 
+        webLastTrack, 
+        setWebLastTrack 
+      }}
     >
       {children}
     </SpotifyPlayerContext.Provider>

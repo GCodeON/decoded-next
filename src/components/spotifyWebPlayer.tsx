@@ -1,11 +1,12 @@
- 'use client';
+'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useSpotifyPlayer } from '@/context/SpotifyPlayerContext';
+import { useSpotifyPlayer } from '@/context/spotifyPlayerContext';
 import { useAuth } from '@/hooks/useAuth';
 import SpotifyPlayer from 'react-spotify-web-playback';
+import PlayerErrorBoundary from '@/components/playerErrorBoundary';
 
-export default function Player() {
+export default function SpotifyWebPlayer() {
   const [token, setToken] = useState<string | null>(null);
   const { setDeviceId } = useSpotifyPlayer();
 
@@ -20,6 +21,36 @@ export default function Player() {
       return data.token;
     } catch (err) {
       console.error('Failed to get Spotify token:', err);
+      return null;
+    }
+  }, []);
+
+  const handleToken = useCallback(async (): Promise<string | null> => {
+    try {
+      const getRes = await fetch('/api/auth/token', { credentials: 'include' });
+      if (getRes.ok) {
+        const data = await getRes.json();
+        setToken(data.token);
+        return data.token;
+      }
+
+      if (getRes.status === 401) {
+        const refreshRes = await fetch('/api/auth/refresh', { method: 'POST', credentials: 'include' });
+        if (!refreshRes.ok) {
+          console.warn('Refresh failed when called from player getOAuthToken');
+          return null;
+        }
+
+        const retry = await fetch('/api/auth/token', { credentials: 'include' });
+        if (!retry.ok) return null;
+        const data = await retry.json();
+        setToken(data.token);
+        return data.token;
+      }
+
+      return null;
+    } catch (e) {
+      console.error('Error obtaining token for Spotify SDK:', e);
       return null;
     }
   }, []);
@@ -64,15 +95,17 @@ export default function Player() {
   }
 
   return (
-    <>
+    <PlayerErrorBoundary>
       <SpotifyPlayer
+        key={token}
         token={token}
         name="DECODED Web Player"
         callback={handleCallback}
+        // @ts-ignore - runtime prop accepted by SDK
         getOAuthToken={(cb: (token: string) => void) => {
-          fetchToken()
-            .then((t) => {
-              if (t) cb(t);
+          handleToken()
+            .then((token) => {
+              if (token) cb(token);
             })
             .catch((err) => {
               console.error('Failed to refresh token for Spotify SDK:', err);
@@ -91,6 +124,6 @@ export default function Player() {
             sliderHandleColor : '#fff'
         }}
       />
-    </>
+    </PlayerErrorBoundary>
   );
 }

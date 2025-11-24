@@ -4,7 +4,7 @@ import { db } from '@/lib/firebase-config';
 
 import { useSpotifyApi } from '@/hooks/useSpotifyApi';
 import { useLyrics } from '@/hooks/useLyrics';
-import { useSpotifyPlayer } from '@/context/SpotifyPlayerContext';
+import { useSpotifyPlayer } from '@/context/spotifyPlayerContext';
 
 import { cleanTrackName, mstoSeconds } from '@/utils/track';
 import { htmlToLyrics, lyricsToHtml } from '@/utils/lyrics';
