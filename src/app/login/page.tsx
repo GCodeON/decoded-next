@@ -1,4 +1,4 @@
-import Auth from '@/components/auth';
+import { User } from '@/features/auth/';
 
 export default function LoginPage() {
   return (
@@ -6,7 +6,7 @@ export default function LoginPage() {
       <div className="text-center">
         <h1 className="text-3xl text-white mb-8">Welcome to Decoded</h1>
         <div className="flex justify-center items-center">
-          <Auth />
+          <User />
         </div>
       </div>
     </div>

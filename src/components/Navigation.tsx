@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import Auth from '@/components/auth';
+import User from '@/features/auth/components/User';  
 
 const nav = [
   { name: 'Artists', href: '/artists' },
@@ -26,7 +26,7 @@ export default function Navigation() {
           </Link>
         );
       })}
-      <Auth />
+      <User />
     </div>
   );
 }

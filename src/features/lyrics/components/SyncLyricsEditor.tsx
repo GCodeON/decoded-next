@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { FaPlayCircle, FaPauseCircle, FaClock } from 'react-icons/fa';
-import { parseLrcForEditing, matchLrcToPlainLines, formatTime, parseLrcTime } from '@/utils/lrc';
+import { parseLrcForEditing, matchLrcToPlainLines, formatTime, parseLrcTime } from '@/features/lyrics/utils/lrc';
 
 interface Props {
   plainLyrics: string;

@@ -2,8 +2,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
-import { useSpotifyApi } from '@/hooks/spotify/useSpotifyApi';
-import { SpotifyArtist } from '@/types/spotify';
+import { useSpotifyApi, SpotifyArtist } from '@/features/spotify/';
 
 export default function Artists() {
   const [artists, setArtists] = useState<SpotifyArtist[] | null>(null);

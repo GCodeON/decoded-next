@@ -1,10 +1,9 @@
 import './globals.css'
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
-
-import { SpotifyPlayerProvider } from '@/context/spotifyPlayerContext';
-import Dashboard from '@/components/dashboard';
-import AuthGuard from '@/components/AuthGuard';
+import Dashboard from  '@/components/Dashboard';
+import { SpotifyPlayerProvider } from '@/features/player';
+import { AuthGuard } from '@/features/auth';
 
 const inter = Inter({ subsets: ['latin'] })
 

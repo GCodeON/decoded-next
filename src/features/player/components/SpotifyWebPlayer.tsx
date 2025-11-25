@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useSpotifyPlayer } from '@/context/spotifyPlayerContext';
-import { useAuth } from '@/hooks/useAuth';
+import { useSpotifyPlayer } from '@/features/player/context/SpotifyPlayerContext';
+import { useAuth } from '@/features/auth/hooks/useAuth';
 import SpotifyPlayer from 'react-spotify-web-playback';
-import PlayerErrorBoundary from '@/components/playerErrorBoundary';
+import PlayerErrorBoundary from '@/features/player/components/PlayerErrorBoundary';
 
 export default function SpotifyWebPlayer() {
   const [token, setToken] = useState<string | null>(null);
@@ -118,7 +118,7 @@ export default function SpotifyWebPlayer() {
   return (
     <PlayerErrorBoundary>
       <SpotifyPlayer
-        key={token} // This will force remount when token changes
+        key={token}
         token={token}
         name="DECODED Web Player"
         callback={handleCallback}

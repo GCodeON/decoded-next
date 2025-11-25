@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase-config';
+import { db } from '@/infrastructure/firebase/config';
 
-import { useSongLyrics } from '@/hooks/lyrics/useSongLyrics';
-import { cleanTrackName, mstoSeconds } from '@/utils/track';
-import { htmlToLyrics, lyricsToHtml } from '@/utils/lyrics';
-import { SavedSong } from '@/types/track';
-import { SpotifyTrack } from '@/types/spotify';
+import { useSongLyrics } from '@/features/lyrics/hooks/useSongLyrics';
+import { cleanTrackName, mstoSeconds } from '@/features/lyrics/utils/track';
+import { htmlToLyrics, lyricsToHtml } from '@/features/lyrics/utils/lyrics';
+import { SavedSong } from '@/features/lyrics/types/track';
+import { SpotifyTrack } from '@/features/spotify/types/spotify';
 
 interface UseSavedSongParams {
   track: SpotifyTrack | null;

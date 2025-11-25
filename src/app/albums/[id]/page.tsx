@@ -4,7 +4,7 @@ import { useState, useEffect, Key } from 'react';
 import Image from 'next/image'
 import Link from 'next/link'
 
-import { useSpotifyApi } from '@/hooks/spotify/useSpotifyApi';
+import { useSpotifyApi } from '@/features/spotify';
 
 export default function Album({ params }: { params: { id: string } }) {
   const [album, setAlbum] = useState <any>();
