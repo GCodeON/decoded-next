@@ -7,13 +7,13 @@ import { useSpotifyApi, SpotifyArtist } from '@/features/spotify/';
 export default function Artists() {
   const [artists, setArtists] = useState<SpotifyArtist[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { spotifyApi } = useSpotifyApi();
+  const spotify = useSpotifyApi();
 
   useEffect(() => {
     const fetchTopArtists = async () => {
       setIsLoading(true);
       try {
-        const data = await spotifyApi('/me/top/artists?limit=20');
+        const data = await spotify.getTopArtists(20);
         if (data?.items) {
           setArtists(data.items);
         }
@@ -25,7 +25,7 @@ export default function Artists() {
     };
 
     fetchTopArtists();
-  }, [spotifyApi]);
+  }, [spotify]);
 
   return (
     <div className="flex justify-center py-8">

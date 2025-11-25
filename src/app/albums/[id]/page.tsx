@@ -8,19 +8,19 @@ import { useSpotifyApi } from '@/features/spotify';
 
 export default function Album({ params }: { params: { id: string } }) {
   const [album, setAlbum] = useState <any>();
-  const { spotifyApi } = useSpotifyApi();
+  const spotify = useSpotifyApi();
 
   useEffect(() => {
     const getAlbum = async function () {
-      const album = await spotifyApi(`/albums/${params.id}`);
+      const album = await spotify.getAlbum(params.id);
     
-      if(album) {
+      if(album?.tracks) {
         console.log('album tracks', album);
         setAlbum(album.tracks.items);
       }
     }
     getAlbum();
-  },[])
+  },[params.id, spotify])
 
   return (
     <div className='flex flex-col gap-1 justify-center'>

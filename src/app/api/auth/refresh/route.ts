@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { tokenRefresh } from '@/features/spotify/hooks/useSpotifyApi';
+import { spotifyAuthService } from '@/features/auth/services/spotifyAuthService';
 
 export async function POST(request: NextRequest) {
   const refreshToken = request.cookies.get('spotify_refresh_token')?.value;
@@ -8,23 +8,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const response = await tokenRefresh(refreshToken);
-
-    if (!response.ok) {
-      const text = await response.text();
-      console.error('Spotify refresh failed:', response.status, text);
-      throw new Error(`Refresh failed with status ${response.status}`);
-    }
-
-    // Check content-type to ensure we have JSON
-    const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
-      const text = await response.text();
-      console.error('Spotify returned non-JSON response:', text.substring(0, 200));
-      throw new Error('Invalid response from Spotify (expected JSON)');
-    }
-
-    const data = await response.json();
+    const data = await spotifyAuthService.refreshAccessToken(refreshToken);
 
     const expiresAt = Date.now() + data.expires_in * 1000;
 

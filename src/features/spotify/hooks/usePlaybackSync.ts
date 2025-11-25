@@ -7,7 +7,7 @@ export function usePlaybackSync(trackId: string, enabled: boolean = true) {
   const [currentPosition, setCurrentPosition] = useState(0);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const { spotifyApi } = useSpotifyApi();
+  const spotify = useSpotifyApi();
   const {
     deviceId,
     webLastPosition,
@@ -19,7 +19,7 @@ export function usePlaybackSync(trackId: string, enabled: boolean = true) {
 
   const pollPlayback = useCallback(async () => {
     try {
-      const data = await spotifyApi(`/me/player`);
+      const data = await spotify.getPlaybackState();
 
       // Handle device tracking
       if (data?.device?.id) {
@@ -47,19 +47,20 @@ export function usePlaybackSync(trackId: string, enabled: boolean = true) {
     } catch (err) {
       console.error('Playback polling failed:', err);
     }
-  }, [trackId, spotifyApi, deviceId, setLastExternalDevice, setWebLastPosition, setWebLastTrack]);
+  }, [trackId, spotify, deviceId, setLastExternalDevice, setWebLastPosition, setWebLastTrack]);
 
   const togglePlayback = useCallback(async () => {
     try {
       if (isPlaying) {
-        await spotifyApi('/me/player/pause', { method: 'PUT' });
+        await spotify.pause();
         return;
       }
 
       // Try to get active device
       let targetDeviceId: string | undefined;
       try {
-        const { devices } = await spotifyApi('/me/player/devices');
+        const devicesData: any = await spotify.getPlaybackState();
+        const devices = devicesData?.devices || [];
         const active = devices?.find((d: any) => d.is_active);
         targetDeviceId = active?.id;
       } catch (_) {}
@@ -72,13 +73,7 @@ export function usePlaybackSync(trackId: string, enabled: boolean = true) {
         positionMs = webLastPosition * 1000;
       }
 
-      await spotifyApi(`/me/player/play${deviceToUse ? `?device_id=${deviceToUse}` : ''}`, {
-        method: 'PUT',
-        body: {
-          uris: [`spotify:track:${trackId}`],
-          position_ms: positionMs,
-        },
-      });
+      await spotify.play(deviceToUse || undefined, [`spotify:track:${trackId}`], positionMs);
     } catch (err: any) {
       console.error('Toggle playback failed:', err.message);
     }
@@ -89,7 +84,7 @@ export function usePlaybackSync(trackId: string, enabled: boolean = true) {
     deviceId,
     webLastPosition,
     webLastTrack,
-    spotifyApi,
+    spotify,
   ]);
 
   useEffect(() => {

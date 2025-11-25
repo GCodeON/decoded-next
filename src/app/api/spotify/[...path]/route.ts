@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import spotifyClient from '@/infrastructure/spotify/api-client';
+import spotifyClient from '@/infrastructure/spotify/client';
 
 function getApiPath(request: NextRequest) {
   const { pathname, search } = new URL(request.url);

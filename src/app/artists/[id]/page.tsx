@@ -7,14 +7,14 @@ import Link from 'next/link'
 import { useSpotifyApi, SpotifyArtist, SpotifyAlbum } from '@/features/spotify/';
 
 export default function Artist({ params }: { params: { id: string } }) {
-  const [artist, setArtist] = useState<SpotifyArtist[] | null>(null);
+  const [artist, setArtist] = useState<SpotifyArtist | null>(null);
   const [albums, setAlbums] = useState<SpotifyAlbum[] | null>(null);
-  const { spotifyApi } = useSpotifyApi();
+  const spotify = useSpotifyApi();
 
   useEffect(() => {
     const getArtist = async() => {
       try {
-        const data = await spotifyApi(`/artists/${params.id}`)
+        const data = await spotify.getArtist(params.id);
         if(data) {
           console.log('artist data', data);
           setArtist(data);
@@ -25,12 +25,12 @@ export default function Artist({ params }: { params: { id: string } }) {
     }
 
     getArtist();
-  },[params.id, spotifyApi])
+  },[params.id, spotify])
 
   useEffect(() => {
     const getAlbums = async() => {
       try {
-        const albums = await spotifyApi(`/artists/${params.id}/albums`)
+        const albums = await spotify.getArtistAlbums(params.id);
         if(albums) {
           console.log('album data', albums);
           setAlbums(albums.items);
@@ -41,7 +41,7 @@ export default function Artist({ params }: { params: { id: string } }) {
     }
 
     getAlbums();
-  }, [params.id, spotifyApi, artist]);
+  }, [params.id, spotify, artist]);
 
   return (
     <div className="flex justify-center py-8">
