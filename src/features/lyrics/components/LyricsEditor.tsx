@@ -5,8 +5,8 @@ import SunEditor from 'suneditor-react';
 import 'suneditor/dist/css/suneditor.min.css';
 import { FaSave, FaTimes } from 'react-icons/fa';
 
-import Legend from './legend';
-import { customColors } from '@/utils/legend'
+import Legend from './VowelLegend';
+import { customColors } from '@/features/lyrics/config/rhyme-colors'
 
 export default function LyricsEditor({
   initialHtml,

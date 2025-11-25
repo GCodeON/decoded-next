@@ -1,6 +1,6 @@
 import axios, { AxiosInstance } from 'axios';
 
-const spotifyClient = (): AxiosInstance => {
+const spotifyClient = (endpoint?: string): AxiosInstance => {
   const instance = axios.create({
     baseURL: 'https://api.spotify.com/v1',
     headers: {

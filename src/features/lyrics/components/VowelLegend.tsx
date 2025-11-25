@@ -1,5 +1,5 @@
 'use client';
-import { vowels } from "@/utils/legend";
+import { vowels } from "@/features/lyrics/config/rhyme-colors";
 
 export default function Legend() {
   // Responsive grouping

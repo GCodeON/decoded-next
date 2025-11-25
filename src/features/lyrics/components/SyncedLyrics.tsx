@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useRef, useMemo, useState } from 'react';
-import { SyncedLine, SyncedTrack } from '@/types/track';
+import { SyncedLine, SyncedTrack } from '@/features/lyrics/types/track';
 import { FaPalette } from 'react-icons/fa';
 
 export default function SyncedLyrics({

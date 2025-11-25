@@ -2,15 +2,17 @@
 import { useState, useMemo } from 'react';
 import { FaEdit, FaClock } from 'react-icons/fa';
 
-import { useSpotifyTrack } from '@/hooks/spotify/useSpotifyTrack';
-import { useSavedSong } from '@/hooks/lyrics/useSavedSong';
-import { usePlaybackSync } from '@/hooks/spotify/usePlaybackSync';
-import { lyricsToHtml, mapLrcToRhymeHtml } from '@/utils/lyrics';
+import { useSpotifyTrack, usePlaybackSync } from '@/features/spotify';
+import { 
+  useSavedSong, 
+  LyricsEditor, 
+  SyncLyricsEditor, 
+  SyncedLyrics, 
+  lyricsToHtml, 
+  mapLrcToRhymeHtml 
+} from '@/features/lyrics';
 
-import SongHeader from '@/components/songHeader';
-import LyricsEditor from '@/components/lyricsEditor';
-import SyncedLyrics from '@/components/syncedLyrics';
-import SyncLyricsEditor from '@/components/syncLyricsEditor';
+import SongHeader from '@/components/SongHeader';
 
 export default function Song({ params }: { params: { id: string } }) {
   const { track,  loading: trackLoading, error: trackError } = useSpotifyTrack(params.id);

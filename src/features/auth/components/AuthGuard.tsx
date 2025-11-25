@@ -2,7 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
-import useAuth from '@/hooks/useAuth';
+import useAuth from '@/features/auth/hooks/useAuth';
 
 type Props = {
   children: React.ReactNode;

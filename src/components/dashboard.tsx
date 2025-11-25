@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import { useState } from 'react'
 import { Divide as Hamburger } from 'hamburger-react';
-import Navigation from '@/components/nav';
-import SpotifyWebPlayer from '@/components/spotifyWebPlayer';
+import Navigation from '@/components/Navigation';
+import SpotifyWebPlayer from '@/features/player/components/SpotifyWebPlayer';
 
 export default function Dashboard({ children }: { children: React.ReactNode }) {
   const [isOpen, setOpen] = useState(false)

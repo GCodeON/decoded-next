@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useSpotifyApi } from '@/hooks/spotify/useSpotifyApi';
-import { useSpotifyPlayer } from '@/context/spotifyPlayerContext';
+import { useSpotifyApi } from '@/features/spotify/hooks/useSpotifyApi';
+import { useSpotifyPlayer } from '@/features/player/context/SpotifyPlayerContext';
 
 export function usePlaybackSync(trackId: string, enabled: boolean = true) {
   const [isPlaying, setIsPlaying] = useState(false);

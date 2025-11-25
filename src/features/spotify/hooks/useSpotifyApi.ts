@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { SpotifyRequestOptions } from '@/types/spotify';
+import { SpotifyRequestOptions } from '@/features/spotify/types/spotify';
 
 export const useSpotifyApi = () => {
   const spotifyApi = useCallback(

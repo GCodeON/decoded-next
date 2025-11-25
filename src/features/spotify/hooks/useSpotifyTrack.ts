@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useSpotifyApi } from '@/hooks/spotify/useSpotifyApi';
-import { SpotifyTrack } from '@/types/spotify';
+import { useSpotifyApi } from '@/features/spotify/hooks/useSpotifyApi';
+import { SpotifyTrack } from '@/features/spotify/types/spotify';
 
 export function useSpotifyTrack(trackId: string) {
   const [track, setTrack] = useState<SpotifyTrack | null>(null);

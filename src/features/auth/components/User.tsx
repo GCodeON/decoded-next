@@ -1,10 +1,10 @@
 'use client';
 
 import { FaUser, FaPowerOff } from 'react-icons/fa';
-import { useUser } from '@/hooks/useUser';
-import { useAuth } from '@/hooks/useAuth';
+import { useUser } from '@/features/auth/hooks/useUser';
+import { useAuth } from '@/features/auth/hooks/useAuth';
 
-export default function Auth() {
+export default function User() {
   const { authenticated, user, loading } = useUser();
   const { login, logout } = useAuth();
 
