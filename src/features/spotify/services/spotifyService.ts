@@ -1,47 +1,58 @@
-import spotifyApiClient from '@/infrastructure/spotify/api-client';
-import type { SpotifyTrack, SpotifyArtist, SpotifyAlbum } from '../types/spotify';
+import { spotifyEndpoints } from '@/infrastructure/spotify/endpoints';
+import type { SpotifyTransport } from '../transport/SpotifyTransport';
+import type { 
+  SpotifyTrack, 
+  SpotifyArtist, 
+  SpotifyAlbum, 
+  PlaybackState, 
+  SavedTracksResponse 
+} from '../types/spotify';
 
-export const spotifyService = {
-  async getTrack(trackId: string): Promise<SpotifyTrack> {
-    return spotifyApiClient(`/tracks/${trackId}`);
-  },
+/**
+ * Factory function to create a Spotify service with injected transport.
+ * Allows same business logic to work in both client (fetch) and server (axios) contexts.
+ */
+export function createSpotifyService(transport: SpotifyTransport) {
+  return {
+    async getTrack(trackId: string): Promise<SpotifyTrack> {
+      return transport.request<SpotifyTrack>('GET', spotifyEndpoints.track(trackId));
+    },
 
-  async getCurrentlyPlaying() {
-    return spotifyApiClient('/me/player/currently-playing');
-  },
+    async getCurrentlyPlaying(): Promise<SpotifyTrack | null> {
+      const data = await transport.request<{ item?: SpotifyTrack }>('GET', spotifyEndpoints.currentlyPlaying());
+      return data?.item ?? null;
+    },
 
-  async getPlaybackState() {
-    return spotifyApiClient('/me/player');
-  },
+    async getPlaybackState(): Promise<PlaybackState> {
+      return transport.request<PlaybackState>('GET', spotifyEndpoints.playback());
+    },
 
-  async getUserTracks(limit = 50, offset = 0) {
-    return spotifyApiClient(`/me/tracks?limit=${limit}&offset=${offset}`);
-  },
+    async getUserTracks(limit = 50, offset = 0): Promise<SavedTracksResponse> {
+      return transport.request<SavedTracksResponse>('GET', spotifyEndpoints.userTracks(limit, offset));
+    },
 
-  async getAlbum(albumId: string): Promise<SpotifyAlbum> {
-    return spotifyApiClient(`/albums/${albumId}`);
-  },
+    async getAlbum(albumId: string): Promise<SpotifyAlbum> {
+      return transport.request<SpotifyAlbum>('GET', spotifyEndpoints.album(albumId));
+    },
 
-  async getArtist(artistId: string): Promise<SpotifyArtist> {
-    return spotifyApiClient(`/artists/${artistId}`);
-  },
+    async getArtist(artistId: string): Promise<SpotifyArtist> {
+      return transport.request<SpotifyArtist>('GET', spotifyEndpoints.artist(artistId));
+    },
 
-  async play(deviceId?: string, uris?: string[], position_ms?: number) {
-    const params = new URLSearchParams();
-    if (deviceId) params.append('device_id', deviceId);
-    
-    return spotifyApiClient(`/me/player/play?${params}`, {
-      method: 'PUT',
-      body: JSON.stringify({ uris, position_ms }),
-    });
-  },
+    async getTopArtists(limit = 20): Promise<{ items: SpotifyArtist[] }> {
+      return transport.request<{ items: SpotifyArtist[] }>('GET', spotifyEndpoints.topArtists(limit));
+    },
 
-  async pause(deviceId?: string) {
-    const params = new URLSearchParams();
-    if (deviceId) params.append('device_id', deviceId);
-    
-    return spotifyApiClient(`/me/player/pause?${params}`, {
-      method: 'PUT',
-    });
-  },
-};
+    async getArtistAlbums(artistId: string): Promise<{ items: SpotifyAlbum[] }> {
+      return transport.request<{ items: SpotifyAlbum[] }>('GET', spotifyEndpoints.artistAlbums(artistId));
+    },
+
+    async play(deviceId?: string, uris?: string[], position_ms?: number): Promise<void> {
+      await transport.request('PUT', spotifyEndpoints.play(deviceId), { uris, position_ms });
+    },
+
+    async pause(deviceId?: string): Promise<void> {
+      await transport.request('PUT', spotifyEndpoints.pause(deviceId));
+    },
+  };
+}

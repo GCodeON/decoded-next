@@ -6,7 +6,7 @@ export function useSpotifyTrack(trackId: string) {
   const [track, setTrack] = useState<SpotifyTrack | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { spotifyApi } = useSpotifyApi();
+  const spotify = useSpotifyApi();
 
   useEffect(() => {
     if (!trackId) {
@@ -21,7 +21,7 @@ export function useSpotifyTrack(trackId: string) {
       try {
         setLoading(true);
         setError(null);
-        const data = await spotifyApi(`/tracks/${trackId}`);
+        const data = await spotify.getTrack(trackId);
         if (mounted) setTrack(data);
       } catch (err: any) {
         if (mounted) setError(err.message || 'Failed to load track');
@@ -33,7 +33,7 @@ export function useSpotifyTrack(trackId: string) {
     fetchTrack();
 
     return () => { mounted = false; };
-  }, [trackId, spotifyApi]);
+  }, [trackId, spotify]);
 
   return { track, loading, error };
 }

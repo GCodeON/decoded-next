@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useSpotifyApi } from '@/features/spotify';
 import Track from '@/components/TrackCard';
 
@@ -8,16 +8,14 @@ export default function Home() {
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const currentTrackIdRef = useRef<string | null>(null);
 
-  const { spotifyApi } = useSpotifyApi();
+  const spotify = useSpotifyApi();
 
-  const fetchCurrentlyPlaying = async () => {
+  const fetchCurrentlyPlaying = useCallback(async () => {
     try {
-      const data = await spotifyApi('/me/player/currently-playing');
-
-      const newTrack = data?.item || null;
+      const newTrack = await spotify.getCurrentlyPlaying();
 
       if (newTrack?.id !== currentTrackIdRef.current) {
-        currentTrackIdRef.current = newTrack?.id;
+        currentTrackIdRef.current = newTrack?.id ?? null;
         setCurrentTrack(newTrack);
       }
     } catch (err: any) {
@@ -32,7 +30,7 @@ export default function Home() {
         setIsInitialLoading(false);
       }
     }
-  };
+  }, [spotify, isInitialLoading]);
 
   useEffect(() => {
     fetchCurrentlyPlaying();
@@ -40,7 +38,7 @@ export default function Home() {
     const interval = setInterval(fetchCurrentlyPlaying, 3000);
 
     return () => clearInterval(interval);
-  }, [spotifyApi]);
+  }, [fetchCurrentlyPlaying]);
 
   return (
     <div className="flex justify-center py-8">
