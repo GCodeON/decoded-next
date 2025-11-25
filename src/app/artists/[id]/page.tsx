@@ -4,7 +4,7 @@ import { useState, useEffect, Key } from 'react';
 import Image from 'next/image'
 import Link from 'next/link'
 
-import { useSpotifyApi } from '@/hooks/useSpotifyApi';
+import { useSpotifyApi } from '@/hooks/spotify/useSpotifyApi';
 import { SpotifyArtist, SpotifyAlbum } from '@/types/spotify';
 
 export default function Artist({ params }: { params: { id: string } }) {

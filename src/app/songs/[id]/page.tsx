@@ -1,7 +1,10 @@
 'use client';
 import { useState, useMemo } from 'react';
 import { FaEdit, FaClock } from 'react-icons/fa';
-import { useSpotifyTrack, useSavedSong, usePlaybackSync } from '@/hooks/useTrack';
+
+import { useSpotifyTrack } from '@/hooks/spotify/useSpotifyTrack';
+import { useSavedSong } from '@/hooks/lyrics/useSavedSong';
+import { usePlaybackSync } from '@/hooks/spotify/usePlaybackSync';
 import { lyricsToHtml, mapLrcToRhymeHtml } from '@/utils/lyrics';
 
 import SongHeader from '@/components/songHeader';
@@ -10,8 +13,8 @@ import SyncedLyrics from '@/components/syncedLyrics';
 import SyncLyricsEditor from '@/components/syncLyricsEditor';
 
 export default function Song({ params }: { params: { id: string } }) {
-  const { track, error: trackError, loading: trackLoading } = useSpotifyTrack(params.id);
-  const { savedSong, isSaving, lyricsLoading, lyricsError, updateLyrics, updateSynced } = useSavedSong(track, params.id);
+  const { track,  loading: trackLoading, error: trackError } = useSpotifyTrack(params.id);
+  const { savedSong, isSaving, lyricsLoading, lyricsError, updateLyrics, updateSynced } = useSavedSong({track, trackId: params.id});
   const { isPlaying, currentPosition, togglePlayback } = usePlaybackSync(params.id, !!track);
 
   const [editMode, setEditMode] = useState(false);

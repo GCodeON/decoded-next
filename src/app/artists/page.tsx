@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
-import { useSpotifyApi } from '@/hooks/useSpotifyApi';
+import { useSpotifyApi } from '@/hooks/spotify/useSpotifyApi';
 import { SpotifyArtist } from '@/types/spotify';
 
 export default function Artists() {
