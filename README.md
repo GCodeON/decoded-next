@@ -16,7 +16,6 @@ A modern Next.js application for analyzing and visualizing song lyrics, built wi
 - Tailwind CSS 4.1+ with @tailwindcss/postcss
 - Spotify Web API
 - Firebase
-- SunEditor for rich text editing
 
 ## Project Architecture
 
