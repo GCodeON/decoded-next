@@ -1,8 +1,6 @@
-'use client';
-
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import User from '@/features/auth/components/User';  
+import { User } from '@/modules/auth';  
 
 const nav = [
   { name: 'Artists', href: '/artists' },

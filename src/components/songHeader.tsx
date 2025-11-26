@@ -1,7 +1,7 @@
 'use client';
 import Image from 'next/image';
 import { FaPlayCircle, FaPauseCircle } from 'react-icons/fa';
-import { SpotifyTrack } from '@/features/spotify/types/spotify';
+import { SpotifyTrack } from '@/modules/spotify';
 
 export default function SongHeader({ 
     track, 

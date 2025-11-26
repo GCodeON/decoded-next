@@ -1,10 +1,8 @@
-
 'use client'
 import { useState, useEffect, Key } from 'react';
-import Image from 'next/image'
 import Link from 'next/link'
 
-import { useSpotifyApi } from '@/features/spotify';
+import { useSpotifyApi } from '@/modules/spotify';
 
 export default function Album({ params }: { params: { id: string } }) {
   const [album, setAlbum] = useState <any>();

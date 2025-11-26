@@ -1,4 +1,4 @@
-import { User } from '@/features/auth/';
+import { User } from '@/modules/auth';
 
 export default function LoginPage() {
   return (
