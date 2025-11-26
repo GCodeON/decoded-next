@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { useSpotifyApi } from '@/features/spotify';
+import { useSpotifyApi } from '@/modules/spotify';
 import Track from '@/components/TrackCard';
 
 export default function Home() {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { spotifyAuthService } from '@/features/auth/services/spotifyAuthService';
+import { spotifyAuthService } from '@/modules/auth/services/spotifyAuthService';
 
 export async function POST(request: NextRequest) {
   const refreshToken = request.cookies.get('spotify_refresh_token')?.value;

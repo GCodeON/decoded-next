@@ -2,7 +2,7 @@
 import { useState, useMemo } from 'react';
 import { FaEdit, FaClock } from 'react-icons/fa';
 
-import { useSpotifyTrack, usePlaybackSync } from '@/features/spotify';
+import { useSpotifyTrack, usePlaybackSync } from '@/modules/spotify';
 import { 
   useSavedSong, 
   LyricsEditor, 
@@ -10,7 +10,7 @@ import {
   SyncedLyrics, 
   lyricsToHtml, 
   mapLrcToRhymeHtml 
-} from '@/features/lyrics';
+} from '@/modules/lyrics';
 
 import SongHeader from '@/components/SongHeader';
 
