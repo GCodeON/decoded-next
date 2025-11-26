@@ -3,10 +3,13 @@ import React from 'react';
 
 type State = { hasError: boolean };
 
-export default class PlayerErrorBoundary extends React.Component<{
+type Props = {
   children: React.ReactNode;
-}, State> {
-  constructor(props: any) {
+  onRetry?: () => void;
+};
+
+export default class PlayerErrorBoundary extends React.Component<Props, State> {
+  constructor(props: Props) {
     super(props);
     this.state = { hasError: false };
   }
@@ -22,6 +25,7 @@ export default class PlayerErrorBoundary extends React.Component<{
 
   reset = () => {
     this.setState({ hasError: false });
+    this.props.onRetry?.();
   };
 
   render() {
