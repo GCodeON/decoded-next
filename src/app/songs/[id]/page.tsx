@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { use, useState, useMemo } from 'react';
 import { FaEdit, FaClock } from 'react-icons/fa';
 
 import { useSpotifyTrack, usePlaybackSync } from '@/modules/spotify';
@@ -14,10 +14,11 @@ import {
 
 import SongHeader from '@/components/SongHeader';
 
-export default function Song({ params }: { params: { id: string } }) {
-  const { track,  loading: trackLoading, error: trackError } = useSpotifyTrack(params.id);
-  const { savedSong, isSaving, lyricsLoading, lyricsError, updateLyrics, updateSynced } = useSavedSong({track, trackId: params.id});
-  const { isPlaying, currentPosition, togglePlayback } = usePlaybackSync(params.id, !!track);
+export default function Song({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const { track,  loading: trackLoading, error: trackError } = useSpotifyTrack(id);
+  const { savedSong, isSaving, lyricsLoading, lyricsError, updateLyrics, updateSynced } = useSavedSong({track, trackId: id});
+  const { isPlaying, currentPosition, togglePlayback } = usePlaybackSync(id, !!track);
 
   const [editMode, setEditMode] = useState(false);
   const [syncMode, setSyncMode] = useState(false);

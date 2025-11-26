@@ -10,12 +10,13 @@ A modern Next.js application for analyzing and visualizing song lyrics, built wi
 - **Synced Lyrics**: Display and edit time-synced lyrics with real-time playback
 
 ## Tech Stack
-- Next.js 14+
-- React 18
-- TypeScript 5+
-- Tailwind CSS
+- Next.js 16.0.4
+- React 19.2.0
+- TypeScript 5.9+
+- Tailwind CSS 4.1+ with @tailwindcss/postcss
 - Spotify Web API
 - Firebase
+- SunEditor for rich text editing
 
 ## Project Architecture
 
