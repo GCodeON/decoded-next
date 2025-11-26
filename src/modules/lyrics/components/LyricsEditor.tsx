@@ -1,11 +1,13 @@
 'use client';
 import { useState } from 'react';
-
-import SunEditor from 'suneditor-react';
-import 'suneditor/dist/css/suneditor.min.css';
+import dynamic from 'next/dynamic';
 import { FaSave, FaTimes } from 'react-icons/fa';
-
 import { Legend, customColors } from '@/modules/lyrics';
+import 'suneditor/dist/css/suneditor.min.css';
+
+const SunEditor = dynamic(() => import('suneditor-react'), {
+  ssr: false
+});
 
 export default function LyricsEditor({
   initialHtml,

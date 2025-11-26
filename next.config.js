@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  env: {
+    env: {
     SPOTIFY_CLIENT_ID           : process.env.SPOTIFY_CLIENT_ID,
     SPOTIFY_CLIENT_SECRET       : process.env.SPOTIFY_CLIENT_SECRET,
     SPOTIFY_REDIRECT_URI        : process.env.SPOTIFY_REDIRECT_URI,
@@ -17,8 +17,13 @@ const nextConfig = {
     FIREBASE_MEASUREMENT_ID     : process.env.FIREBASE_MEASUREMENT_ID
   },
   images: {
-    domains: ["i.scdn.co"]
-  }
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'i.scdn.co',
+      },
+    ],
+  },
 }
 
 module.exports = nextConfig

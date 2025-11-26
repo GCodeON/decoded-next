@@ -1,6 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 :root {
   --foreground-rgb: 0, 0, 0;
@@ -32,7 +30,10 @@ body {
 }
 
 .synced-line.active {
-  @apply bg-blue-100 text-blue-900 font-bold shadow-lg scale-105;
-  transform: translateY(-1px);
+  background-color: rgb(219 234 254);
+  color: rgb(30 58 138);
+  font-weight: 700;
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  transform: translateY(-1px) scale(1.05);
   box-shadow: 0 8px 20px rgba(59, 130, 246, 0.25) !important;
 }

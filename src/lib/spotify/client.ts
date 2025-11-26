@@ -12,7 +12,8 @@ export const createSpotifyAxios = (): AxiosInstance => {
     async (config) => {
       try {
         const { cookies } = await import('next/headers');
-        const accessToken = cookies().get('spotify_access_token')?.value;
+        const cookieStore = await cookies();
+        const accessToken = cookieStore.get('spotify_access_token')?.value;
         if (accessToken) {
           config.headers.Authorization = `Bearer ${accessToken}`;
         }
