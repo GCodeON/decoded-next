@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { LyricsResult } from '@/modules/lyrics/types/lyrics';
+import { LyricsResult } from '@/features/lyrics/types/lyrics';
 
 export function useSongLyrics(artist: string, song: string, album: string, duration: number) {
   const [data, setData] = useState<LyricsResult | null>(null);
