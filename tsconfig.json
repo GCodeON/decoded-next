@@ -23,21 +23,11 @@
       }
     ],
     "paths": {
-      "@/*": [
-        "./src/*"
-      ],
-      "@/core/*": [
-        "./src/core/*"
-      ],
-      "@/features/*": [
-        "./src/features/*"
-      ],
-      "@/modules/*": [
-        "./src/modules/*"
-      ],
-      "@/lib/*": [
-        "./src/lib/*"
-      ]
+      "@/*": [ "./src/*"],
+      "@/core/*": ["./src/core/*"],
+      "@/features/*": ["./src/features/*"],
+      "@/modules/*": ["./src/modules/*"],
+      "@/lib/*": ["./src/lib/*"]
     }
   },
   "include": [
