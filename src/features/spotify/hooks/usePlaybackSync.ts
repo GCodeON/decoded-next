@@ -44,8 +44,11 @@ export function usePlaybackSync(trackId: string, enabled: boolean = true) {
         setIsPlaying(false);
         setCurrentPosition(0);
       }
-    } catch (err) {
-      console.error('Playback polling failed:', err);
+    } catch (err: any) {
+      // Only log non-auth errors to reduce noise
+      if (!err?.message?.includes('Token refresh failed') && !err?.message?.includes('log in again')) {
+        console.error('Playback polling failed:', err);
+      }
     }
   }, [trackId, spotify, deviceId, setLastExternalDevice, setWebLastPosition, setWebLastTrack]);
 

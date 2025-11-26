@@ -31,23 +31,32 @@ export const createSpotifyAxios = (): AxiosInstance => {
       const originalReq: any = error.config;
       if (error.response?.status === 401 && !originalReq._retry) {
         originalReq._retry = true;
+        
+        // Call refresh endpoint (server-side will handle cookies)
         const base = process.env.NEXT_PUBLIC_BASE_URL || '';
         const refreshRes = await fetch(`${base}/api/auth/refresh`, {
           method: 'POST',
           credentials: 'include',
         });
+        
         if (!refreshRes.ok) {
           return Promise.reject(new Error('Token refresh failed – please log in again'));
         }
+        
+        // After refresh, get the new token from cookies
         try {
           const { cookies } = await import('next/headers');
-          const newToken = cookies().get('spotify_access_token')?.value;
+          const cookieStore = await cookies();
+          const newToken = cookieStore.get('spotify_access_token')?.value;
           if (newToken) {
             originalReq.headers = originalReq.headers || {};
             originalReq.headers.Authorization = `Bearer ${newToken}`;
+            return instance(originalReq);
           }
-        } catch (_) {}
-        return instance(originalReq);
+        } catch (_) {
+          // If we can't read cookies (shouldn't happen server-side), reject
+          return Promise.reject(new Error('Token refresh succeeded but could not retrieve new token'));
+        }
       }
       return Promise.reject(error);
     }
