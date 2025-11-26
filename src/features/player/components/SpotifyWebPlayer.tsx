@@ -9,9 +9,10 @@ import PlayerErrorBoundary from '@/features/player/components/PlayerErrorBoundar
 
 export default function SpotifyWebPlayer() {
   const { isChecking: isAuthChecking, isAuthenticated } = useAuth();
-  const { token, authError, handleToken, setAuthError } = useSpotifyAuthToken();
+  const { token, authError, handleToken, setAuthError, setToken } = useSpotifyAuthToken();
   const handleCallback = useSpotifyPlayerCallback(handleToken);
   const hasInitialized = useRef(false);
+  const playerKey = useRef(0);
 
   useEffect(() => {
     if (isAuthenticated && !token && !authError && !hasInitialized.current) {
@@ -19,6 +20,8 @@ export default function SpotifyWebPlayer() {
       handleToken();
     }
   }, [isAuthenticated, token, authError, handleToken]);
+
+  // Temporary: Simulate player error for testing error boundary
 
   if (isAuthChecking || !isAuthenticated) return null;
 
@@ -33,10 +36,13 @@ export default function SpotifyWebPlayer() {
   return (
     <PlayerErrorBoundary onRetry={() => {
       setAuthError(null);
+      setToken(null);
+      hasInitialized.current = false;
+      playerKey.current += 1;
       handleToken();
     }}>
       <SpotifyPlayer
-        key={token}
+        key={`player-${playerKey.current}-${token?.substring(0, 10)}`}
         token={token}
         name="DECODED Web Player"
         callback={handleCallback}
@@ -53,6 +59,7 @@ export default function SpotifyWebPlayer() {
         syncExternalDeviceInterval={2}
         persistDeviceSelection={false}
         syncExternalDevice={true}
+        showSaveIcon={true}
         styles={{
             activeColor       : '#fff',
             bgColor           : '#000',
