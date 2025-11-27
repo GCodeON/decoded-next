@@ -13,15 +13,17 @@ interface UseSavedSongParams {
 export function useSavedSong({ track, trackId }: UseSavedSongParams) {
   const [savedSong, setSavedSong] = useState<SavedSong | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [shouldFetchLyrics, setShouldFetchLyrics] = useState(false);
 
   const artistName = track?.artists[0]?.name || '';
   const trackName = track?.name || '';
 
+  // Only call useSongLyrics if we need to fetch new lyrics
   const { data: lyricsData, loading: lyricsLoading, error: lyricsError } = useSongLyrics(
-    artistName,
-    cleanTrackName(trackName),
-    track?.album.name || '',
-    mstoSeconds(track?.duration_ms || 0)
+    shouldFetchLyrics ? artistName : '',
+    shouldFetchLyrics ? cleanTrackName(trackName) : '',
+    shouldFetchLyrics ? track?.album.name || '' : '',
+    shouldFetchLyrics ? mstoSeconds(track?.duration_ms || 0) : 0
   );
 
   // Load from Firestore
@@ -44,6 +46,10 @@ export function useSavedSong({ track, trackId }: UseSavedSongParams) {
             rhymeEncoded: data.lyrics?.rhymeEncoded || lyricsToHtml(data.lyrics?.plain || ''),
           },
         });
+        setShouldFetchLyrics(false); // Song exists, no need to fetch
+      } else {
+        // Song doesn't exist in Firebase, fetch lyrics
+        setShouldFetchLyrics(true);
       }
     };
 
@@ -70,6 +76,7 @@ export function useSavedSong({ track, trackId }: UseSavedSongParams) {
       try {
         await setDoc(doc(db, 'songs', trackId), newSong);
         setSavedSong(newSong);
+        setShouldFetchLyrics(false);
       } catch (err) {
         console.error('Failed to save new song:', err);
       } finally {
