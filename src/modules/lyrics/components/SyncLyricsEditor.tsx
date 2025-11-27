@@ -15,20 +15,26 @@ interface Props {
 
 export default function SyncLyricsEditor({ plainLyrics, existingLrc, currentPosition, isPlaying, togglePlayback, onSave, onCancel } : Props) {
 
-  const lines = useMemo(() => {
-    return plainLyrics
-    .split('\n')
-    .map(l => l.trim())
-    .filter(line => line.length > 0);
-  }, [plainLyrics]);
-
-  const initialTimestamps = useMemo(() => {
-    if(!existingLrc?.trim()) {
-        return new Array(lines.length).fill(null);
+  // If we have existingLrc, parse lines and timestamps directly from it
+  // Otherwise use plainLyrics (filtered of blanks) for fresh sync
+  const { lines, initialTimestamps } = useMemo(() => {
+    if (existingLrc?.trim()) {
+      const lrcEntries = parseLrcForEditing(existingLrc);
+      return {
+        lines: lrcEntries.map(e => e.text),
+        initialTimestamps: lrcEntries.map(e => e.time)
+      };
     }
-    const lrcEntries = parseLrcForEditing(existingLrc);
-    return matchLrcToPlainLines(lines, lrcEntries);
-  }, [existingLrc, lines]);
+    // Fresh sync: use plain lyrics without blank lines
+    const plainLines = plainLyrics
+      .split(/\r?\n/)
+      .map(l => l.trim())
+      .filter(l => l.length > 0);
+    return {
+      lines: plainLines,
+      initialTimestamps: new Array(plainLines.length).fill(null)
+    };
+  }, [existingLrc, plainLyrics]);
 
   const [timestamps, setTimestamps] = useState<(number | null)[]>(initialTimestamps);
   const [currentLine, setCurrentLine] = useState(() => {
@@ -109,40 +115,39 @@ export default function SyncLyricsEditor({ plainLyrics, existingLrc, currentPosi
         return () => clearTimeout(timer);
     }, []);
 
-    //LRC Playback live follow 
+    // LRC Playback live follow: skip nulls and use next non-null boundary
     useEffect(() => {
-        if (!existingLrc || editingIndex !== null) return;
+      if (!existingLrc || editingIndex !== null) return;
 
-        let targetIndex = 0;
-
-        // Find the line that owns the current time
-        for (let i = 0; i < timestamps.length; i++) {
-            const time = timestamps[i];
-            if (time === null) continue;
-
-            const nextTime = timestamps[i + 1];
-
-            // This line is active if:
-            // - Its time has passed
-            // - AND next line hasn't started yet (or doesn't exist)
-            if (time <= currentPosition + 0.3 && (!nextTime || currentPosition < nextTime)) {
-                targetIndex = i;
-                break;
-            }
-
-            // If we passed a line, it was the last one
-            if (time <= currentPosition) {
-                targetIndex = i;
-            }
+      const len = timestamps.length;
+      const nextNonNull = (idx: number): number | null => {
+        for (let j = idx + 1; j < len; j++) {
+          if (timestamps[j] !== null) return timestamps[j] as number;
         }
+        return null;
+      };
 
-        if (targetIndex !== currentLine) {
-            setCurrentLine(targetIndex);
-            containerRef.current?.children[targetIndex]?.scrollIntoView({
-                behavior: 'smooth',
-                block: 'center',
-            });
+      let targetIndex = 0;
+      for (let i = 0; i < len; i++) {
+        const t = timestamps[i];
+        if (t === null) continue;
+        const nextT = nextNonNull(i);
+        // This line is active if currentPosition is between this timestamp and the next
+        if (currentPosition >= t && (nextT === null || currentPosition < nextT)) {
+          targetIndex = i;
+          break;
         }
+        // Keep track of the last passed timestamp
+        if (currentPosition >= t) {
+          targetIndex = i;
+        }
+      }
+
+      if (targetIndex !== currentLine) {
+        setCurrentLine(targetIndex);
+        const el = containerRef.current?.children[targetIndex] as HTMLElement | undefined;
+        el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
     }, [currentPosition, timestamps, currentLine, existingLrc, editingIndex]);
 
     // Auto-scroll
@@ -232,7 +237,7 @@ export default function SyncLyricsEditor({ plainLyrics, existingLrc, currentPosi
                 <span className="text-gray-400">[--:--.--]</span>
                 )}
             </div>
-              <div className="flex-1 font-medium text-lg text-black">{line}</div>
+              <div className="flex-1 font-medium text-lg text-black">{line?.trim() ? line : '(instrumental)'}</div>
               <button
                 onClick={(e) => {
                 e.stopPropagation();

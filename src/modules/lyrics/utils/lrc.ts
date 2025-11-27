@@ -31,35 +31,34 @@ export const parseLrcForEditing = (lrc: string): { time: number; text: string }[
   if (!lrc?.trim()) return [];
 
   const entries: { time: number; text: string }[] = [];
+  const lineRegex = /\[(\d+):(\d+(?:\.\d+)?)\]/g;
 
-  lrc.split('\n').forEach(rawLine => {
-    const line = rawLine.trim();
-    if (!line) return;
+  lrc.split(/\r?\n/).forEach(rawLine => {
+    if (!rawLine) return; // keep processing if line has timestamps even if only tags
 
-    // Find all [mm:ss.xx] or [m:ss.xx]
-    const timeTags = line.match(/\[\d+:\d+(?:\.\d+)?\]/g);
-    if (!timeTags) return;
+    // Collect all timestamp matches with their position
+    const matches: { mins: number; secs: number; index: number; raw: string }[] = [];
+    lineRegex.lastIndex = 0;
+    let m: RegExpExecArray | null;
+    while ((m = lineRegex.exec(rawLine)) !== null) {
+      const mins = parseInt(m[1], 10);
+      const secs = parseFloat(m[2]);
+      if (isNaN(mins) || isNaN(secs)) continue;
+      matches.push({ mins, secs, index: m.index, raw: m[0] });
+    }
+    if (matches.length === 0) return;
 
-    // Extract text after last timestamp
-    const lastTag = timeTags[timeTags.length - 1];
-    const textStart = line.lastIndexOf(lastTag) + lastTag.length;
-    let text = line.slice(textStart).trim();
-
-    // Remove word-level tags <...>
-    text = text.replace(/<\d+(?::\d+(?:\.\d+)?)?>/g, '').trim();
-
-    // Parse each timestamp
-    timeTags.forEach(tag => {
-      const match = tag.match(/\[(\d+):(\d+(?:\.\d+)?)\]/);
-      if (!match) return;
-
-      const mins = parseInt(match[1], 10);
-      const secs = parseFloat(match[2]);
-      if (isNaN(mins) || isNaN(secs)) return;
-
+    // For each timestamp, grab the text until the next timestamp (or end of line)
+    matches.forEach((tag, i) => {
+      const start = tag.index + tag.raw.length;
+      const end = i + 1 < matches.length ? matches[i + 1].index : rawLine.length;
+      let segment = rawLine.slice(start, end).trim();
+      // Remove word-level tags <...>
+      segment = segment.replace(/<\d+(?::\d+(?:\.\d+)?)?>/g, '').trim();
+      // Allow empty segment (blank line with timestamp)
       entries.push({
-        time: mins * 60 + secs,
-        text,
+        time: Number((tag.mins * 60 + tag.secs).toFixed(2)),
+        text: segment,
       });
     });
   });
