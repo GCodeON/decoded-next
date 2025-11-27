@@ -1,7 +1,7 @@
 'use client';
-import { useEffect, useRef, useMemo, useState } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { FaPalette } from 'react-icons/fa';
-import { SyncedLine, SyncedTrack } from '@/modules/lyrics';
+import { useLyricSync, SyncedTrack  } from '@/modules/lyrics';
 
 export default function SyncedLyrics({
   syncedLyrics,
@@ -10,71 +10,42 @@ export default function SyncedLyrics({
   rhymeEncodedLines
 }: SyncedTrack ) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const linesRef = useRef<SyncedLine[]>([]);
   const [showRhymes, setShowRhymes] = useState(true);
 
-  const lines = useMemo(() => {
-    return syncedLyrics
-      .split('\n')
-      .map((line) => line.trim())
-      .filter((line) => line && /^\[/.test(line))
-      .map((line, index) => {
-        const m = line.match(/\[(\d+):(\d+\.\d+|\d+)\](.*)/);
-        if (!m) return null;
-        const [, mins, secs, txt] = m;
-        const time = parseInt(mins) * 60 + parseFloat(secs);
-        return { 
-          time, 
-          text: txt.trim(),
-          rhymeHtml: rhymeEncodedLines?.[index],
-          element: null as HTMLDivElement | null 
-        };
-      })
-      .filter(Boolean) as SyncedLine[];
-  }, [syncedLyrics, rhymeEncodedLines]);
+  const { lines, activeLine } = useLyricSync({
+    plainLyrics: '',
+    existingLrc: syncedLyrics,
+    currentPosition,
+    isPlaying,
+    autoScroll: true
+  });
 
-  // Update DOM references
+  // Auto-scroll to active line
   useEffect(() => {
-    linesRef.current = lines;
-    requestAnimationFrame(() => {
-      const els = containerRef.current?.querySelectorAll('.synced-line');
-      els?.forEach((el, i) => {
-        if (lines[i]) lines[i].element = el as HTMLDivElement;
-      });
-    });
-  }, [lines]);
-
-  // Scroll to active line
-  useEffect(() => {
-    if (!isPlaying || linesRef.current.length === 0) return;
-
-    const active = linesRef.current.filter((l) => currentPosition >= l.time).pop();
-    if (!active?.element) return;
-
-    const container = containerRef.current!;
-    const line = active.element;
-
-    // Highlight
-    container.querySelectorAll('.synced-line').forEach((el) => {
-      el.classList.toggle('active', el === line);
-    });
-
-    // Smooth scroll
-    const containerRect = container.getBoundingClientRect();
-    const lineRect = line.getBoundingClientRect();
-    const lineCenterY = lineRect.top - containerRect.top + container.scrollTop + lineRect.height / 2;
-    const targetScrollTop = lineCenterY - container.clientHeight / 2;
-    const maxScroll = container.scrollHeight - container.clientHeight;
-    const finalScrollTop = Math.max(0, Math.min(targetScrollTop, maxScroll));
-
-    if (Math.abs(container.scrollTop - finalScrollTop) > 5) {
-      container.scrollTo({ top: finalScrollTop, behavior: 'smooth' });
+    if (activeLine === null) return;
+    
+    const container = containerRef.current;
+    if (!container) return;
+    
+    const targetElement = Array.from(container.children)[activeLine] as HTMLElement | undefined;
+    
+    if (targetElement) {
+      targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-  }, [currentPosition, isPlaying]);
+  }, [activeLine]);
+
+  const htmlIsVisuallyEmpty = (html?: string): boolean => {
+    if (!html) return true;
+    const stripped = html
+      .replace(/<br\s*\/?>/gi, '')
+      .replace(/&nbsp;/gi, '')
+      .replace(/<[^>]+>/g, '')
+      .trim();
+    return stripped.length === 0;
+  };
 
   return (
     <>
-      {/* Toggle Button */}
       <div className="flex justify-end mb-4">
         <button
           onClick={() => setShowRhymes(!showRhymes)}
@@ -88,23 +59,43 @@ export default function SyncedLyrics({
           {showRhymes ? 'Rhymes ON' : 'Show Rhyme Colors'}
         </button>
       </div>
-      {/* Lyrics Container */}
+
       <div
         ref={containerRef}
         className="max-h-96 overflow-y-auto bg-gray-50 rounded-xl py-5 md:space-y-2 scrollbar-thin scrollbar-thumb-gray-400"
       >
         {lines.map((line, i) => {
-          const isActive = isPlaying && linesRef.current[i]?.element?.classList.contains('active');
+          const isActive = i === activeLine;
+          const lineText = line.trim();
+          
+          // For empty lines, always show as instrumental
+          if (!lineText) {
+            return (
+              <div
+                key={i}
+                className={`synced-line px-4 py-2 rounded-lg shadow-sm transition-all duration-200 text-black text-md md:text-xl font-medium ${
+                  isActive ? 'bg-yellow-100 scale-105' : 'bg-white'
+                }`}
+              >
+                <span className="text-gray-400 italic">(instrumental)</span>
+              </div>
+            );
+          }
+          
+          const rhymeHtml = rhymeEncodedLines?.[i];
+          const showRhymeContent = showRhymes && rhymeHtml && !htmlIsVisuallyEmpty(rhymeHtml);
 
           return (
             <div
               key={i}
-              className="synced-line px-4 py-2 rounded-lg bg-white shadow-sm transition-all duration-200 text-black text-md md:text-xl font-medium"
+              className={`synced-line px-2 py-2 rounded-lg shadow-sm transition-all duration-200 text-black text-md md:text-xl font-medium ${
+                isActive ? 'bg-yellow-100 scale-101' : 'bg-white'
+              }`}
             >
-              {showRhymes && line.rhymeHtml ? (
-                <div dangerouslySetInnerHTML={{ __html: line.rhymeHtml }} />
+              {showRhymeContent ? (
+                <div dangerouslySetInnerHTML={{ __html: rhymeHtml }} />
               ) : (
-                <span>{line.text}</span>
+                <span>{lineText}</span>
               )}
             </div>
           );

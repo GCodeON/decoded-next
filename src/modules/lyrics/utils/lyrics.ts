@@ -20,10 +20,11 @@ export const lyricsToHtml = (text: string): string => {
 };
 
 export function mapLrcToRhymeHtml(lrc: string, rhymeEncoded: string): string[] {
+  // Extract text from LRC, preserving empty lines for instrumental breaks
   const lrcTexts = lrc
     .split('\n')
-    .map(line => line.replace(/\[[\d:]+\.\d+\]/g, '').trim())
-    .filter(Boolean);
+    .map(line => line.replace(/\[[\d:]+\.\d+\]/g, '').trim());
+  // DON'T filter(Boolean) - we need to keep empty strings!
 
   // Convert rhymeEncoded HTML to array of lines preserving HTML
   const div = document.createElement('div');
@@ -35,24 +36,28 @@ export function mapLrcToRhymeHtml(lrc: string, rhymeEncoded: string): string[] {
   const htmlLines = div.innerHTML
     .split('\n')
     .map(l => l.trim())
-    .filter(Boolean);
+    .filter(Boolean); // Keep this filter for HTML lines
 
   const result: string[] = [];
-  let lrcIndex = 0;
+  let htmlIndex = 0;
 
-  for (const htmlLine of htmlLines) {
-    const cleanText = htmlLine.replace(/<[^>]*>/g, '').trim();
-    if (lrcIndex < lrcTexts.length && cleanText.includes(lrcTexts[lrcIndex].slice(0, 15))) {
-      result.push(htmlLine || lrcTexts[lrcIndex]);
-      lrcIndex++;
-    } else if (cleanText) {
-      result.push(htmlLine);
+  for (const lrcText of lrcTexts) {
+    if (!lrcText) {
+      // Empty LRC line - instrumental break
+      result.push('');
+    } else if (htmlIndex < htmlLines.length) {
+      const cleanText = htmlLines[htmlIndex].replace(/<[^>]*>/g, '').trim();
+      if (cleanText.includes(lrcText.slice(0, 15)) || lrcText.includes(cleanText.slice(0, 15))) {
+        result.push(htmlLines[htmlIndex]);
+        htmlIndex++;
+      } else {
+        // No matching HTML, use plain text
+        result.push(lrcText);
+      }
+    } else {
+      // No more HTML lines, use plain text
+      result.push(lrcText);
     }
-  }
-
-  // Fill any missing lines
-  while (result.length < lrcTexts.length) {
-    result.push(lrcTexts[result.length]);
   }
 
   return result;

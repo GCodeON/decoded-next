@@ -26,7 +26,7 @@ export const parseLrcTime = (input: string): number => {
     return isNaN(secs) ? NaN : secs;
 };
 
-// LRC Parser
+// LRC Parser - PRESERVES EMPTY LINES for instrumental breaks
 export const parseLrcForEditing = (lrc: string): { time: number; text: string }[] => {
   if (!lrc?.trim()) return [];
 
@@ -55,7 +55,7 @@ export const parseLrcForEditing = (lrc: string): { time: number; text: string }[
       let segment = rawLine.slice(start, end).trim();
       // Remove word-level tags <...>
       segment = segment.replace(/<\d+(?::\d+(?:\.\d+)?)?>/g, '').trim();
-      // Allow empty segment (blank line with timestamp)
+      // KEEP EMPTY SEGMENTS - they represent instrumental breaks
       entries.push({
         time: Number((tag.mins * 60 + tag.secs).toFixed(2)),
         text: segment,
@@ -97,4 +97,18 @@ export const matchLrcToPlainLines = (
   }
 
   return result;
+};
+
+// Generate LRC string from lines and timestamps
+export const generateLrc = (lines: string[], timestamps: (number | null)[]): string => {
+  return lines
+    .map((line, i) => {
+      const time = timestamps[i];
+      if (time === null) return null;
+      const mins = Math.floor(time / 60).toString().padStart(2, '0');
+      const secs = (time % 60).toFixed(2).padStart(5, '0');
+      return `[${mins}:${secs}] ${line}`;
+    })
+    .filter(Boolean)
+    .join('\n');
 };
