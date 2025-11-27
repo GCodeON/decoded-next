@@ -43,6 +43,7 @@ export default function SyncLyricsEditor({ plainLyrics, existingLrc, currentPosi
   });
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editValue, setEditValue] = useState('');
+  const [manualNavigation, setManualNavigation] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
 
@@ -79,9 +80,10 @@ export default function SyncLyricsEditor({ plainLyrics, existingLrc, currentPosi
         if (editingIndex !== null) return;
 
         const handler = (e: KeyboardEvent) => {
-        if (e.key === ' ') { e.preventDefault(); stampCurrent(); }
-        if (e.key === 'ArrowUp') { e.preventDefault(); goBack(); }
-        if (e.key === 'ArrowDown') { e.preventDefault(); setCurrentLine(p => Math.min(lines.length - 1, p + 1)); }
+        if (e.key === ' ') { e.preventDefault(); stampCurrent(); setManualNavigation(true); }
+        if (e.key === 'ArrowUp') { e.preventDefault(); goBack(); setManualNavigation(true); }
+        if (e.key === 'ArrowDown') { e.preventDefault(); setCurrentLine(p => Math.min(lines.length - 1, p + 1)); setManualNavigation(true); }
+        if (e.key === 'Escape') { e.preventDefault(); setManualNavigation(false); }
         };
         document.addEventListener('keydown', handler);
         return () => document.removeEventListener('keydown', handler);
@@ -116,8 +118,9 @@ export default function SyncLyricsEditor({ plainLyrics, existingLrc, currentPosi
     }, []);
 
     // LRC Playback live follow: skip nulls and use next non-null boundary
+    // Only active when all lines are mapped and user hasn't manually navigated
     useEffect(() => {
-      if (!existingLrc || editingIndex !== null) return;
+      if (!existingLrc || editingIndex !== null || !allStamped || manualNavigation) return;
 
       const len = timestamps.length;
       const nextNonNull = (idx: number): number | null => {
@@ -148,7 +151,7 @@ export default function SyncLyricsEditor({ plainLyrics, existingLrc, currentPosi
         const el = containerRef.current?.children[targetIndex] as HTMLElement | undefined;
         el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
-    }, [currentPosition, timestamps, currentLine, existingLrc, editingIndex]);
+    }, [currentPosition, timestamps, currentLine, existingLrc, editingIndex, allStamped, manualNavigation]);
 
     // Auto-scroll
     useEffect(() => {
@@ -158,7 +161,18 @@ export default function SyncLyricsEditor({ plainLyrics, existingLrc, currentPosi
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between bg-gradient-to-r from-green-50 to-blue-50 p-4 rounded-lg">
-        <h3 className="text-lg font-bold text-black">Sync Lyrics to Music</h3>
+        <div className="flex items-center gap-4">
+          <h3 className="text-lg font-bold text-black">Sync Lyrics to Music</h3>
+          {allStamped && manualNavigation && (
+            <button
+              onClick={() => setManualNavigation(false)}
+              className="px-3 py-1 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 transition"
+              title="Re-enable auto-scroll to follow playback"
+            >
+              Enable Auto-Scroll
+            </button>
+          )}
+        </div>
         <div className="flex items-center gap-4 text-sm">
           <button onClick={togglePlayback} className="text-green-600 hover:scale-110 transition">
             {isPlaying ? <FaPauseCircle size={28} /> : <FaPlayCircle size={28} />}
@@ -167,7 +181,7 @@ export default function SyncLyricsEditor({ plainLyrics, existingLrc, currentPosi
             {Math.floor(currentPosition / 60)}:{(currentPosition % 60).toFixed(0).padStart(2, '0')}
           </span>
           <span className="text-gray-600">
-            Space = Stamp • ↑ = Prev • ↓ = Next
+            Space = Stamp • ↑ = Prev • ↓ = Next • Esc = Auto-Scroll
           </span>
         </div>
       </div>
@@ -186,7 +200,10 @@ export default function SyncLyricsEditor({ plainLyrics, existingLrc, currentPosi
                   ? 'bg-green-50 border-green-300'
                   : 'bg-white border-gray-300'
               }`}
-              onClick={() => setCurrentLine(i)}
+              onClick={() => {
+                setCurrentLine(i);
+                if (allStamped && i !== currentLine) setManualNavigation(true);
+              }}
             >
               <div className="w-28 text-right font-mono text-sm">
                 {time !== null ? (
@@ -246,6 +263,7 @@ export default function SyncLyricsEditor({ plainLyrics, existingLrc, currentPosi
                     n[i] = Number(currentPosition.toFixed(2));
                     return n;
                 });
+                setManualNavigation(true);
                 if (i === currentLine) {
                     setCurrentLine(Math.min(lines.length - 1, i + 1));
                 }
