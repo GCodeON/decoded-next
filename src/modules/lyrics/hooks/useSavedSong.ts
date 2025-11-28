@@ -127,12 +127,67 @@ export function useSavedSong({ track, trackId }: UseSavedSongParams) {
         await updateDoc(doc(db, 'songs', trackId), {
           'lyrics.synced': trimmed,
         });
+        // Background publish to LrcLib when fully synced
+        if (trimmed && isFullyStamped(trimmed)) {
+          // Compute signature to avoid duplicate publishes
+          const sigInput = `${artistName}|${cleanTrackName(track!.name)}|${track!.album.name}|${track!.duration_ms}|${trimmed}`;
+          const sigBuf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(sigInput));
+          const sigHex = Array.from(new Uint8Array(sigBuf)).map((b) => b.toString(16).padStart(2, '0')).join('');
+
+          // If already published with same signature, skip
+          const existingSig = (savedSong as any)?.lrclib?.signature;
+          const wasPublished = (savedSong as any)?.lrclib?.published;
+          if (wasPublished && existingSig && existingSig === sigHex) {
+            return;
+          }
+
+          const body = {
+            trackName: cleanTrackName(track!.name),
+            artistName: artistName,
+            albumName: track!.album.name,
+            durationMs: track!.duration_ms,
+            plainLyrics: savedSong!.lyrics.plain,
+            syncedLyrics: trimmed,
+          };
+          // Fire-and-forget: do not await publish; keep UI responsive
+          void (async () => {
+            try {
+              const res = await fetch('/api/lyrics/lrclib/publish', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+                keepalive: true as any,
+              });
+              if (res.ok) {
+                const now = Date.now();
+                await updateDoc(doc(db, 'songs', trackId), {
+                  'lrclib.published': true,
+                  'lrclib.signature': sigHex,
+                  'lrclib.lastPublishedAt': now,
+                });
+                if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('lrclib:published', { detail: { trackId } }));
+                }
+              }
+            } catch (e) {
+              console.error('Background publish failed', e);
+            }
+          })();
+        }
       } catch (err) {
         console.error('Failed to update synced lyrics:', err);
       }
     },
     [savedSong, trackId]
   );
+
+  function isFullyStamped(lrc: string) {
+    const ts = /^\[\d{2}:\d{2}(?:\.\d{2})?]/;
+    return lrc
+      .split(/\r?\n/)
+      .filter(Boolean)
+      .every((ln) => !ln.trim() || ts.test(ln));
+  }
 
   return {
     savedSong,
