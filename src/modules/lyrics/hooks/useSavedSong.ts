@@ -1,3 +1,4 @@
+'use client'
 import { useState, useEffect, useCallback } from 'react';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
@@ -152,7 +153,7 @@ export function useSavedSong({ track, trackId }: UseSavedSongParams) {
           // Fire-and-forget: do not await publish; keep UI responsive
           void (async () => {
             try {
-              const res = await fetch('/api/lyrics/lrclib/publish', {
+              const res = await fetch('/api/lyrics/publish', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body),

@@ -1,3 +1,4 @@
+'use client'
 import { useState, useEffect, useMemo } from 'react';
 import { parseLrcForEditing } from '@/modules/lyrics';
 
