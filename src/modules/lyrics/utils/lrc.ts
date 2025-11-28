@@ -1,6 +1,6 @@
 
-export const mstoSeconds = (duration: number): number => {
-  return Math.round(duration / 1000);
+export const mstoSeconds = (ms: number): number => {
+  return Math.max(0, Math.round(ms / 1000));
 };
 
 export const cleanTrackName = (name: string): string => {
@@ -111,4 +111,12 @@ export const generateLrc = (lines: string[], timestamps: (number | null)[]): str
     })
     .filter(Boolean)
     .join('\n');
+};
+
+export const isLikelySynced = (lrc?: string) => {
+  if (!lrc) return false;
+  const lines = lrc.split(/\r?\n/).filter(Boolean);
+  if (lines.length === 0) return false;
+  const timestampRe = /^\[\d{2}:\d{2}(?:\.\d{2})?]/;
+  return lines.every((ln) => !ln.trim() || timestampRe.test(ln));
 };

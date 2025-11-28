@@ -1,5 +1,5 @@
 'use client';
-import { use, useState, useMemo } from 'react';
+import { use, useState, useMemo, useEffect } from 'react';
 import { FaEdit, FaClock } from 'react-icons/fa';
 
 import { useSpotifyTrack, usePlaybackSync } from '@/modules/spotify';
@@ -22,6 +22,18 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
 
   const [editMode, setEditMode] = useState(false);
   const [syncMode, setSyncMode] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+
+  // Listen for LrcLib publish event to show toast
+  useEffect(() => {
+    const onPublished = (e: Event) => {
+      console.log("published synced lyrics", e);
+      setToast('Synced Lyrics Published');
+      setTimeout(() => setToast(null), 3000);
+    };
+    window.addEventListener('lrclib:published', onPublished as EventListener);
+    return () => window.removeEventListener('lrclib:published', onPublished as EventListener);
+  }, []);
 
   const displayLyrics = useMemo(() => {
     if (savedSong?.lyrics) {
@@ -65,6 +77,11 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
 
   return (
     <div className="w-full mx-auto p-6 space-y-8">
+      {toast && (
+        <div className="fixed top-6 right-6 z-50 bg-black text-white px-4 py-2 rounded shadow-lg">
+          {toast}
+        </div>
+      )}
       <SongHeader 
         track={track} 
         isPlaying={isPlaying} 
