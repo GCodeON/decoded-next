@@ -13,13 +13,16 @@ export { useLyricSync } from './hooks/useLyricSync';
 export { useTimestampEditor } from './hooks/useTimestampEditor';
 export { useSyncNavigation } from './hooks/useSyncNavigation';
 
+// Services
+export { lrcLibService } from './services/lrclibService';
+
 // Utils
 export { lyricsToHtml, htmlToLyrics, mapLrcToRhymeHtml } from './utils/lyrics';
-export { cleanTrackName, mstoSeconds, formatTime, parseLrcTime, parseLrcForEditing, matchLrcToPlainLines, generateLrc } from './utils/lrc';
+export { cleanTrackName, mstoSeconds, formatTime, parseLrcTime, parseLrcForEditing, matchLrcToPlainLines, generateLrc, isLikelySynced } from './utils/lrc';
 
 // Config
 export { customColors, vowels } from './config/rhyme-colors';
 
 // Types
-export type { LrcLibData, LyricsResponse, LyricsResult } from './types/lyrics';
+export type { LrcLibData, LyricsResponse, LyricsResult, LyricsSearchParams, PublishPayload, GetLyricsResult, PublishResult, ChallengeData } from './types/lyrics';
 export type { SavedSong, SyncedLine, SyncedTrack } from './types/track';

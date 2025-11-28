@@ -88,7 +88,7 @@ export default function SyncedLyrics({
           return (
             <div
               key={i}
-              className={`synced-line px-2 py-2 rounded-lg shadow-sm transition-all duration-200 text-black text-md md:text-xl font-medium ${
+              className={`synced-line px-2 py-2 rounded-lg shadow-sm transition-all duration-400 text-black text-md md:text-xl font-medium ${
                 isActive ? 'bg-yellow-100 scale-101' : 'bg-white'
               }`}
             >

@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { LyricsResponse, LrcLibData } from '@/modules/lyrics';
+import { LyricsResponse, lrcLibService } from '@/modules/lyrics';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -31,34 +31,31 @@ export async function GET(request: NextRequest) {
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
 
-  let foundViaLrcLib = false;
   let lrcNotFound = false;
 
-
+  // Try LrcLib if we have album and duration
   if (album && duration) {
-    const lrcUrl = `https://lrclib.net/api/get?artist_name=${encodeURIComponent(
-      artist
-    )}&track_name=${encodeURIComponent(song)}&album_name=${encodeURIComponent(
-      album
-    )}&duration=${encodeURIComponent(duration)}`;
+    const result = await lrcLibService.getLyrics({
+      artistName: artist,
+      trackName: song,
+      albumName: album,
+      duration,
+    });
 
-    const lrcRes = await safeFetch(lrcUrl);
-
-    if (lrcRes?.ok) {
-      const data: LrcLibData = await lrcRes.json();
-      const synced = data.syncedLyrics?.trim() || null;
-      const plain = data.plainLyrics?.trim() || null;
+    if (result.success) {
+      const synced = result.data.syncedLyrics?.trim() || null;
+      const plain = result.data.plainLyrics?.trim() || null;
 
       if (synced || plain) {
-        foundViaLrcLib = true;
         return buildResponse(plain, synced);
       }
-    } else if (lrcRes?.status === 404) {
+    } else if (result.error === 'not_found') {
       lrcNotFound = true;
     }
-    // else: network error → still try fallback
+    // For timeout or invalid_response, continue to fallback
   }
 
+  // Fallback to OVH
   const ovhUrl = `https://api.lyrics.ovh/v1/${encodeURIComponent(artist)}/${encodeURIComponent(song)}`;
   const ovhRes = await safeFetch(ovhUrl);
 
