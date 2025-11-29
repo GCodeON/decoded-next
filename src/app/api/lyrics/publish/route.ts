@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { lrcLibService, isLikelySynced, mstoSeconds, PublishPayload } from '@/modules/lyrics/';
+import { lyricsService, isLikelySynced, mstoSeconds, PublishPayload } from '@/modules/lyrics/';
 
 async function performBackgroundPublish(body: PublishPayload) {
   const payload = {
@@ -12,7 +12,7 @@ async function performBackgroundPublish(body: PublishPayload) {
   };
 
   const logPrefix = `[LrcLib:${body.artistName}-${body.trackName}]`;
-  await lrcLibService.publishWithPow(payload, { logPrefix });
+  await lyricsService.publishWithPow(payload, { logPrefix });
 }
 
 export async function POST(req: NextRequest) {

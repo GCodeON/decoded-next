@@ -12,13 +12,16 @@ export { useSongLyrics } from './hooks/useSongLyrics';
 export { useLyricSync } from './hooks/useLyricSync';
 export { useTimestampEditor } from './hooks/useTimestampEditor';
 export { useSyncNavigation } from './hooks/useSyncNavigation';
+export { useLrcLibPublish } from './hooks/useLrcLibPublish';
 
 // Services
-export { lrcLibService } from './services/lrclibService';
+export { lyricsService } from './services/lyricsService';
+export { songService } from './services/songService';
 
 // Utils
 export { lyricsToHtml, htmlToLyrics, mapLrcToRhymeHtml } from './utils/lyrics';
-export { cleanTrackName, mstoSeconds, formatTime, parseLrcTime, parseLrcForEditing, matchLrcToPlainLines, generateLrc, isLikelySynced } from './utils/lrc';
+export { cleanTrackName, mstoSeconds, formatTime, parseLrcTime, parseLrcForEditing, matchLrcToPlainLines, generateLrc, isLikelySynced, isFullyStamped } from './utils/lrc';
+export { computeSignature } from './utils/signature';
 
 // Config
 export { customColors, vowels } from './config/rhyme-colors';

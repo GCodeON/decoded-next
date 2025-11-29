@@ -1,10 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react';
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase/config';
-
-import { useSongLyrics, cleanTrackName, mstoSeconds, htmlToLyrics, lyricsToHtml, SavedSong } from '@/modules/lyrics/';
-import { SpotifyTrack } from '@/modules/spotify/types/spotify';
+import { useSongLyrics, cleanTrackName, mstoSeconds, htmlToLyrics, lyricsToHtml, SavedSong, songService, useLrcLibPublish } from '@/modules/lyrics';
+import { SpotifyTrack } from '@/modules/spotify';
 
 interface UseSavedSongParams {
   track: SpotifyTrack | null;
@@ -19,6 +16,8 @@ export function useSavedSong({ track, trackId }: UseSavedSongParams) {
   const artistName = track?.artists[0]?.name || '';
   const trackName = track?.name || '';
 
+  const { publishIfReady } = useLrcLibPublish({ trackId, track });
+
   // Only call useSongLyrics if we need to fetch new lyrics
   const { data: lyricsData, loading: lyricsLoading, error: lyricsError } = useSongLyrics(
     shouldFetchLyrics ? artistName : '',
@@ -32,11 +31,9 @@ export function useSavedSong({ track, trackId }: UseSavedSongParams) {
     if (!track || !trackId) return;
 
     const load = async () => {
-      const ref = doc(db, 'songs', trackId);
-      const snap = await getDoc(ref);
+      const data = await songService.getSong(trackId);
 
-      if (snap.exists()) {
-        const data = snap.data();
+      if (data) {
         setSavedSong({
           title: data.title || cleanTrackName(track.name),
           artist: data.artist || artistName,
@@ -75,7 +72,7 @@ export function useSavedSong({ track, trackId }: UseSavedSongParams) {
       };
 
       try {
-        await setDoc(doc(db, 'songs', trackId), newSong);
+        await songService.saveSong(trackId, newSong);
         setSavedSong(newSong);
         setShouldFetchLyrics(false);
       } catch (err) {
@@ -101,10 +98,7 @@ export function useSavedSong({ track, trackId }: UseSavedSongParams) {
       setSavedSong(updated);
 
       try {
-        await updateDoc(doc(db, 'songs', trackId), {
-          'lyrics.plain': plain,
-          'lyrics.rhymeEncoded': htmlContent,
-        });
+        await songService.updateLyrics(trackId, plain, htmlContent);
       } catch (err) {
         console.error('Failed to update lyrics:', err);
       }
@@ -125,70 +119,16 @@ export function useSavedSong({ track, trackId }: UseSavedSongParams) {
       setSavedSong(updated);
 
       try {
-        await updateDoc(doc(db, 'songs', trackId), {
-          'lyrics.synced': trimmed,
-        });
-        // Background publish to LrcLib when fully synced
-        if (trimmed && isFullyStamped(trimmed)) {
-          // Compute signature to avoid duplicate publishes
-          const sigInput = `${artistName}|${cleanTrackName(track!.name)}|${track!.album.name}|${track!.duration_ms}|${trimmed}`;
-          const sigBuf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(sigInput));
-          const sigHex = Array.from(new Uint8Array(sigBuf)).map((b) => b.toString(16).padStart(2, '0')).join('');
-
-          // If already published with same signature, skip
-          const existingSig = (savedSong as any)?.lrclib?.signature;
-          const wasPublished = (savedSong as any)?.lrclib?.published;
-          if (wasPublished && existingSig && existingSig === sigHex) {
-            return;
-          }
-
-          const body = {
-            trackName: cleanTrackName(track!.name),
-            artistName: artistName,
-            albumName: track!.album.name,
-            durationMs: track!.duration_ms,
-            plainLyrics: savedSong!.lyrics.plain,
-            syncedLyrics: trimmed,
-          };
-          // Fire-and-forget: do not await publish; keep UI responsive
-          void (async () => {
-            try {
-              const res = await fetch('/api/lyrics/publish', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body),
-                keepalive: true as any,
-              });
-              if (res.ok) {
-                const now = Date.now();
-                await updateDoc(doc(db, 'songs', trackId), {
-                  'lrclib.published': true,
-                  'lrclib.signature': sigHex,
-                  'lrclib.lastPublishedAt': now,
-                });
-                if (typeof window !== 'undefined') {
-                  window.dispatchEvent(new CustomEvent('lrclib:published', { detail: { trackId } }));
-                }
-              }
-            } catch (e) {
-              console.error('Background publish failed', e);
-            }
-          })();
+        await songService.updateSyncedLyrics(trackId, trimmed);
+        if (trimmed) {
+          await publishIfReady(savedSong, trimmed);
         }
       } catch (err) {
         console.error('Failed to update synced lyrics:', err);
       }
     },
-    [savedSong, trackId]
+    [savedSong, trackId, publishIfReady]
   );
-
-  function isFullyStamped(lrc: string) {
-    const ts = /^\[\d{2}:\d{2}(?:\.\d{2})?]/;
-    return lrc
-      .split(/\r?\n/)
-      .filter(Boolean)
-      .every((ln) => !ln.trim() || ts.test(ln));
-  }
 
   return {
     savedSong,

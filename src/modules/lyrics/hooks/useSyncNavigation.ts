@@ -1,5 +1,5 @@
+'use client'
 import { useState, useCallback, useEffect } from 'react';
-
 interface UseSyncNavigationOptions {
   totalLines: number;
   allStamped: boolean;
