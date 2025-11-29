@@ -1,17 +1,8 @@
 'use client';
 import { use, useState, useMemo, useEffect } from 'react';
 import { FaEdit, FaClock } from 'react-icons/fa';
-
 import { useSpotifyTrack, usePlaybackSync } from '@/modules/spotify';
-import { 
-  useSavedSong, 
-  LyricsEditor, 
-  SyncLyricsEditor, 
-  SyncedLyrics, 
-  lyricsToHtml, 
-  mapLrcToRhymeHtml 
-} from '@/modules/lyrics';
-
+import { useSavedSong, LyricsEditor, SyncLyricsEditor, SyncedLyrics, lyricsToHtml, mapLrcToRhymeHtml } from '@/modules/lyrics';
 import SongHeader from '@/components/SongHeader';
 
 export default function Song({ params }: { params: Promise<{ id: string }> }) {
