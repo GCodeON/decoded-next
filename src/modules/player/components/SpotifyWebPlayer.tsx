@@ -64,18 +64,25 @@ export default function SpotifyWebPlayer() {
         callback={handleCallback}
         // @ts-ignore - runtime prop accepted by SDK
         getOAuthToken={(cb: (t: string) => void) => {
-          handleToken()
-            .then((t) => {
-              if (t) cb(t);
-              else setAuthError('Token unavailable – please log in again');
-            })
-            .catch((err) => {
-              console.error('SDK token refresh failed:', err);
-              setAuthError('Token refresh failed – please log in again');
-            });
+          // Return cached token immediately if available, refresh in background
+          if (token) {
+            cb(token);
+            // Refresh in background to ensure token stays fresh
+            handleToken().catch(() => {});
+          } else {
+            handleToken()
+              .then((t) => {
+                if (t) cb(t);
+                else setAuthError('Token unavailable – please log in again');
+              })
+              .catch((err) => {
+                console.error('SDK token refresh failed:', err);
+                setAuthError('Token refresh failed – please log in again');
+              });
+          }
         }}
         syncExternalDeviceInterval={2}
-        persistDeviceSelection={false}
+        persistDeviceSelection={true}
         syncExternalDevice={true}
         showSaveIcon={true}
         styles={{

@@ -9,22 +9,10 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { track,  loading: trackLoading, error: trackError } = useSpotifyTrack(id);
   const { savedSong, isSaving, lyricsLoading, lyricsError, updateLyrics, updateSynced } = useSavedSong({track, trackId: id});
-  const { isPlaying, currentPosition, togglePlayback } = usePlaybackSync(id, !!track);
-
+  
   const [editMode, setEditMode] = useState(false);
   const [syncMode, setSyncMode] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
-
-  // Listen for LrcLib publish event to show toast
-  useEffect(() => {
-    const onPublished = (e: Event) => {
-      console.log("published synced lyrics", e);
-      setToast('Synced Lyrics Published');
-      setTimeout(() => setToast(null), 3000);
-    };
-    window.addEventListener('lrclib:published', onPublished as EventListener);
-    return () => window.removeEventListener('lrclib:published', onPublished as EventListener);
-  }, []);
 
   const displayLyrics = useMemo(() => {
     if (savedSong?.lyrics) {
@@ -44,6 +32,22 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
   }, [savedSong]);
 
   const hasSynced = !!displayLyrics?.synced;
+  
+  // Enable high-frequency polling when: in sync editor mode OR viewing synced lyrics
+  const syncLyricsPolling = syncMode || (hasSynced && !editMode);
+  const { isPlaying, currentPosition, togglePlayback } = usePlaybackSync(id, !!track, syncLyricsPolling);
+
+  // Listen for LrcLib publish event to show toast
+  useEffect(() => {
+    const onPublished = (e: Event) => {
+      console.log("published synced lyrics", e);
+      setToast('Synced Lyrics Published');
+      setTimeout(() => setToast(null), 3000);
+    };
+    window.addEventListener('lrclib:published', onPublished as EventListener);
+    return () => window.removeEventListener('lrclib:published', onPublished as EventListener);
+  }, []);
+
   const displayHtml = displayLyrics?.rhymeEncoded || '';
   const plainLyrics = displayLyrics?.plain || '';
 

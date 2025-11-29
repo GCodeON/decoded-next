@@ -3,6 +3,8 @@ export { useSpotifyApi } from './hooks/useSpotifyApi';
 export { useSpotifyTrack } from './hooks/useSpotifyTrack';
 export { usePlaybackSync } from './hooks/usePlaybackSync';
 export { useSafePolling } from './hooks/useSafePolling';
+export { useSyncPolling } from './hooks/useSyncPolling';
+export { useGlobalPlaybackState } from './hooks/useGlobalPlaybackState';
 
 // Services
 export { createSpotifyService } from './services/spotifyService';
