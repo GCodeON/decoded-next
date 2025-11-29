@@ -2,7 +2,7 @@ import { LrcLib } from '@/lib/lrclib/client';
 import { solvePow } from '@/lib/lrclib/pow';
 import type { LrcLibData, LyricsSearchParams, GetLyricsResult, PublishPayload, PublishResult, ChallengeData } from '@/modules/lyrics';
 
-export class LrcLibService {
+export class LyricsService {
   private readonly challengeTimeout = 8000;
   private readonly publishTimeout = 10000;
   private readonly userAgent = 'DecodedNext/1.0 (+https://github.com/GCodeON/decoded-next)';
@@ -194,4 +194,4 @@ export class LrcLibService {
 }
 
 // Export singleton instance
-export const lrcLibService = new LrcLibService();
+export const lyricsService = new LyricsService();

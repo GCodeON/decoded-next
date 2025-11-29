@@ -1,4 +1,3 @@
-
 export const mstoSeconds = (ms: number): number => {
   return Math.max(0, Math.round(ms / 1000));
 };
@@ -34,9 +33,8 @@ export const parseLrcForEditing = (lrc: string): { time: number; text: string }[
   const lineRegex = /\[(\d+):(\d+(?:\.\d+)?)\]/g;
 
   lrc.split(/\r?\n/).forEach(rawLine => {
-    if (!rawLine) return; // keep processing if line has timestamps even if only tags
+    if (!rawLine) return; 
 
-    // Collect all timestamp matches with their position
     const matches: { mins: number; secs: number; index: number; raw: string }[] = [];
     lineRegex.lastIndex = 0;
     let m: RegExpExecArray | null;
@@ -48,7 +46,6 @@ export const parseLrcForEditing = (lrc: string): { time: number; text: string }[
     }
     if (matches.length === 0) return;
 
-    // For each timestamp, grab the text until the next timestamp (or end of line)
     matches.forEach((tag, i) => {
       const start = tag.index + tag.raw.length;
       const end = i + 1 < matches.length ? matches[i + 1].index : rawLine.length;
@@ -93,7 +90,6 @@ export const matchLrcToPlainLines = (
       result[i] = Number(lrc.time.toFixed(2));
       lrcIndex++;
     }
-    // Else: skip this plain line (could be missing in LRC)
   }
 
   return result;
@@ -119,4 +115,12 @@ export const isLikelySynced = (lrc?: string) => {
   if (lines.length === 0) return false;
   const timestampRe = /^\[\d{2}:\d{2}(?:\.\d{2})?]/;
   return lines.every((ln) => !ln.trim() || timestampRe.test(ln));
+};
+
+export const isFullyStamped = (lrc: string): boolean => {
+  const timestampRegex = /^\[\d{2}:\d{2}(?:\.\d{2})?]/;
+  return lrc
+    .split(/\r?\n/)
+    .filter(Boolean)
+    .every((line) => !line.trim() || timestampRegex.test(line));
 };

@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { LyricsResponse, lrcLibService } from '@/modules/lyrics';
+import { LyricsResponse, lyricsService } from '@/modules/lyrics';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
 
   // Try LrcLib if we have album and duration
   if (album && duration) {
-    const result = await lrcLibService.getLyrics({
+    const result = await lyricsService.getLyrics({
       artistName: artist,
       trackName: song,
       albumName: album,
