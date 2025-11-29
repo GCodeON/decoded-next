@@ -2,6 +2,7 @@
 export { useSpotifyApi } from './hooks/useSpotifyApi';
 export { useSpotifyTrack } from './hooks/useSpotifyTrack';
 export { usePlaybackSync } from './hooks/usePlaybackSync';
+export { useSafePolling } from './hooks/useSafePolling';
 
 // Services
 export { createSpotifyService } from './services/spotifyService';

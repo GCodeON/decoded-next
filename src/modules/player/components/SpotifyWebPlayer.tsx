@@ -1,6 +1,5 @@
 'use client';
-
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import SpotifyPlayer from 'react-spotify-web-playback';
 import { useAuth } from '@/modules/auth/';
 import { useSpotifyAuthToken, useSpotifyPlayerCallback, PlayerErrorBoundary } from '@/modules/player';
@@ -11,15 +10,37 @@ export default function SpotifyWebPlayer() {
   const handleCallback = useSpotifyPlayerCallback(handleToken);
   const hasInitialized = useRef(false);
   const playerKey = useRef(0);
+  const fetchingRef = useRef(false);
 
   useEffect(() => {
-    if (isAuthenticated && !token && !authError && !hasInitialized.current) {
+    if (
+      isAuthenticated &&
+      !token &&
+      !authError &&
+      !hasInitialized.current &&
+      !fetchingRef.current
+    ) {
+      fetchingRef.current = true;
       hasInitialized.current = true;
-      handleToken();
+      handleToken().finally(() => {
+        fetchingRef.current = false;
+      });
     }
   }, [isAuthenticated, token, authError, handleToken]);
 
-  // Temporary: Simulate player error for testing error boundary
+  const retryPlayer = useCallback(async () => {
+    setAuthError(null);
+    hasInitialized.current = false;
+    playerKey.current += 1;
+    try {
+      const newToken = await handleToken();
+      if (!newToken) {
+        setToken(null);
+      }
+    } catch {
+      setToken(null);
+    }
+  }, [handleToken, setAuthError, setToken]);
 
   if (isAuthChecking || !isAuthenticated) return null;
 
@@ -31,27 +52,26 @@ export default function SpotifyWebPlayer() {
     );
   }
 
+  const keySafePart = token ? token.slice(0, 10) : 'pending';
+  const playerKeyString = `player-${playerKey.current}-${keySafePart}`;
+
   return (
-    <PlayerErrorBoundary onRetry={() => {
-      setAuthError(null);
-      setToken(null);
-      hasInitialized.current = false;
-      playerKey.current += 1;
-      handleToken();
-    }}>
+    <PlayerErrorBoundary onRetry={retryPlayer}>
       <SpotifyPlayer
-        key={`player-${playerKey.current}-${token?.substring(0, 10)}`}
+        key={playerKeyString}
         token={token}
         name="DECODED Web Player"
         callback={handleCallback}
         // @ts-ignore - runtime prop accepted by SDK
-        getOAuthToken={(cb: (token: string) => void) => {
+        getOAuthToken={(cb: (t: string) => void) => {
           handleToken()
-            .then((token) => {
-              if (token) cb(token);
+            .then((t) => {
+              if (t) cb(t);
+              else setAuthError('Token unavailable – please log in again');
             })
             .catch((err) => {
-              console.error('Failed to refresh token for Spotify SDK:', err);
+              console.error('SDK token refresh failed:', err);
+              setAuthError('Token refresh failed – please log in again');
             });
         }}
         syncExternalDeviceInterval={2}
