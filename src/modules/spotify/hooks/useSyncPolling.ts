@@ -15,14 +15,17 @@ export function useSyncPolling(
 ) {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const activeRef = useRef(false);
+  const isPollingRef = useRef(false);
 
   const poll = useCallback(async () => {
-    if (!activeRef.current) return;
-
+    if (!activeRef.current || isPollingRef.current) return;
+    isPollingRef.current = true;
     try {
       await pollFn();
     } catch (err) {
       // Silently ignore errors; global polling handles auth/network issues
+    } finally {
+      isPollingRef.current = false;
     }
 
     if (activeRef.current) {

@@ -1,8 +1,17 @@
-import { useState, useCallback, useMemo, useRef } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { useSpotifyApi, useSyncPolling } from '@/modules/spotify';
 import { useSpotifyPlayer } from '@/modules/player';
 
-export function usePlaybackSync(trackId: string, enabled: boolean = true, syncMode: boolean = false) {
+// Enable logs via param or env var NEXT_PUBLIC_DEBUG_SYNC=1
+const ENV_DEBUG_SYNC = typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_DEBUG_SYNC === '1';
+
+export function usePlaybackSync(
+  trackId: string,
+  enabled: boolean = true,
+  syncMode: boolean = false,
+  viewMode: boolean = false,
+  debug: boolean = ENV_DEBUG_SYNC
+) {
 
   const spotify = useSpotifyApi();
   const {
@@ -16,8 +25,9 @@ export function usePlaybackSync(trackId: string, enabled: boolean = true, syncMo
     globalIsPlaying,
   } = useSpotifyPlayer();
 
-  const [localPosition, setLocalPosition] = useState<number | null>(null);
+  const [localProgressMs, setLocalProgressMs] = useState<number | null>(null);
   const lastUpdateRef = useRef<number>(Date.now());
+  const rafRef = useRef<number | null>(null);
 
   // Derive playing state from global context
   const isPlaying = useMemo(() => {
@@ -29,52 +39,81 @@ export function usePlaybackSync(trackId: string, enabled: boolean = true, syncMo
 
   const isPlayingThisTrack = isPlaying && globalTrackId === trackId;
 
+  // Smooth interpolation when in sync or view mode
+  const needsInterpolation = (syncMode || viewMode) && isPlayingThisTrack;
+
+  useEffect(() => {
+    if (!needsInterpolation || localProgressMs == null) {
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+      return;
+    }
+
+    let lastTs = performance.now();
+    const tick = (now: number) => {
+      const dt = now - lastTs;
+      lastTs = now;
+      setLocalProgressMs(prev => (prev == null ? null : prev + dt));
+      rafRef.current = requestAnimationFrame(tick);
+    };
+
+    rafRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+    };
+  }, [needsInterpolation, localProgressMs]);
+
   // Use local position if recently updated, otherwise fall back to global/web
   const currentPosition = useMemo(() => {
     const now = Date.now();
     const localAge = now - lastUpdateRef.current;
     
-    // In sync mode, always prefer local position if available
-    if (syncMode && localPosition !== null && localAge < 3000) {
-      return localPosition;
-    }
-    
-    // If local position is fresh (< 2s old) and playing, use it
-    if (localPosition !== null && localAge < 2000 && isPlayingThisTrack) {
-      return localPosition;
+    // Prefer interpolated local ms in sync/view mode
+    if ((syncMode || viewMode) && localProgressMs != null && localAge < 3000) {
+      const sec = Math.floor(localProgressMs / 1000);
+      if (debug) console.log('[PlaybackSync] using local(interpolated)', { trackId, sec, ms: localProgressMs.toFixed(0), ageMs: localAge });
+      return sec;
     }
     
     // Fall back to global position if this track is globally active
     if (globalTrackId === trackId && globalPosition !== null) {
+      if (debug) console.log('[PlaybackSync] using global', { trackId, pos: globalPosition });
       return globalPosition;
     }
     
     // Fall back to web-only context
     if (webLastTrack === trackId && webLastPosition !== null) {
+      if (debug) console.log('[PlaybackSync] using web', { trackId, pos: webLastPosition });
       return webLastPosition;
     }
     
+    if (debug) console.log('[PlaybackSync] using default', { trackId, pos: 0 });
     return 0;
-  }, [syncMode, localPosition, isPlayingThisTrack, globalTrackId, trackId, globalPosition, webLastTrack, webLastPosition]);
+  }, [syncMode, viewMode, localProgressMs, globalTrackId, trackId, globalPosition, webLastTrack, webLastPosition, debug]);
 
   // High-frequency sync polling (250ms) when in sync mode
   const pollSync = useCallback(async () => {
     try {
       const data = await spotify.getPlaybackState();
       if (data?.item?.id === trackId && typeof data.progress_ms === 'number') {
-        const newPos = Math.floor(data.progress_ms / 1000);
-        setLocalPosition(newPos);
+        const ms = data.progress_ms;
+        setLocalProgressMs(ms);
         lastUpdateRef.current = Date.now();
-        // console.log('[usePlaybackSync] Sync poll update:', { trackId, newPos, progressMs: data.progress_ms });
+        if (debug) console.log('[PlaybackSync] poll update', { trackId, sec: Math.floor(ms / 1000), progressMs: ms });
       }
     } catch (err) {
       // Ignore errors; global polling handles them
     }
-  }, [spotify, trackId]);
+  }, [spotify, trackId, debug]);
 
   useSyncPolling(pollSync, {
-    enabled: enabled && syncMode,
-    intervalMs: 500 // Poll every 500ms during sync mode for precise timing
+    enabled: enabled && (syncMode || viewMode),
+    intervalMs: 250 // Poll every 250ms for precise timing
   });
 
   const togglePlayback = useCallback(async () => {

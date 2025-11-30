@@ -34,8 +34,8 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
   const hasSynced = !!displayLyrics?.synced;
   
   // Enable high-frequency polling when: in sync editor mode OR viewing synced lyrics
-  const syncLyricsPolling = syncMode || (hasSynced && !editMode);
-  const { isPlaying, currentPosition, togglePlayback } = usePlaybackSync(id, !!track, syncLyricsPolling);
+  const isViewMode = hasSynced && !editMode && !syncMode;
+  const { isPlaying, currentPosition, togglePlayback } = usePlaybackSync(id, !!track, syncMode, isViewMode);
 
   // Listen for LrcLib publish event to show toast
   useEffect(() => {

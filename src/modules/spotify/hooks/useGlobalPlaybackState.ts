@@ -2,7 +2,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useSpotifyApi } from './useSpotifyApi';
 import { useSpotifyPlayer } from '@/modules/player';
-import { useSafePolling } from './useSafePolling';
 
 /**
  * Global playback state hook with adaptive polling.
@@ -26,93 +25,97 @@ export function useGlobalPlaybackState() {
 
   const lastStateRef = useRef<any>(null);
   const isVisibleRef = useRef(true);
-  const currentIntervalRef = useRef(2500);
+  const isPollingRef = useRef(false);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const baseIntervalRef = useRef(2500);
 
-  // Track document visibility
   useEffect(() => {
     const handleVisibilityChange = () => {
       isVisibleRef.current = !document.hidden;
     };
-
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
 
-  const pollPlayback = useCallback(async () => {
-    const data = await spotify.getPlaybackState();
-
-    const newTrackId = data?.item?.id || null;
-    const newPosition = data?.progress_ms ? Math.floor(data.progress_ms / 1000) : 0;
-    const newIsPlaying = data?.is_playing ?? false;
-    const currentDeviceId = data?.device?.id || null;
-    const isWebPlayer = currentDeviceId && currentDeviceId === deviceId;
-
-    if (!newTrackId) {
-      // No active playback or nothing loaded
-      setGlobalIsPlaying(false);
-      return;
-    }
-
-    // Update global state
-    if (lastStateRef.current?.trackId !== newTrackId) {
-      setGlobalTrackId(newTrackId);
-    }
-    if (lastStateRef.current?.position !== newPosition) {
-      setGlobalPosition(newPosition);
-    }
-    if (lastStateRef.current?.isPlaying !== newIsPlaying) {
-      setGlobalIsPlaying(newIsPlaying);
-    }
-
-    // Track device-specific state
-    if (currentDeviceId && !isWebPlayer) {
-      setLastExternalDevice(currentDeviceId);
-    }
-
-    if (isWebPlayer) {
-      if (lastStateRef.current?.webTrack !== newTrackId) {
-        setWebLastTrack(newTrackId);
+  const pollOnce = useCallback(async () => {
+    if (isPollingRef.current) return; // concurrency guard
+    isPollingRef.current = true;
+    try {
+      const data = await spotify.getPlaybackState();
+      if (!data) {
+        setGlobalIsPlaying(false);
+        return;
       }
-      if (lastStateRef.current?.webPosition !== newPosition) {
-        setWebLastPosition(newPosition);
-      }
-      if (lastStateRef.current?.webIsPlaying !== newIsPlaying) {
-        setWebIsPlaying(newIsPlaying);
-      }
-    }
 
-    // Adjust polling interval based on state
-    if (!isVisibleRef.current) {
-      currentIntervalRef.current = 30000; // 30s when hidden
-    } else if (newIsPlaying) {
-      currentIntervalRef.current = 2500; // 2.5s when playing
-    } else {
-      currentIntervalRef.current = 15000; // 15s when paused
-    }
+      const newTrackId = data.item?.id || null;
+      const newPosition = typeof data.progress_ms === 'number' ? Math.floor(data.progress_ms / 1000) : null;
+      const newIsPlaying = !!data.is_playing;
+      const currentDeviceId = data.device?.id || null;
+      const isWebPlayer = currentDeviceId && currentDeviceId === deviceId;
 
-    lastStateRef.current = {
-      trackId: newTrackId,
-      position: newPosition,
-      isPlaying: newIsPlaying,
-      webTrack: isWebPlayer ? newTrackId : lastStateRef.current?.webTrack,
-      webPosition: isWebPlayer ? newPosition : lastStateRef.current?.webPosition,
-      webIsPlaying: isWebPlayer ? newIsPlaying : lastStateRef.current?.webIsPlaying,
+      if (!newTrackId) {
+        setGlobalIsPlaying(false);
+        return;
+      }
+
+      const sig = `${newTrackId}:${newPosition}:${newIsPlaying}:${currentDeviceId || ''}:${isWebPlayer}`;
+      if (sig === lastStateRef.current?.sig) {
+        // State unchanged; still update interval adaptively below
+      } else {
+        if (lastStateRef.current?.trackId !== newTrackId) setGlobalTrackId(newTrackId);
+        if (newPosition !== null && lastStateRef.current?.position !== newPosition) setGlobalPosition(newPosition);
+        if (lastStateRef.current?.isPlaying !== newIsPlaying) setGlobalIsPlaying(newIsPlaying);
+
+        if (currentDeviceId && !isWebPlayer) {
+          setLastExternalDevice(currentDeviceId);
+        }
+
+        if (isWebPlayer) {
+          if (lastStateRef.current?.webTrack !== newTrackId) setWebLastTrack(newTrackId);
+          if (newPosition !== null && lastStateRef.current?.webPosition !== newPosition) setWebLastPosition(newPosition);
+          if (lastStateRef.current?.webIsPlaying !== newIsPlaying) setWebIsPlaying(newIsPlaying);
+        }
+      }
+
+      // Adjust interval target
+      if (!isVisibleRef.current) baseIntervalRef.current = 30000; // hidden
+      else if (newIsPlaying) baseIntervalRef.current = 2500; // playing
+      else baseIntervalRef.current = 15000; // paused
+
+      lastStateRef.current = {
+        sig,
+        trackId: newTrackId,
+        position: newPosition,
+        isPlaying: newIsPlaying,
+        webTrack: isWebPlayer ? newTrackId : lastStateRef.current?.webTrack,
+        webPosition: isWebPlayer ? newPosition : lastStateRef.current?.webPosition,
+        webIsPlaying: isWebPlayer ? newIsPlaying : lastStateRef.current?.webIsPlaying,
+      };
+    } catch (err) {
+      // Log once per error class could be added; keep silent for now
+    } finally {
+      isPollingRef.current = false;
+    }
+  }, [spotify, deviceId, setGlobalIsPlaying, setGlobalTrackId, setGlobalPosition, setWebLastTrack, setWebLastPosition, setWebIsPlaying, setLastExternalDevice]);
+
+  useEffect(() => {
+    let active = true;
+    const schedule = () => {
+      if (!active) return;
+      pollOnce().finally(() => {
+        if (!active) return;
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        const interval = baseIntervalRef.current;
+        timeoutRef.current = setTimeout(schedule, interval);
+      });
     };
-  }, [
-    spotify,
-    deviceId,
-    setLastExternalDevice,
-    setWebLastPosition,
-    setWebLastTrack,
-    setWebIsPlaying,
-    setGlobalTrackId,
-    setGlobalPosition,
-    setGlobalIsPlaying,
-  ]);
-
-  useSafePolling(pollPlayback, {
-    enabled: true,
-    baseMs: currentIntervalRef.current,
-    maxMs: 30000,
-  });
+    schedule();
+    return () => {
+      active = false;
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+    };
+  }, [pollOnce]);
 }
