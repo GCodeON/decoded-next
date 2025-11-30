@@ -87,10 +87,6 @@ export const SpotifyPlayerProvider = ({ children }: { children: React.ReactNode 
     }
   });
 
-  // Global playback (any active device) - not persisted across reloads intentionally
-  const [globalTrackId, setGlobalTrackId] = useState<string | null>(null);
-  const [globalPosition, setGlobalPosition] = useState<number | null>(null);
-  const [globalIsPlaying, setGlobalIsPlaying] = useState<boolean>(false);
 
   // Keep sessionStorage in sync when states change
   useEffect(() => {
@@ -126,6 +122,11 @@ export const SpotifyPlayerProvider = ({ children }: { children: React.ReactNode 
       sessionStorage.setItem('spotify_web_is_playing', webIsPlaying ? '1' : '0');
     } catch {}
   }, [webIsPlaying]);
+
+  // Global playback (any active device) - not persisted across reloads intentionally
+  const [globalTrackId, setGlobalTrackId] = useState<string | null>(null);
+  const [globalPosition, setGlobalPosition] = useState<number | null>(null);
+  const [globalIsPlaying, setGlobalIsPlaying] = useState<boolean>(false);
 
   const setDeviceId = (id: string | null) => setDeviceIdState(id);
   const setLastExternalDevice = (id: string | null) => setLastExternalDeviceState(id);

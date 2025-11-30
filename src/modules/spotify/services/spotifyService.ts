@@ -27,46 +27,6 @@ export function createSpotifyService(transport: SpotifyTransport) {
       return transport.request<PlaybackState>('GET', spotifyEndpoints.playback());
     },
 
-    /**
-     * Unified playback snapshot: primary call to /me/player, optional lightweight
-     * fallback to /currently-playing if the player response has no item (e.g. brief gap
-     * right after pause/resume). This prevents double polling in higher layers while still
-     * keeping track info available.
-     */
-    async getPlaybackSnapshot(): Promise<{
-      state: PlaybackState | null;
-      trackId: string | null;
-      isPlaying: boolean;
-      progressSec: number | null;
-      deviceId: string | null;
-    }> {
-      let state: PlaybackState | null = null;
-      try {
-        state = await this.getPlaybackState();
-      } catch {
-        state = null;
-      }
-
-      let item: SpotifyTrack | null | undefined = state?.item;
-      let isPlaying = !!state?.is_playing;
-
-      // Fallback: only attempt if no item; ignore errors silently.
-      if (!item) {
-        try {
-          const current = await this.getCurrentlyPlaying();
-          if (current) item = current;
-        } catch {}
-      }
-
-      const trackId = item?.id || null;
-      const progressSec = typeof state?.progress_ms === 'number'
-        ? Math.floor(state.progress_ms / 1000)
-        : null;
-      const deviceId = state?.device?.id || null;
-
-      return { state, trackId, isPlaying, progressSec, deviceId };
-    },
-
     async getDevices(): Promise<{ devices: any[] }> {
       return transport.request<{ devices: any[] }>('GET', spotifyEndpoints.devices());
     },

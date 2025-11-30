@@ -39,12 +39,12 @@ export function useGlobalPlaybackState() {
   }, []);
 
   const pollPlayback = useCallback(async () => {
-    const snapshot = await spotify.getPlaybackSnapshot();
+    const data = await spotify.getPlaybackState();
 
-    const newTrackId = snapshot.trackId;
-    const newPosition = snapshot.progressSec ?? 0;
-    const newIsPlaying = snapshot.isPlaying;
-    const currentDeviceId = snapshot.deviceId;
+    const newTrackId = data?.item?.id || null;
+    const newPosition = data?.progress_ms ? Math.floor(data.progress_ms / 1000) : 0;
+    const newIsPlaying = data?.is_playing ?? false;
+    const currentDeviceId = data?.device?.id || null;
     const isWebPlayer = currentDeviceId && currentDeviceId === deviceId;
 
     if (!newTrackId) {

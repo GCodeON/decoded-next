@@ -65,7 +65,7 @@ export function usePlaybackSync(trackId: string, enabled: boolean = true, syncMo
         const newPos = Math.floor(data.progress_ms / 1000);
         setLocalPosition(newPos);
         lastUpdateRef.current = Date.now();
-        console.log('[usePlaybackSync] Sync poll update:', { trackId, newPos, progressMs: data.progress_ms });
+        // console.log('[usePlaybackSync] Sync poll update:', { trackId, newPos, progressMs: data.progress_ms });
       }
     } catch (err) {
       // Ignore errors; global polling handles them

@@ -1,7 +1,7 @@
 import './globals.css'
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
-import Dashboard from  '@/components/Dashboard';
+import Dashboard from '@/components/Dashboard';
 import { SpotifyPlayerProvider } from '@/modules/player';
 import { AuthGuard } from '@/modules/auth';
 import { GlobalPlaybackStateProvider } from '@/components/GlobalPlaybackStateProvider';
