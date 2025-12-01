@@ -1,12 +1,11 @@
 'use client';
-import { useRef, useCallback, useEffect } from 'react';
+import { useRef, useCallback, useEffect, useMemo, useState } from 'react';
 import { FaClock } from 'react-icons/fa';
 import { 
   formatTime, 
   generateLrc, 
   useLyricSync, 
   useTimestampEditor, 
-  useSyncNavigation, 
   TimestampDisplay, 
   SyncControls
 } from '@/modules/lyrics';
@@ -14,6 +13,7 @@ interface Props {
   plainLyrics: string;
   existingLrc?: string | null;
   currentPosition: number;
+  currentPositionMs?: number;
   isPlaying: boolean;
   togglePlayback: () => void;
   onSave: (lrc: string) => void;
@@ -24,6 +24,7 @@ export default function SyncLyricsEditor({
   plainLyrics,
   existingLrc,
   currentPosition,
+  currentPositionMs,
   isPlaying,
   togglePlayback,
   onSave,
@@ -36,8 +37,10 @@ export default function SyncLyricsEditor({
     plainLyrics,
     existingLrc,
     currentPosition,
+    currentPositionMs,
     isPlaying,
-    autoScroll: true
+    autoScroll: true,
+    debug: true
   });
 
   // Timestamp editing
@@ -50,61 +53,99 @@ export default function SyncLyricsEditor({
     saveEdit
   } = useTimestampEditor();
 
-  // Navigation callbacks
-  const stampCurrent = useCallback(() => {
-    setTimestamps(prev => {
-      const next = [...prev];
-      next[currentLine] = Number(currentPosition.toFixed(2));
-      return next;
-    });
-    setCurrentLine(prev => Math.min(lines.length - 1, prev + 1));
-  }, [currentPosition, lines.length, setTimestamps]);
+  // Manual navigation state
+  const [manualLineOverride, setManualLineOverride] = useState<number | null>(null);
+  const [manualNavigation, setManualNavigation] = useState(false);
 
-  const goBack = useCallback(() => {
-    setCurrentLine(prev => Math.max(0, prev - 1));
-  }, []);
+  // Compute currentLine synchronously
+  // Behavior:
+  // - If we have a manual override (set by navigation or last-follow), use it
+  // - Else use activeLine when available
+  // - Fallback to 0 only when neither exists (initial state)
+  const currentLine = useMemo(() => {
+    // When paused, retain the last manual override to avoid skipping lines on resume
+    if (!isPlaying && manualLineOverride !== null) return manualLineOverride;
+    if (activeLine !== null) return activeLine;
+    return 0;
+  }, [manualLineOverride, activeLine, isPlaying]);
 
-  const goNext = useCallback(() => {
-    setCurrentLine(prev => Math.min(lines.length - 1, prev + 1));
-  }, [lines.length]);
-
-  const {
-    currentLine,
-    setCurrentLine,
-    manualNavigation,
-    goToLine,
-    enableAutoScroll
-  } = useSyncNavigation({
-    totalLines: lines.length,
-    allStamped,
-    onStamp: stampCurrent,
-    onBack: goBack,
-    onNext: goNext
-  });
-
-  // Follow playback when not manually navigating
+  // Update manual override when activeLine changes (auto-follow when not manually navigating)
   useEffect(() => {
     if (activeLine !== null && !manualNavigation && editingIndex === null) {
-      setCurrentLine(activeLine);
+      setManualLineOverride(activeLine);
     }
-  }, [activeLine, manualNavigation, editingIndex, setCurrentLine]);
+  }, [activeLine, manualNavigation, editingIndex]);
 
-  // Auto-scroll to current line
+  // Debug: log active/current line transitions and unpause responsiveness
   useEffect(() => {
-    containerRef.current?.children[currentLine]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    console.log('[SyncLyricsEditor] isPlaying', { isPlaying, ts: Math.floor(performance.now()) });
+  }, [isPlaying]);
+
+  useEffect(() => {
+    console.log('[SyncLyricsEditor] activeLine', { activeLine, ts: Math.floor(performance.now()) });
+  }, [activeLine]);
+
+  useEffect(() => {
+    console.log('[SyncLyricsEditor] currentLine', { currentLine, ts: Math.floor(performance.now()) });
+  }, [currentLine]);
+
+  // Navigation callbacks
+  const stampCurrent = useCallback(() => {
+    const ms = typeof currentPositionMs === 'number' ? currentPositionMs : currentPosition * 1000;
+    const sec = Math.floor(ms / 1000);
+    setTimestamps(prev => {
+      const next = [...prev];
+      next[currentLine] = Number(sec.toFixed(2));
+      return next;
+    });
+    setManualLineOverride(Math.min(lines.length - 1, currentLine + 1));
+  }, [currentPositionMs, currentPosition, lines.length, setTimestamps, currentLine]);
+
+  const goBack = useCallback(() => {
+    setManualLineOverride(prev => Math.max(0, (prev ?? currentLine) - 1));
+  }, [currentLine]);
+
+  const goNext = useCallback(() => {
+    setManualLineOverride(prev => Math.min(lines.length - 1, (prev ?? currentLine) + 1));
+  }, [lines.length, currentLine]);
+
+  const goToLine = useCallback((index: number) => {
+    setManualLineOverride(index);
+    setManualNavigation(true);
+  }, []);
+
+  const enableAutoScroll = useCallback(() => {
+    setManualNavigation(false);
+    if (activeLine !== null) {
+      setManualLineOverride(activeLine);
+    }
+  }, [activeLine]);
+
+  const allStampedStatus = useMemo(() => timestamps.every(t => t !== null), [timestamps]);
+
+  // Auto-scroll to current line - use rAF for smooth, immediate scrolling
+  useEffect(() => {
+    const element = containerRef.current?.children[currentLine] as HTMLElement | undefined;
+    if (element) {
+      requestAnimationFrame(() => {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+    }
   }, [currentLine]);
 
   // Handlers
   const handleStampLine = useCallback((index: number) => {
+    const ms = typeof currentPositionMs === 'number' ? currentPositionMs : currentPosition * 1000;
+    const sec = Math.floor(ms / 1000);
     setTimestamps(prev => {
       const next = [...prev];
-      next[index] = Number(currentPosition.toFixed(2));
+      next[index] = Number(sec.toFixed(2));
       return next;
     });
     if (index === currentLine) {
-      setCurrentLine(Math.min(lines.length - 1, index + 1));
+      setManualLineOverride(Math.min(lines.length - 1, index + 1));
     }
-  }, [currentPosition, currentLine, lines.length, setTimestamps, setCurrentLine]);
+  }, [currentPositionMs, currentPosition, currentLine, lines.length, setTimestamps]);
 
   const handleSaveTimestamp = useCallback((index: number, value: number) => {
     setTimestamps(prev => {
@@ -127,7 +168,7 @@ export default function SyncLyricsEditor({
         isPlaying={isPlaying}
         currentPosition={currentPosition}
         togglePlayback={togglePlayback}
-        allStamped={allStamped}
+        allStamped={allStampedStatus}
         manualNavigation={manualNavigation}
         onEnableAutoScroll={enableAutoScroll}
       />
@@ -188,7 +229,7 @@ export default function SyncLyricsEditor({
       <div className="flex justify-between items-center pt-4 border-t">
         <button
           onClick={handleSave}
-          disabled={!allStamped}
+          disabled={!allStampedStatus}
           className="px-8 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
         >
           Save Synced Lyrics

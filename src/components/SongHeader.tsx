@@ -1,4 +1,5 @@
 'use client';
+import { useState } from 'react';
 import Image from 'next/image';
 import { FaPlayCircle, FaPauseCircle } from 'react-icons/fa';
 import { SpotifyTrack } from '@/modules/spotify';
@@ -12,6 +13,21 @@ export default function SongHeader({
     isPlaying: boolean,
     togglePlayback: () => void;
 }) {
+  const [optimisticIsPlaying, setOptimisticIsPlaying] = useState(isPlaying);
+
+  // Sync optimistic state when actual state changes
+  if (optimisticIsPlaying !== isPlaying) {
+    setOptimisticIsPlaying(isPlaying);
+  }
+
+  const handleToggle = async () => {
+    // Immediate UI update
+    setOptimisticIsPlaying(!optimisticIsPlaying);
+    
+    // Then trigger actual API call
+    await togglePlayback();
+  };
+
   return (
     <div className="flex items-center space-x-6 bg-white rounded-xl shadow-lg p-6">
       <div className="relative w-48 h-48 flex-shrink-0">
@@ -35,11 +51,11 @@ export default function SongHeader({
       </div>
 
       <button
-        onClick={togglePlayback}
-        aria-label={isPlaying ? 'Pause' : 'Play'}
+        onClick={handleToggle}
+        aria-label={optimisticIsPlaying ? 'Pause' : 'Play'}
         className="text-green-500 hover:text-green-600 transition"
       >
-        {isPlaying ? <FaPauseCircle size={48} /> : <FaPlayCircle size={48} />}
+        {optimisticIsPlaying ? <FaPauseCircle size={48} /> : <FaPlayCircle size={48} />}
       </button>
     </div>
   );

@@ -35,7 +35,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
   
   // Enable high-frequency polling when: in sync editor mode OR viewing synced lyrics
   const isViewMode = hasSynced && !editMode && !syncMode;
-  const { isPlaying, currentPosition, togglePlayback } = usePlaybackSync(id, !!track, syncMode, isViewMode);
+  const { isPlaying, currentPosition, currentPositionMs, togglePlayback } = usePlaybackSync(id, !!track, syncMode, isViewMode);
 
   // Listen for LrcLib publish event to show toast
   useEffect(() => {
@@ -129,6 +129,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
             plainLyrics={plainLyrics}
             existingLrc={displayLyrics.synced}
             currentPosition={currentPosition}
+            currentPositionMs={currentPositionMs}
             isPlaying={isPlaying}
             togglePlayback={togglePlayback}
             onSave={(lrc) => {
@@ -144,6 +145,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
           <SyncedLyrics
             syncedLyrics={displayLyrics.synced!}
             currentPosition={currentPosition}
+            currentPositionMs={currentPositionMs}
             isPlaying={isPlaying}
             rhymeEncodedLines={displayLyrics.rhymeEncodedLines}
           />
