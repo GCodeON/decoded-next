@@ -2,9 +2,8 @@ import './globals.css'
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import Dashboard from '@/components/Dashboard';
-import { SpotifyPlayerProvider } from '@/modules/player';
+import { SpotifyPlayerProvider, PlaybackStateProvider } from '@/modules/player';
 import { AuthGuard } from '@/modules/auth';
-import { GlobalPlaybackStateProvider } from '@/components/GlobalPlaybackStateProvider';
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -18,7 +17,7 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
     <html lang="en">
       <body className={`${inter.className}`}>
         <SpotifyPlayerProvider>
-          <GlobalPlaybackStateProvider />
+          <PlaybackStateProvider />
           <Dashboard>
             <AuthGuard>
               {children}

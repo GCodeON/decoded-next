@@ -1,5 +1,4 @@
 'use client';
-
 import { useCallback } from 'react';
 import { useSpotifyPlayer } from '@/modules/player';
 

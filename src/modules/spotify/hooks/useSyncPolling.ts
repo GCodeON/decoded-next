@@ -1,3 +1,4 @@
+'use client'
 import { useRef, useEffect, useCallback } from 'react';
 
 interface SyncPollConfig {
@@ -6,8 +7,7 @@ interface SyncPollConfig {
 }
 
 /**
- * High-frequency polling hook specifically for lyric sync mode.
- * Polls every 200-500ms for precise position tracking.
+ * High-frequency polling every 200-500ms for precise position tracking.
  */
 export function useSyncPolling(
   pollFn: () => Promise<void>,

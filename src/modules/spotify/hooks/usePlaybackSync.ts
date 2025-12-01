@@ -1,3 +1,4 @@
+'use client'
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { useSpotifyApi, useSyncPolling } from '@/modules/spotify';
 import { useSpotifyPlayer } from '@/modules/player';
@@ -44,7 +45,7 @@ export function usePlaybackSync(
     if (!enabled) return false;
     // Prefer latest poll-observed play state when in sync/view modes
     const pollPlay = lastPollIsPlayingRef.current;
-    // If we recently toggled play, reflect playing immediately
+
     if ((syncMode || viewMode) && performance.now() < optimisticPlayUntilRef.current) {
       return true;
     }
@@ -58,13 +59,11 @@ export function usePlaybackSync(
 
   const isPlayingThisTrack = isPlaying && globalTrackId === trackId;
 
-  // Interpolation flag
   const needsInterpolation = (syncMode || viewMode) && isPlayingThisTrack;
 
   // Track global position for seek detection
   const lastGlobalPositionRef = useRef<number | null>(null);
 
-  // Detect seeks from global position changes (e.g., user seeking via Spotify player)
   useEffect(() => {
     if (needsInterpolation && globalTrackId === trackId && globalPosition !== null) {
       const globalMs = globalPosition * 1000;
@@ -92,10 +91,9 @@ export function usePlaybackSync(
     }
   }, [needsInterpolation, globalTrackId, trackId, globalPosition, debug]);
 
-  // Initialize baseline from global position on mount if needed
   useEffect(() => {
     if (needsInterpolation && lastSampleMsRef.current == null) {
-      // Seed with global position if available
+
       if (globalTrackId === trackId && globalPosition !== null) {
         lastSampleMsRef.current = globalPosition * 1000;
         lastSampleAtRef.current = performance.now();
@@ -116,7 +114,7 @@ export function usePlaybackSync(
       return;
     }
     
-    // Start interpolation when we have a sample (either from poll or initialized from global)
+
     if (lastSampleMsRef.current != null && !isInterpolatingRef.current) {
       isInterpolatingRef.current = true;
       const tick = () => {
@@ -142,7 +140,6 @@ export function usePlaybackSync(
     };
   }, [needsInterpolation]);
 
-  // Derived current position seconds from interpolated ms
   const currentPosition = useMemo(() => {
     if (currentInterpolatedMs != null) {
       const sec = Math.floor(currentInterpolatedMs / 1000);
@@ -216,13 +213,12 @@ export function usePlaybackSync(
             }
           }
         } else {
-          // Not interpolating or no baseline yet - standard validation
           if (prev != null) {
             const diff = newMs - prev;
             if (diff < -2000) {
               if (debug) console.log('[PlaybackSync] seek detected', { trackId, from: prev, to: newMs, diff });
             } else if (diff < -150) {
-              // Small backward drift likely stale sample; ignore
+
               if (debug) console.log('[PlaybackSync] stale sample ignored', { trackId, prev, sample: newMs, diff });
               return;
             }
@@ -234,7 +230,6 @@ export function usePlaybackSync(
           lastSampleAtRef.current = now;
         }
         
-        // Trigger rAF start immediately if track is playing (don't wait for needsInterpolation state)
         if (shouldInterpolate && !isInterpolatingRef.current) {
           isInterpolatingRef.current = true;
           const tick = () => {
@@ -341,7 +336,8 @@ export function usePlaybackSync(
             optimisticPlayUntilRef.current = performance.now() + 2000; // 2s optimistic window
             lastSampleMsRef.current = positionMs;
             lastSampleAtRef.current = performance.now();
-            setCurrentInterpolatedMs(positionMs); // Immediate state update
+            setCurrentInterpolatedMs(positionMs);
+
             if (!isInterpolatingRef.current) {
               isInterpolatingRef.current = true;
               const tick = () => {
@@ -398,14 +394,14 @@ export function usePlaybackSync(
               if (globalTrackId === trackId && globalPosition !== null) return Math.floor(globalPosition * 1000);
               return Math.floor(currentPosition * 1000);
             })();
-            
-            // Optimistically start interpolation BEFORE API call
+
             if (syncMode || viewMode) {
               lastPollIsPlayingRef.current = true;
               optimisticPlayUntilRef.current = performance.now() + 2000;
               lastSampleMsRef.current = positionMs;
               lastSampleAtRef.current = performance.now();
-              setCurrentInterpolatedMs(positionMs); // Immediate state update
+              setCurrentInterpolatedMs(positionMs);
+
               if (!isInterpolatingRef.current) {
                 isInterpolatingRef.current = true;
                 const tick = () => {
@@ -440,7 +436,6 @@ export function usePlaybackSync(
                   if (typeof s.progress_ms === 'number') {
                     lastSampleMsRef.current = s.progress_ms;
                     lastSampleAtRef.current = performance.now();
-                    // Immediately update interpolated value so UI jumps to correct position on resume
                     setCurrentInterpolatedMs(s.progress_ms);
                     if (debug) console.log('[PlaybackSync] fresh position after transfer', { trackId, posMs: s.progress_ms });
                   }

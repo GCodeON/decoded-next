@@ -10,7 +10,7 @@ import { useSpotifyPlayer } from '@/modules/player';
  * - 15s when paused
  * - 30s when tab is hidden
  */
-export function useGlobalPlaybackState() {
+export function usePlaybackState() {
   const spotify = useSpotifyApi();
   const {
     deviceId,
