@@ -1,8 +1,8 @@
 import './globals.css'
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
-import Dashboard from  '@/components/Dashboard';
-import { SpotifyPlayerProvider } from '@/modules/player';
+import Dashboard from '@/components/Dashboard';
+import { SpotifyPlayerProvider, PlaybackStateProvider } from '@/modules/player';
 import { AuthGuard } from '@/modules/auth';
 
 const inter = Inter({ subsets: ['latin'] })
@@ -19,6 +19,7 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
         <SpotifyPlayerProvider>
           <Dashboard>
             <AuthGuard>
+              <PlaybackStateProvider />
               {children}
             </AuthGuard>
           </Dashboard>

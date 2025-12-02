@@ -19,6 +19,7 @@ export interface SyncedLine {
 export interface SyncedTrack {
   syncedLyrics: string;
   currentPosition: number;
+  currentPositionMs?: number; // optional ms precision
   isPlaying: boolean;
   rhymeEncodedLines: string[] | null | undefined;
 }

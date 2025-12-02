@@ -1,5 +1,6 @@
+'use client'
 import { useState, useEffect } from 'react';
-import { useSpotifyApi, SpotifyTrack } from '@/modules/spotify/';
+import { useSpotifyApi, SpotifyTrack } from '@/modules/spotify';
 
 export function useSpotifyTrack(trackId: string) {
   const [track, setTrack] = useState<SpotifyTrack | null>(null);

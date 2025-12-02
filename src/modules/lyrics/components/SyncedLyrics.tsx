@@ -6,6 +6,7 @@ import { useLyricSync, SyncedTrack  } from '@/modules/lyrics';
 export default function SyncedLyrics({
   syncedLyrics,
   currentPosition,
+  currentPositionMs,
   isPlaying,
   rhymeEncodedLines
 }: SyncedTrack ) {
@@ -16,23 +17,53 @@ export default function SyncedLyrics({
     plainLyrics: '',
     existingLrc: syncedLyrics,
     currentPosition,
+    currentPositionMs,
     isPlaying,
-    autoScroll: true
+    autoScroll: true,
+    debug: true
   });
+
+  // Retain last active line while paused to avoid snapping/clearing
+  const lastActiveLineRef = useRef<number | null>(null);
+  const effectiveActiveLine = isPlaying ? activeLine : (lastActiveLineRef.current ?? activeLine);
+
+  useEffect(() => {
+    if (activeLine !== null && isPlaying) {
+      lastActiveLineRef.current = activeLine;
+    }
+  }, [activeLine, isPlaying]);
+
+  // Debug: log active line changes and unpause responsiveness
+  useEffect(() => {
+    if (isPlaying && activeLine !== null) {
+      console.log('[SyncedLyrics] activeLine', {
+        line: activeLine,
+        ts: Math.floor(performance.now())
+      });
+    }
+  }, [isPlaying, activeLine]);
+
+  useEffect(() => {
+    if (isPlaying) {
+      console.log('[SyncedLyrics] unpaused', { ts: Math.floor(performance.now()) });
+    } else {
+      console.log('[SyncedLyrics] paused', { ts: Math.floor(performance.now()) });
+    }
+  }, [isPlaying]);
 
   // Auto-scroll to active line
   useEffect(() => {
-    if (activeLine === null) return;
+    if (effectiveActiveLine === null) return;
     
     const container = containerRef.current;
     if (!container) return;
     
-    const targetElement = Array.from(container.children)[activeLine] as HTMLElement | undefined;
+    const targetElement = Array.from(container.children)[effectiveActiveLine] as HTMLElement | undefined;
     
     if (targetElement) {
       targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-  }, [activeLine]);
+  }, [effectiveActiveLine]);
 
   const htmlIsVisuallyEmpty = (html?: string): boolean => {
     if (!html) return true;
@@ -65,7 +96,7 @@ export default function SyncedLyrics({
         className="max-h-96 overflow-y-auto bg-gray-50 rounded-xl py-5 md:space-y-2 scrollbar-thin scrollbar-thumb-gray-400"
       >
         {lines.map((line, i) => {
-          const isActive = i === activeLine;
+          const isActive = i === effectiveActiveLine;
           const lineText = line.trim();
           
           // For empty lines, always show as instrumental

@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   const error = searchParams.get('error');
 
   if (error || !code) {
-    return NextResponse.redirect(new URL('/?error=auth_failed', request.url));
+    return NextResponse.json({ error: 'auth_failed' }, { status: 400 });
   }
 
   try {
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
 
     const expiresAt = Date.now() + data.expires_in * 1000;
 
-    const res = NextResponse.redirect(new URL('/', request.url));
+    const res = NextResponse.json({ success: true });
 
     res.cookies.set('spotify_access_token', data.access_token, {
       httpOnly: true,
@@ -49,6 +49,6 @@ export async function GET(request: NextRequest) {
     return res;
   } catch (err) {
     console.error('Auth callback error:', err);
-    return NextResponse.redirect(new URL('/?error=auth_failed', request.url));
+    return NextResponse.json({ error: 'auth_failed' }, { status: 500 });
   }
 }

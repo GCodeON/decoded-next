@@ -27,6 +27,10 @@ export function createSpotifyService(transport: SpotifyTransport) {
       return transport.request<PlaybackState>('GET', spotifyEndpoints.playback());
     },
 
+    async getDevices(): Promise<{ devices: any[] }> {
+      return transport.request<{ devices: any[] }>('GET', spotifyEndpoints.devices());
+    },
+
     async getUserTracks(limit = 50, offset = 0): Promise<SavedTracksResponse> {
       return transport.request<SavedTracksResponse>('GET', spotifyEndpoints.userTracks(limit, offset));
     },
@@ -53,6 +57,13 @@ export function createSpotifyService(transport: SpotifyTransport) {
 
     async pause(deviceId?: string): Promise<void> {
       await transport.request('PUT', spotifyEndpoints.pause(deviceId));
+    },
+
+    async transferPlayback(deviceId: string, play: boolean = true): Promise<void> {
+      await transport.request('PUT', spotifyEndpoints.transferPlayback(), {
+        device_ids: [deviceId],
+        play,
+      });
     },
   };
 }
