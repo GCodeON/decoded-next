@@ -9,8 +9,9 @@ import { useSpotifyPlayer } from '@/modules/player';
  * - 2.5s when actively playing
  * - 15s when paused
  * - 30s when tab is hidden
+ * @param enabled - Whether polling should be active (default: true)
  */
-export function usePlaybackState() {
+export function usePlaybackState(enabled: boolean = true) {
   const spotify = useSpotifyApi();
   const {
     deviceId,
@@ -99,6 +100,8 @@ export function usePlaybackState() {
   }, [spotify, deviceId, setGlobalIsPlaying, setGlobalTrackId, setGlobalPosition, setWebLastTrack, setWebLastPosition, setWebIsPlaying, setLastExternalDevice]);
 
   useEffect(() => {
+    if (!enabled) return; // Don't start polling if disabled
+    
     let active = true;
     const schedule = () => {
       if (!active) return;
@@ -117,5 +120,5 @@ export function usePlaybackState() {
         timeoutRef.current = null;
       }
     };
-  }, [pollOnce]);
+  }, [pollOnce, enabled]);
 }

@@ -8,7 +8,7 @@ type Props = {
   children: React.ReactNode;
 };
 
-const PUBLIC_PATHS = ['/login', '/api/auth/callback'];
+const PUBLIC_PATHS = ['/login', '/api/auth/callback', '/callback'];
 
 export default function AuthGuard({ children }: Props) {
   const pathname = usePathname();

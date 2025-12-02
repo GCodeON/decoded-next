@@ -2,7 +2,15 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export async function proxy(req: NextRequest) {
-  const path = req.nextUrl.pathname;
+  const url = req.nextUrl;
+  const path = url.pathname;
+
+  // Redirect 127.0.0.1 to localhost for callback route
+  if (url.hostname === '127.0.0.1' && path === '/callback') {
+    const newUrl = new URL(url.toString());
+    newUrl.hostname = 'localhost';
+    return NextResponse.redirect(newUrl, { status: 307 });
+  }
 
   const shouldHandle =
     path.startsWith('/api/spotify') ||
@@ -15,7 +23,16 @@ export async function proxy(req: NextRequest) {
 
   const expiresAt = req.cookies.get('spotify_expires_at')?.value;
   const accessToken = req.cookies.get('spotify_access_token')?.value;
+  const refreshToken = req.cookies.get('spotify_refresh_token')?.value;
   const now = Date.now();
+  
+  // If no refresh token exists, user is not authenticated
+  if (!refreshToken) {
+    if (path.startsWith('/api')) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
+    return NextResponse.redirect(new URL('/login', req.url));
+  }
   
   if (!accessToken || !expiresAt || now > Number(expiresAt) - 5 * 60 * 1000) {
     const refresh = await fetch(new URL('/api/auth/refresh', req.url), {
@@ -57,5 +74,6 @@ export const config = {
     '/api/spotify/:path*',
     '/api/auth/token',
     '/player/:path*',
+    '/callback',
   ],
 };
