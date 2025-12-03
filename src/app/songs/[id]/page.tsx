@@ -3,8 +3,7 @@ import { use, useState, useMemo, useEffect } from 'react';
 import { FaEdit, FaClock, FaFont } from 'react-icons/fa';
 import { useSpotifyTrack, usePlaybackSync } from '@/modules/spotify';
 import { useSavedSong, LyricsEditor, SyncedLyrics, lyricsToHtml, mapLrcToRhymeHtml } from '@/modules/lyrics';
-import SyncLyricsEditorUnified from '@/modules/lyrics/components/SyncLyricsEditorUnified';
-import AnimatedSyncedLyrics from '@/modules/lyrics/components/AnimatedSyncedLyrics';
+import SyncLyricsEditorUnified from '@/modules/lyrics/components/SyncLyricsEditor';
 import SongHeader from '@/components/SongHeader';
 
 export default function Song({ params }: { params: Promise<{ id: string }> }) {
@@ -15,6 +14,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
   const [editMode, setEditMode] = useState(false);
   const [syncMode, setSyncMode] = useState(false);
   const [wordSyncEnabled, setWordSyncEnabled] = useState(false);
+  const [showRhymes, setShowRhymes] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
 
   const displayLyrics = useMemo(() => {
@@ -104,6 +104,15 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
                   <FaFont /> {wordSyncEnabled ? 'Word Sync ON' : 'Word Sync'}
                 </button>
               )}
+              <button
+                onClick={() => setShowRhymes(!showRhymes)}
+                className={`flex items-center gap-2 font-semibold ${
+                  showRhymes ? 'text-green-600 hover:text-green-700' : 'text-gray-600 hover:text-gray-700'
+                }`}
+              >
+                {/* Palette icon optional; using label for clarity */}
+                {showRhymes ? 'Rhymes ON' : 'Rhymes OFF'}
+              </button>
               {!hasSynced ? (
                 <button
                   onClick={() => setSyncMode(true)}
@@ -161,25 +170,27 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
           />
         )}
 
-        {/* Word-Synced Animated View */}
+       {/* Word-synced animated view */}
         {displayLyrics && !editMode && !syncMode && hasSynced && wordSyncEnabled && hasWordSynced && (
-          <AnimatedSyncedLyrics
-            wordSyncedLyrics={displayLyrics.wordSynced!}
-            currentPosition={currentPosition}
+          <SyncedLyrics
+            syncedLyrics={displayLyrics.wordSynced!}
             currentPositionMs={currentPositionMs}
             isPlaying={isPlaying}
             rhymeEncodedLines={displayLyrics.rhymeEncodedLines || undefined}
+            showRhymes={showRhymes}
+            mode="word"  // ← forces word sync
           />
         )}
 
-        {/* Regular Synced View (no word timing or word sync disabled) */}
+        {/* Regular synced view (fallback) */}
         {displayLyrics && !editMode && !syncMode && hasSynced && (!wordSyncEnabled || !hasWordSynced) && (
           <SyncedLyrics
-            syncedLyrics={displayLyrics.synced!}
-            currentPosition={currentPosition}
+            syncedLyrics={displayLyrics.wordSynced || displayLyrics.synced!}
             currentPositionMs={currentPositionMs}
             isPlaying={isPlaying}
-            rhymeEncodedLines={displayLyrics.rhymeEncodedLines}
+            rhymeEncodedLines={displayLyrics.rhymeEncodedLines || undefined}
+            showRhymes={showRhymes}
+            mode="line"  // ← forces line-level
           />
         )}
 

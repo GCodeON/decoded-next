@@ -1,10 +1,10 @@
 // Components
 export { default as LyricsEditor } from './components/LyricsEditor';
-export { default as SyncLyricsEditor } from './components/archive/SyncLyricsEditor';
-export { default as SyncLyricsEditorWithWords } from './components/archive/SyncLyricsEditorWithWords';
-export { default as SyncLyricsEditorUnified } from './components/SyncLyricsEditorUnified';
+// export { default as SyncLyricsEditor } from './components/archive/SyncLyricsEditor';
+// export { default as SyncLyricsEditorWithWords } from './components/archive/SyncLyricsEditorWithWords';
+export { default as SyncLyricsEditorUnified } from './components/SyncLyricsEditor';
 export { default as SyncedLyrics } from './components/SyncedLyrics';
-export { default as AnimatedSyncedLyrics } from './components/AnimatedSyncedLyrics';
+// export { default as AnimatedSyncedLyrics } from './components/AnimatedSyncedLyrics';
 export { default as Legend } from './components/VowelLegend';
 export { SyncControls } from './components/SyncControls';
 export { TimestampDisplay } from './components/TimestampDisplay';

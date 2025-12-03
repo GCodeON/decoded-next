@@ -1,6 +1,8 @@
 export interface Word {
   text: string;
-  time: number; // seconds, 3 decimals
+  time: number;  // seconds, 3 decimals
+  start?: number;
+  end?:  number;
 }
 
 export interface TimedLine {

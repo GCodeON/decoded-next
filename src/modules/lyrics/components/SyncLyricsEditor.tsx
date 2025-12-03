@@ -1,14 +1,7 @@
 'use client';
 import { useRef, useCallback, useEffect, useMemo, useState } from 'react';
 import { FaClock, FaFont } from 'react-icons/fa';
-import { 
-  formatTime, 
-  generateLrc, 
-  useLyricSync, 
-  useTimestampEditor, 
-  SyncControls
-} from '@/modules/lyrics';
-import { generateEnhancedLrc, parseEnhancedLrc, type Word } from '@/modules/lyrics/utils/lrcAdvanced';
+import { formatTime, generateLrc, useLyricSync, useTimestampEditor, SyncControls, generateEnhancedLrc, parseEnhancedLrc, type Word } from '@/modules/lyrics';
 import LineEditor from  './sync-editor/LineEditor';
 import WordEditor from './sync-editor/WordEditor';
 
@@ -25,7 +18,7 @@ interface Props {
   onCancel: () => void;
 }
 
-export default function SyncLyricsEditorUnified({
+export default function SyncLyricsEditor({
   plainLyrics,
   existingLrc,
   existingWordLrc,
@@ -70,7 +63,7 @@ export default function SyncLyricsEditorUnified({
     currentPositionMs,
     isPlaying,
     autoScroll: true, // Enables activeLine tracking during playback
-    debug: true
+    debug: false
   });
 
   // Timestamp editing - shared
