@@ -171,6 +171,7 @@ function RhymeEncodedWordSync({
   lineIndex: number;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const lastProcessedWordRef = useRef<number | null>(null);
 
   const mappedHtml = useMemo(() => {
     const doc = new DOMParser().parseFromString(rhymeHtml, 'text/html');
@@ -190,6 +191,7 @@ function RhymeEncodedWordSync({
 
         if (remaining.includes(text)) {
           span.setAttribute('data-word-index', String(wordIdx));
+          span.setAttribute('data-span-id', String(i)); // Unique ID for each span
           // Store original background color as data attribute
           const bgColor = span.style.backgroundColor || window.getComputedStyle(span).backgroundColor;
           if (bgColor && bgColor !== 'transparent' && bgColor !== 'rgba(0, 0, 0, 0)') {
@@ -249,57 +251,55 @@ function RhymeEncodedWordSync({
   // Handle scale animation or gradient fill for non-cursor modes
   useEffect(() => {
     if (!containerRef.current || animationStyle === 'cursor') return;
-    // Only process active lines - past lines are already set and shouldn't be touched
-    if (!isActive) return;
     
-    const spans = containerRef.current.querySelectorAll('span[data-word-index]');
+    const container = containerRef.current;
+    
+    // When line becomes inactive, do nothing (preserve past state)
+    if (!isActive) {
+      lastProcessedWordRef.current = null;
+      return;
+    }
+    
+    // Skip if we've already processed this word (prevents re-running on same word)
+    if (lastProcessedWordRef.current === activeWordIndex) return;
+    
+    const previousWordIndex = lastProcessedWordRef.current;
+    lastProcessedWordRef.current = activeWordIndex;
+    
+    const spans = container.querySelectorAll('span[data-word-index]');
 
+    // Only update spans that changed state
     spans.forEach(span => {
       const el = span as HTMLElement;
       const wordIdx = parseInt(el.getAttribute('data-word-index')!, 10);
-      // Get original background from data attribute (stored before CSS hides it)
       const originalBg = el.getAttribute('data-original-bg') || '';
-
-      let isCurrent = false;
-
-      if (activeWordIndex !== null && wordIdx < activeWordIndex) {
-        // Past words in active line: only set if not already set
-        if (originalBg && el.style.backgroundColor !== originalBg) {
-          el.style.backgroundColor = originalBg;
-          el.style.backgroundImage = 'none';
-          el.style.background = '';
-        }
-      } else if (activeWordIndex === wordIdx) {
-        // Current word: show full background color (instant reveal like karaoke)
-        isCurrent = true;
-        if (originalBg && el.style.backgroundColor !== originalBg) {
-          el.style.backgroundColor = originalBg;
-          el.style.backgroundImage = 'none';
-          el.style.background = '';
-        }
-      } else {
-        // Future words in active line - only clear if not already cleared
-        if (el.style.backgroundColor !== '') {
-          el.style.backgroundColor = '';
-          el.style.backgroundImage = '';
-          el.style.background = '';
-        }
+      
+      const isCurrent = activeWordIndex === wordIdx;
+      const wasCurrent = previousWordIndex === wordIdx;
+      
+      // Skip if this span's state hasn't changed
+      if (isCurrent === wasCurrent && el.classList.contains('bg-revealed') === (isCurrent || (activeWordIndex !== null && wordIdx < activeWordIndex))) {
+        return;
       }
+      
+      const isPastWord = activeWordIndex !== null && wordIdx < activeWordIndex;
 
-      // Scale animation for scale/hybrid modes
-      if (animationStyle === 'scale' || animationStyle === 'hybrid') {
-        const targetTransform = isCurrent ? 'scale(1.08)' : 'scale(1.02)';
-        if (el.style.transform !== targetTransform) {
-          el.style.transform = targetTransform;
-          el.style.transition = 'transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1)';
+      // Use class-based approach instead of inline styles
+      if (isPastWord || isCurrent) {
+        // Reveal background for past and current words
+        if (originalBg && !el.classList.contains('bg-revealed')) {
+          el.style.backgroundColor = originalBg;
+          el.classList.add('bg-revealed');
         }
       } else {
-        if (el.style.transform !== 'none') {
-          el.style.transform = 'none';
+        // Future words - remove class and clear inline style
+        if (el.classList.contains('bg-revealed')) {
+          el.classList.remove('bg-revealed');
+          el.style.backgroundColor = '';
         }
       }
     });
-  }, [isActive, activeWordIndex, animationStyle]); // Only run when active line or word changes
+  }, [isActive, activeWordIndex, animationStyle]);
 
   return <div ref={containerRef} dangerouslySetInnerHTML={{ __html: mappedHtml }} />;
 }

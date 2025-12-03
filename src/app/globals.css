@@ -60,7 +60,8 @@ span[data-word-index] {
   opacity: 1;
 }
 
-.synced-line:not(.active-line):not(.past-line) span[data-word-index] {
+/* Hide rhyme colors in future lines - only applies to spans without revealed class */
+.synced-line:not(.active-line):not(.past-line) span:not(.bg-revealed) {
   background-color: transparent !important;
   background-image: none !important;
 }
