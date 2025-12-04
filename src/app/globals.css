@@ -67,6 +67,12 @@ span[data-word-index] {
   background-image: none !important;
 }
 
+/* Hide colors on active lines until revealed */
+.synced-line.active-line span[data-original-bg]:not(.bg-revealed) {
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
 /* .synced-line:not(.active-line):not(.past-line) span {
   background-color: transparent !important;
   background-image: none !important;

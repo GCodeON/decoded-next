@@ -163,6 +163,7 @@ function RhymeEncodedWordSync({
   const containerRef = useRef<HTMLDivElement>(null);
   const cursorRef = useRef<HTMLDivElement>(null);
   const lastProcessedWordRef = useRef<number | null>(null);
+  const revealedElementsRef = useRef<Set<HTMLElement>>(new Set());
 
   const mappedHtml = useMemo(() => {
     const doc = new DOMParser().parseFromString(rhymeHtml, 'text/html');
@@ -173,24 +174,25 @@ function RhymeEncodedWordSync({
     // Build a map of which character positions belong to which words
     const charToWordIndex: (number | null)[] = new Array(fullText.length).fill(null);
     
+    // Match words sequentially in order (avoids duplicate matches)
+    let searchPos = 0;
     words.forEach((word, wordIdx) => {
       // Normalize the word for matching (remove punctuation for comparison)
       const normalizedWord = word.text.toLowerCase().replace(/[^\w']/g, '');
       if (!normalizedWord) return;
       
-      // Find this word in the full text (account for case insensitivity)
-      let searchPos = 0;
-      while (searchPos < fullText.length) {
-        const textSlice = fullText.slice(searchPos).toLowerCase();
-        const matchIdx = textSlice.indexOf(normalizedWord);
-        
-        if (matchIdx === -1) break;
-        
+      // Find this word starting from current position
+      const textSlice = fullText.slice(searchPos).toLowerCase();
+      const matchIdx = textSlice.search(new RegExp(`\\b${normalizedWord}\\b|${normalizedWord}`));
+      
+      if (matchIdx !== -1) {
         const actualPos = searchPos + matchIdx;
         
         // Mark all character positions for this word
         for (let i = 0; i < normalizedWord.length; i++) {
-          charToWordIndex[actualPos + i] = wordIdx;
+          if (charToWordIndex[actualPos + i] === null) {
+            charToWordIndex[actualPos + i] = wordIdx;
+          }
         }
         
         searchPos = actualPos + normalizedWord.length;
@@ -242,11 +244,37 @@ function RhymeEncodedWordSync({
         const el = node as HTMLElement;
         const newEl = el.cloneNode(false) as HTMLElement;
         
-        // Preserve styling for colored spans
-        const bgColor = window.getComputedStyle(el).backgroundColor;
-        if (bgColor && bgColor !== 'rgba(0, 0, 0, 0)' && bgColor !== 'transparent') {
+        // Track the starting char index for this element
+        const startCharIdx = charIdx.value;
+        
+        // Preserve styling for colored spans - check inline style and style attribute
+        let bgColor: string | null = null;
+        
+        // Try to get background color from inline style attribute
+        const styleAttr = el.getAttribute('style');
+        if (styleAttr) {
+          const bgMatch = styleAttr.match(/background-color\s*:\s*([^;]+)/i);
+          if (bgMatch) {
+            bgColor = bgMatch[1].trim();
+          }
+        }
+        
+        // Also check for background shorthand
+        if (!bgColor && styleAttr) {
+          const bgMatch = styleAttr.match(/background\s*:\s*([^;]+)/i);
+          if (bgMatch) {
+            const bg = bgMatch[1].trim();
+            // Extract color if it's a valid color value
+            if (bg && !bg.includes('url(') && !bg.includes('gradient')) {
+              bgColor = bg.split(/\s+/)[0]; // Take first value which is usually the color
+            }
+          }
+        }
+        
+        if (bgColor) {
           newEl.setAttribute('data-original-bg', bgColor);
-          newEl.style.backgroundColor = bgColor;
+          // Don't set backgroundColor here - let the effect control reveal timing
+          // But preserve the original color for reference
         }
         
         // If this element already had a word index (from rhyme coloring), preserve it
@@ -266,6 +294,24 @@ function RhymeEncodedWordSync({
             newEl.appendChild(processed);
           }
         });
+        
+        // If this colored span doesn't have a word index yet, determine it from its content
+        if (bgColor && !newEl.getAttribute('data-word-index')) {
+          // First, try to get from any child span with data-word-index
+          const firstChildWithIdx = newEl.querySelector('[data-word-index]');
+          if (firstChildWithIdx) {
+            const childIdx = firstChildWithIdx.getAttribute('data-word-index');
+            if (childIdx) {
+              newEl.setAttribute('data-word-index', childIdx);
+            }
+          } else {
+            // Fall back to first character position
+            const firstWordInSpan = charToWordIndex[startCharIdx];
+            if (firstWordInSpan !== null && firstWordInSpan !== undefined) {
+              newEl.setAttribute('data-word-index', String(firstWordInSpan));
+            }
+          }
+        }
         
         return newEl;
       } else {
@@ -288,12 +334,26 @@ function RhymeEncodedWordSync({
     });
     
     return newBody.innerHTML;
-  }, [rhymeHtml, words]);
+  }, [rhymeHtml, words, animationStyle]);
 
   // Update cursor position with smooth interpolation (Liricle-style)
   useEffect(() => {
     if (!containerRef.current || !cursorRef.current || animationStyle === 'scale') return;
-    if (!isActive || activeWordIndex === null) return;
+    if (!isActive) return;
+
+    // Calculate the active word index based on currentTimeSec (local to this line)
+    let localActiveWordIndex: number | null = null;
+    for (let i = words.length - 1; i >= 0; i--) {
+      if (currentTimeSec >= words[i].time) {
+        localActiveWordIndex = i;
+        break;
+      }
+    }
+
+    if (localActiveWordIndex === null) {
+      // Before first word - position cursor at start of first word
+      localActiveWordIndex = 0;
+    }
 
     // Get ALL elements/text that make up the current word (including spaces, punctuation, etc.)
     const allElements = containerRef.current.querySelectorAll('span');
@@ -304,9 +364,9 @@ function RhymeEncodedWordSync({
       const wordIdx = el.getAttribute('data-word-index');
       if (wordIdx !== null) {
         const idx = parseInt(wordIdx, 10);
-        if (idx === activeWordIndex) {
+        if (idx === localActiveWordIndex) {
           currentWordElements.push(el);
-        } else if (idx === activeWordIndex + 1) {
+        } else if (idx === localActiveWordIndex + 1) {
           nextWordElements.push(el);
         }
       }
@@ -315,7 +375,7 @@ function RhymeEncodedWordSync({
     if (currentWordElements.length === 0) return;
 
     // Get current word timing
-    const currentWord = words[activeWordIndex];
+    const currentWord = words[localActiveWordIndex];
     if (!currentWord) return;
 
     // Calculate bounding box for ALL elements in current word
@@ -330,8 +390,8 @@ function RhymeEncodedWordSync({
     // Fixed cursor width - just interpolate position, not width
     let finalLeft = currentLeft;
 
-    if (nextWordElements.length > 0 && words[activeWordIndex + 1]) {
-      const nextWord = words[activeWordIndex + 1];
+    if (nextWordElements.length > 0 && words[localActiveWordIndex + 1]) {
+      const nextWord = words[localActiveWordIndex + 1];
       const nextRects = nextWordElements.map(el => el.getBoundingClientRect());
       
       const nextLeft = Math.min(...nextRects.map(r => r.left)) - containerRect.left;
@@ -348,7 +408,64 @@ function RhymeEncodedWordSync({
     cursorRef.current.style.left = `${finalLeft}px`;
     cursorRef.current.style.width = `${currentWidth}px`;
     cursorRef.current.style.top = `${currentTop}px`;
-  }, [isActive, activeWordIndex, animationStyle, currentTimeSec, words]);
+  }, [isActive, animationStyle, currentTimeSec, words]);
+
+  // Color reveal effect for cursor mode - timing-based progressive reveal
+  useEffect(() => {
+    if (!containerRef.current || animationStyle !== 'cursor') return;
+    
+    const container = containerRef.current;
+    
+    // For past lines, mark all colored elements as past
+    if (isPast) {
+      const coloredElements = container.querySelectorAll('[data-original-bg]');
+      coloredElements.forEach(el => {
+        el.setAttribute('data-word-state', 'past');
+      });
+      return;
+    }
+    
+    // For active lines, update word state based on timing
+    if (!isActive) return;
+
+    const coloredElements = container.querySelectorAll('[data-original-bg]');
+    
+    coloredElements.forEach(el => {
+      const bg = el.getAttribute('data-original-bg');
+      if (!bg) return;
+      
+      // Get the word index
+      let targetWordIdx: number | null = null;
+      
+      const wordIdx = el.getAttribute('data-word-index');
+      if (wordIdx) {
+        targetWordIdx = parseInt(wordIdx, 10);
+      } else {
+        // Get from first child span with data-word-index
+        const allChildSpans = el.querySelectorAll('[data-word-index]');
+        if (allChildSpans.length > 0) {
+          const firstIdx = allChildSpans[0].getAttribute('data-word-index');
+          if (firstIdx) {
+            targetWordIdx = parseInt(firstIdx, 10);
+          }
+        }
+      }
+      
+      if (targetWordIdx === null) return;
+      
+      const word = words[targetWordIdx];
+      if (!word) return;
+      
+      // Set word state and apply color based on current time vs word time
+      if (currentTimeSec >= word.time) {
+        el.setAttribute('data-word-state', 'past');
+        (el as HTMLElement).style.backgroundColor = bg;
+      } else {
+        el.setAttribute('data-word-state', 'future');
+        (el as HTMLElement).style.backgroundColor = '';
+      }
+    });
+  }, [isActive, isPast, animationStyle, currentTimeSec, words]);
 
   // Handle scale animation or gradient fill for non-cursor modes
   useEffect(() => {
@@ -443,11 +560,23 @@ function PlainWordSync({
   // Update cursor for plain text with smooth interpolation
   useEffect(() => {
     if (!containerRef.current || !cursorRef.current || animationStyle !== 'cursor') return;
-    if (!isActive || activeWordIndex === null) return;
+    if (!isActive || words.length === 0) return;
+
+    // Calculate local active word index based on current time and word timings
+    // Find the last word whose time is <= currentTimeSec
+    let localActiveWordIndex = -1;
+    for (let i = words.length - 1; i >= 0; i--) {
+      if (currentTimeSec >= words[i].time) {
+        localActiveWordIndex = i;
+        break;
+      }
+    }
+
+    if (localActiveWordIndex < 0) return;
 
     const wordSpans = containerRef.current.querySelectorAll('span[data-word-idx]');
     const currentSpan = Array.from(wordSpans).find(span => {
-      return parseInt((span as HTMLElement).getAttribute('data-word-idx')!, 10) === activeWordIndex;
+      return parseInt((span as HTMLElement).getAttribute('data-word-idx')!, 10) === localActiveWordIndex;
     }) as HTMLElement;
 
     if (!currentSpan) return;
@@ -462,30 +591,33 @@ function PlainWordSync({
     // Fixed width - only interpolate position
     let finalLeft = currentLeft;
 
-    const nextSpan = Array.from(wordSpans).find(span => {
-      return parseInt((span as HTMLElement).getAttribute('data-word-idx')!, 10) === activeWordIndex + 1;
-    }) as HTMLElement;
+    // Try to interpolate to next word if it exists
+    if (localActiveWordIndex + 1 < words.length) {
+      const nextSpan = Array.from(wordSpans).find(span => {
+        return parseInt((span as HTMLElement).getAttribute('data-word-idx')!, 10) === localActiveWordIndex + 1;
+      }) as HTMLElement;
 
-    if (nextSpan && words[activeWordIndex] && words[activeWordIndex + 1]) {
-      const currentWord = words[activeWordIndex];
-      const nextWord = words[activeWordIndex + 1];
-      const nextRect = nextSpan.getBoundingClientRect();
-      
-      const nextLeft = nextRect.left - containerRect.left;
+      if (nextSpan) {
+        const currentWord = words[localActiveWordIndex];
+        const nextWord = words[localActiveWordIndex + 1];
+        const nextRect = nextSpan.getBoundingClientRect();
+        
+        const nextLeft = nextRect.left - containerRect.left;
 
-      // Calculate progress
-      const wordDuration = nextWord.time - currentWord.time;
-      const elapsed = currentTimeSec - currentWord.time;
-      const progress = wordDuration > 0 ? Math.min(Math.max(elapsed / wordDuration, 0), 1) : 0;
+        // Calculate progress through current word
+        const wordDuration = nextWord.time - currentWord.time;
+        const elapsed = currentTimeSec - currentWord.time;
+        const progress = wordDuration > 0 ? Math.min(Math.max(elapsed / wordDuration, 0), 1) : 0;
 
-      // Interpolate position only
-      finalLeft = currentLeft + (nextLeft - currentLeft) * progress;
+        // Interpolate position only
+        finalLeft = currentLeft + (nextLeft - currentLeft) * progress;
+      }
     }
 
     cursorRef.current.style.left = `${finalLeft}px`;
     cursorRef.current.style.width = `${currentWidth}px`;
     cursorRef.current.style.top = `${currentTop}px`;
-  }, [isActive, activeWordIndex, animationStyle, currentTimeSec, words]);
+  }, [isActive, animationStyle, currentTimeSec, words]);
 
   return (
     <>
