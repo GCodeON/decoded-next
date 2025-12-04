@@ -32,11 +32,12 @@ body {
   height: 3px;
   border-radius: 1.5px;
   background: rgb(var(--lyric-cursor-accent));
-  opacity: 0.6;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0.9;
+  transition: none;
   pointer-events: none;
   box-shadow: 0 0 8px rgba(var(--lyric-cursor-accent), 0.4);
   display: none;
+  z-index: 100;
 }
 
 .lyric-word-cursor.active {

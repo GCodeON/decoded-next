@@ -38,6 +38,11 @@ export function usePlaybackSync(
   // Interpolated ms state updated each frame
   const [currentInterpolatedMs, setCurrentInterpolatedMs] = useState<number | null>(null);
   const rafRef = useRef<number | null>(null);
+  // Ref to avoid triggering re-renders in tick
+  const currentInterpolatedMsRef = useRef<number | null>(null);
+  useEffect(() => {
+    currentInterpolatedMsRef.current = currentInterpolatedMs;
+  }, [currentInterpolatedMs]);
   const isInterpolatingRef = useRef(false);
 
   // Derive playing state from global context
@@ -232,18 +237,7 @@ export function usePlaybackSync(
         
         if (shouldInterpolate && !isInterpolatingRef.current) {
           isInterpolatingRef.current = true;
-          const tick = () => {
-            const baselineMs = lastSampleMsRef.current;
-            if (baselineMs != null && isInterpolatingRef.current) {
-              const elapsed = performance.now() - lastSampleAtRef.current;
-              const clampedElapsed = Math.min(elapsed, 2000);
-              setCurrentInterpolatedMs(baselineMs + clampedElapsed);
-            }
-            if (isInterpolatingRef.current) {
-              rafRef.current = requestAnimationFrame(tick);
-            }
-          };
-          rafRef.current = requestAnimationFrame(tick);
+          rafRef.current = requestAnimationFrame(tickStable);
           if (debug) console.log('[PlaybackSync] interpolation started from poll', { trackId, posMs: newMs, isPlaying: isPlayingNow, optimistic: inOptimisticWindow });
         }
         
@@ -262,7 +256,23 @@ export function usePlaybackSync(
     } catch (err) {
       // Silent ignore; global polling handles auth
     }
-  }, [spotify, trackId, debug, syncMode, viewMode, currentInterpolatedMs]);
+  }, [spotify, trackId, debug, syncMode, viewMode]);
+  // Stable tick function outside pollSync to avoid recreation on every render
+  const tickStable = () => {
+    const baselineMs = lastSampleMsRef.current;
+    if (baselineMs != null && isInterpolatingRef.current) {
+      const elapsed = performance.now() - lastSampleAtRef.current;
+      const clampedElapsed = Math.min(elapsed, 2000);
+      // Only update state if value actually changed to avoid extra renders
+      const newMs = baselineMs + clampedElapsed;
+      if (currentInterpolatedMsRef.current !== newMs) {
+        setCurrentInterpolatedMs(newMs);
+      }
+    }
+    if (isInterpolatingRef.current) {
+      rafRef.current = requestAnimationFrame(tickStable);
+    }
+  };
 
   useSyncPolling(pollSync, {
     enabled: enabled && (syncMode || viewMode),
