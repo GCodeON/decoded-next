@@ -167,69 +167,127 @@ function RhymeEncodedWordSync({
   const mappedHtml = useMemo(() => {
     const doc = new DOMParser().parseFromString(rhymeHtml, 'text/html');
     
-    let wordIdx = 0;
-    let charsSoFar = 0;
-    
-    // Get all text content to map character positions to word indices
+    // Get the plain text content
     const fullText = doc.body.textContent || '';
-    const wordBoundaries: { start: number; end: number; wordIdx: number }[] = [];
     
-    words.forEach((word, idx) => {
-      // Find word position in full text
-      const cleanWord = word.text.toLowerCase().replace(/[^\w']/g, '');
-      let searchStart = charsSoFar;
+    // Build a map of which character positions belong to which words
+    const charToWordIndex: (number | null)[] = new Array(fullText.length).fill(null);
+    
+    words.forEach((word, wordIdx) => {
+      // Normalize the word for matching (remove punctuation for comparison)
+      const normalizedWord = word.text.toLowerCase().replace(/[^\w']/g, '');
+      if (!normalizedWord) return;
       
-      // Search for this word in the remaining text
-      const remainingText = fullText.slice(searchStart).toLowerCase().replace(/[^\w']/g, '');
-      const wordPos = remainingText.indexOf(cleanWord);
-      
-      if (wordPos !== -1) {
-        wordBoundaries.push({
-          start: searchStart + wordPos,
-          end: searchStart + wordPos + cleanWord.length,
-          wordIdx: idx
-        });
-        charsSoFar = searchStart + wordPos + cleanWord.length;
+      // Find this word in the full text (account for case insensitivity)
+      let searchPos = 0;
+      while (searchPos < fullText.length) {
+        const textSlice = fullText.slice(searchPos).toLowerCase();
+        const matchIdx = textSlice.indexOf(normalizedWord);
+        
+        if (matchIdx === -1) break;
+        
+        const actualPos = searchPos + matchIdx;
+        
+        // Mark all character positions for this word
+        for (let i = 0; i < normalizedWord.length; i++) {
+          charToWordIndex[actualPos + i] = wordIdx;
+        }
+        
+        searchPos = actualPos + normalizedWord.length;
       }
     });
     
-    // Now traverse and mark all elements
-    let textPos = 0;
-    
-    const traverse = (node: Node) => {
+    // Helper function to reconstruct HTML with wrapped text nodes
+    const processNode = (node: Node, charIdx: { value: number }): Node => {
       if (node.nodeType === Node.TEXT_NODE) {
         const text = node.textContent || '';
-        const cleanText = text.toLowerCase().replace(/[^\w']/g, '');
+        const fragment = document.createDocumentFragment();
+        let currentPos = 0;
+        let currentWordIdx: number | null = null;
+        let chunk = '';
         
-        if (cleanText) {
-          // Find which word(s) this text belongs to
-          const matchingBoundary = wordBoundaries.find(wb => 
-            textPos >= wb.start && textPos < wb.end
-          );
+        for (let i = 0; i < text.length; i++) {
+          const wordIdx = charToWordIndex[charIdx.value + i];
           
-          if (matchingBoundary && node.parentElement) {
-            node.parentElement.setAttribute('data-word-index', String(matchingBoundary.wordIdx));
+          // If word index changes, create a span for the accumulated chunk
+          if (wordIdx !== currentWordIdx) {
+            if (chunk) {
+              const span = document.createElement('span');
+              if (currentWordIdx !== null) {
+                span.setAttribute('data-word-index', String(currentWordIdx));
+              }
+              span.textContent = chunk;
+              fragment.appendChild(span);
+            }
+            chunk = text[i];
+            currentWordIdx = wordIdx;
+          } else {
+            chunk += text[i];
           }
-          
-          textPos += cleanText.length;
         }
+        
+        // Append final chunk
+        if (chunk) {
+          const span = document.createElement('span');
+          if (currentWordIdx !== null) {
+            span.setAttribute('data-word-index', String(currentWordIdx));
+          }
+          span.textContent = chunk;
+          fragment.appendChild(span);
+        }
+        
+        charIdx.value += text.length;
+        return fragment;
       } else if (node.nodeType === Node.ELEMENT_NODE) {
         const el = node as HTMLElement;
+        const newEl = el.cloneNode(false) as HTMLElement;
         
-        // Store original background color
-        const bgColor = el.style.backgroundColor;
-        if (bgColor && bgColor !== 'transparent' && bgColor !== 'rgba(0, 0, 0, 0)') {
-          el.setAttribute('data-original-bg', bgColor);
+        // Preserve styling for colored spans
+        const bgColor = window.getComputedStyle(el).backgroundColor;
+        if (bgColor && bgColor !== 'rgba(0, 0, 0, 0)' && bgColor !== 'transparent') {
+          newEl.setAttribute('data-original-bg', bgColor);
+          newEl.style.backgroundColor = bgColor;
+        }
+        
+        // If this element already had a word index (from rhyme coloring), preserve it
+        const existingWordIdx = el.getAttribute('data-word-index');
+        if (existingWordIdx) {
+          newEl.setAttribute('data-word-index', existingWordIdx);
         }
         
         // Process children
-        Array.from(node.childNodes).forEach(traverse);
+        Array.from(node.childNodes).forEach(child => {
+          const processed = processNode(child, charIdx);
+          if (processed.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
+            Array.from(processed.childNodes).forEach(c => {
+              newEl.appendChild(c);
+            });
+          } else {
+            newEl.appendChild(processed);
+          }
+        });
+        
+        return newEl;
+      } else {
+        return node.cloneNode(true);
       }
     };
     
-    Array.from(doc.body.childNodes).forEach(traverse);
+    // Process the document
+    const newBody = document.createElement('div');
+    const charIdx = { value: 0 };
+    Array.from(doc.body.childNodes).forEach(child => {
+      const processed = processNode(child, charIdx);
+      if (processed.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
+        Array.from(processed.childNodes).forEach(c => {
+          newBody.appendChild(c);
+        });
+      } else {
+        newBody.appendChild(processed);
+      }
+    });
     
-    return doc.body.innerHTML;
+    return newBody.innerHTML;
   }, [rhymeHtml, words]);
 
   // Update cursor position with smooth interpolation (Liricle-style)
