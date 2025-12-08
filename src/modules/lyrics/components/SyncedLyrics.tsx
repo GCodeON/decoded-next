@@ -17,7 +17,7 @@ export default function SyncedLyrics({
   rhymeEncodedLines,
   showRhymes = true,
   mode = 'auto',
-  animationStyle = 'cursor' 
+  animationStyle = 'hybrid' 
 }: {
   syncedLyrics: string;
   currentPositionMs: number;
@@ -63,7 +63,7 @@ export default function SyncedLyrics({
   return (
     <div
       ref={containerRef}
-      className="max-h-96 overflow-y-auto bg-gray-50 rounded-xl py-5 md:space-y-2 scrollbar-thin scrollbar-thumb-gray-400"
+      className="max-h-96 overflow-y-auto bg-gray-50 dark:bg-zinc-900 rounded-xl py-5 md:space-y-2 scrollbar-thin scrollbar-thumb-gray-400"
     >
       <div className="lyrics-container">
         {lines.map((line, i) => {
@@ -78,24 +78,25 @@ export default function SyncedLyrics({
         // Instrumental
         if (!lineText) {
           return (
-            <div
-              key={i}
-              className={`synced-line px-4 py-2 rounded-lg shadow-sm transition-all duration-200 text-black text-md md:text-xl font-medium ${
-                isActive ? 'bg-yellow-100 active-line' : isPast ? 'bg-white past-line' : 'bg-white'
-              }`}
-            >
-              <span className="text-gray-400 italic">(instrumental)</span>
-            </div>
+              <div
+                key={i}
+                className={`synced-line px-6 py-3 text-center text-gray-500 italic text-sm ${
+                  isActive ? 'opacity-100' : isPast ? 'opacity-70' : 'opacity-40'
+                }`}
+              >
+                (instrumental)
+              </div>
           );
         }
 
         return (
-          <div
-            key={i}
-            className={`synced-line relative px-2 py-2 rounded-lg shadow-sm transition-all duration-400 text-black text-md md:text-xl font-medium ${
-              isActive ? 'bg-yellow-100 active-line' : isPast ? 'bg-white past-line' : 'bg-white'
-            }`}
-          >
+            <div
+              key={i}
+              className={`synced-line relative px-6 py-3 rounded-lg transition-all duration-300 text-black dark:text-white text-lg md:text-xl font-medium leading-relaxed ${
+                isActive ? 'active-line bg-blue-100/60 dark:bg-blue-900/30' : 
+                isPast ? 'past-line opacity-90' : 'opacity-50'
+              }`}
+            >
             {/* WORD-LEVEL SYNC (Best Experience) */}
             {shouldUseWordSync && hasWords && showRhymeContent && (
               <RhymeEncodedWordSync
@@ -162,8 +163,6 @@ function RhymeEncodedWordSync({
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const cursorRef = useRef<HTMLDivElement>(null);
-  const lastProcessedWordRef = useRef<number | null>(null);
-  const revealedElementsRef = useRef<Set<HTMLElement>>(new Set());
 
   const mappedHtml = useMemo(() => {
     const doc = new DOMParser().parseFromString(rhymeHtml, 'text/html');
@@ -410,17 +409,21 @@ function RhymeEncodedWordSync({
     cursorRef.current.style.top = `${currentTop}px`;
   }, [isActive, animationStyle, currentTimeSec, words]);
 
-  // Color reveal effect for cursor mode - timing-based progressive reveal
+  // Color reveal effect - unified for all animation styles
   useEffect(() => {
-    if (!containerRef.current || animationStyle !== 'cursor') return;
+    if (!containerRef.current) return;
     
     const container = containerRef.current;
+    const coloredElements = container.querySelectorAll('[data-original-bg]');
     
-    // For past lines, mark all colored elements as past
+    // For past lines, reveal all colors immediately
     if (isPast) {
-      const coloredElements = container.querySelectorAll('[data-original-bg]');
       coloredElements.forEach(el => {
-        el.setAttribute('data-word-state', 'past');
+        const bg = el.getAttribute('data-original-bg');
+        if (bg) {
+          el.setAttribute('data-word-state', 'past');
+          (el as HTMLElement).style.backgroundColor = bg;
+        }
       });
       return;
     }
@@ -428,20 +431,18 @@ function RhymeEncodedWordSync({
     // For active lines, update word state based on timing
     if (!isActive) return;
 
-    const coloredElements = container.querySelectorAll('[data-original-bg]');
-    
     coloredElements.forEach(el => {
       const bg = el.getAttribute('data-original-bg');
       if (!bg) return;
       
-      // Get the word index
+      // Get the word index for this colored element
       let targetWordIdx: number | null = null;
       
       const wordIdx = el.getAttribute('data-word-index');
       if (wordIdx) {
         targetWordIdx = parseInt(wordIdx, 10);
       } else {
-        // Get from first child span with data-word-index
+        // Fallback: get from first child span with data-word-index
         const allChildSpans = el.querySelectorAll('[data-word-index]');
         if (allChildSpans.length > 0) {
           const firstIdx = allChildSpans[0].getAttribute('data-word-index');
@@ -456,7 +457,7 @@ function RhymeEncodedWordSync({
       const word = words[targetWordIdx];
       if (!word) return;
       
-      // Set word state and apply color based on current time vs word time
+      // Progressive reveal: apply color when word time is reached
       if (currentTimeSec >= word.time) {
         el.setAttribute('data-word-state', 'past');
         (el as HTMLElement).style.backgroundColor = bg;
@@ -465,60 +466,7 @@ function RhymeEncodedWordSync({
         (el as HTMLElement).style.backgroundColor = '';
       }
     });
-  }, [isActive, isPast, animationStyle, currentTimeSec, words]);
-
-  // Handle scale animation or gradient fill for non-cursor modes
-  useEffect(() => {
-    if (!containerRef.current || animationStyle === 'cursor') return;
-    
-    const container = containerRef.current;
-    
-    // When line becomes inactive, do nothing (preserve past state)
-    if (!isActive) {
-      lastProcessedWordRef.current = null;
-      return;
-    }
-    
-    // Skip if we've already processed this word (prevents re-running on same word)
-    if (lastProcessedWordRef.current === activeWordIndex) return;
-    
-    const previousWordIndex = lastProcessedWordRef.current;
-    lastProcessedWordRef.current = activeWordIndex;
-    
-    const spans = container.querySelectorAll('span[data-word-index]');
-
-    // Only update spans that changed state
-    spans.forEach(span => {
-      const el = span as HTMLElement;
-      const wordIdx = parseInt(el.getAttribute('data-word-index')!, 10);
-      const originalBg = el.getAttribute('data-original-bg') || '';
-      
-      const isCurrent = activeWordIndex === wordIdx;
-      const wasCurrent = previousWordIndex === wordIdx;
-      
-      // Skip if this span's state hasn't changed
-      if (isCurrent === wasCurrent && el.classList.contains('bg-revealed') === (isCurrent || (activeWordIndex !== null && wordIdx < activeWordIndex))) {
-        return;
-      }
-      
-      const isPastWord = activeWordIndex !== null && wordIdx < activeWordIndex;
-
-      // Use class-based approach instead of inline styles
-      if (isPastWord || isCurrent) {
-        // Reveal background for past and current words
-        if (originalBg && !el.classList.contains('bg-revealed')) {
-          el.style.backgroundColor = originalBg;
-          el.classList.add('bg-revealed');
-        }
-      } else {
-        // Future words - remove class and clear inline style
-        if (el.classList.contains('bg-revealed')) {
-          el.classList.remove('bg-revealed');
-          el.style.backgroundColor = '';
-        }
-      }
-    });
-  }, [isActive, activeWordIndex, animationStyle]);
+  }, [isActive, isPast, currentTimeSec, words]);
 
   return (
     <>
@@ -536,119 +484,49 @@ function RhymeEncodedWordSync({
 // Plain Word Sync (cursor or green highlight)
 // ──────────────────────────────────────────────────────────────────────
 function PlainWordSync({
-  lineText,
+ lineText,
   words,
-  activeWordIndex,
   isActive,
+  isNext,
+  isPrev,
+  currentTimeSec,
   animationStyle,
-  lineIndex,
-  currentTimeSec
-}: {
-  lineText: string;
-  words: Word[];
-  activeWordIndex: number | null;
-  isActive: boolean;
-  animationStyle: 'cursor' | 'scale' | 'hybrid';
-  lineIndex: number;
-  currentTimeSec: number;
-}) {
-  const containerRef = useRef<HTMLSpanElement>(null);
-  const cursorRef = useRef<HTMLDivElement>(null);
-  let wordCounter = 0;
-  const parts = lineText.split(/(\s+|\S+)/g).filter(Boolean);
-
-  // Update cursor for plain text with smooth interpolation
-  useEffect(() => {
-    if (!containerRef.current || !cursorRef.current || animationStyle !== 'cursor') return;
-    if (!isActive || words.length === 0) return;
-
-    // Calculate local active word index based on current time and word timings
-    // Find the last word whose time is <= currentTimeSec
-    let localActiveWordIndex = -1;
-    for (let i = words.length - 1; i >= 0; i--) {
-      if (currentTimeSec >= words[i].time) {
-        localActiveWordIndex = i;
-        break;
-      }
-    }
-
-    if (localActiveWordIndex < 0) return;
-
-    const wordSpans = containerRef.current.querySelectorAll('span[data-word-idx]');
-    const currentSpan = Array.from(wordSpans).find(span => {
-      return parseInt((span as HTMLElement).getAttribute('data-word-idx')!, 10) === localActiveWordIndex;
-    }) as HTMLElement;
-
-    if (!currentSpan) return;
-
-    const containerRect = containerRef.current.getBoundingClientRect();
-    const spanRect = currentSpan.getBoundingClientRect();
-
-    const currentLeft = spanRect.left - containerRect.left;
-    const currentTop = spanRect.bottom - containerRect.top;
-    const currentWidth = spanRect.width;
-
-    // Fixed width - only interpolate position
-    let finalLeft = currentLeft;
-
-    // Try to interpolate to next word if it exists
-    if (localActiveWordIndex + 1 < words.length) {
-      const nextSpan = Array.from(wordSpans).find(span => {
-        return parseInt((span as HTMLElement).getAttribute('data-word-idx')!, 10) === localActiveWordIndex + 1;
-      }) as HTMLElement;
-
-      if (nextSpan) {
-        const currentWord = words[localActiveWordIndex];
-        const nextWord = words[localActiveWordIndex + 1];
-        const nextRect = nextSpan.getBoundingClientRect();
-        
-        const nextLeft = nextRect.left - containerRect.left;
-
-        // Calculate progress through current word
-        const wordDuration = nextWord.time - currentWord.time;
-        const elapsed = currentTimeSec - currentWord.time;
-        const progress = wordDuration > 0 ? Math.min(Math.max(elapsed / wordDuration, 0), 1) : 0;
-
-        // Interpolate position only
-        finalLeft = currentLeft + (nextLeft - currentLeft) * progress;
-      }
-    }
-
-    cursorRef.current.style.left = `${finalLeft}px`;
-    cursorRef.current.style.width = `${currentWidth}px`;
-    cursorRef.current.style.top = `${currentTop}px`;
-  }, [isActive, animationStyle, currentTimeSec, words]);
+}: any) {
+  const filledUpTo = words.findIndex(w => currentTimeSec < w.time);
+  const filledWords = filledUpTo === -1 ? words.length : filledUpTo;
 
   return (
-    <>
-      {/* Cursor element for this line */}
-      <div 
-        ref={cursorRef}
-        className={`lyric-word-cursor ${isActive && animationStyle === 'cursor' ? 'active' : ''}`}
-      />
-      <span ref={containerRef}>
-        {parts.map((part, i) => {
-          if (!/\S/.test(part)) return <span key={i}>{part}</span>;
-          const idx = wordCounter++;
-          const highlighted = isActive && activeWordIndex !== null && idx <= activeWordIndex;
-          return (
-            <span
-              key={i}
-              data-word-idx={idx}
-              className="transition-all duration-150 inline-block"
-              style={{
-                backgroundColor: animationStyle !== 'cursor' && highlighted 
-                  ? 'rgba(34, 197, 94, 0.4)' 
-                  : 'transparent',
-                borderRadius: '4px',
-                padding: '0 2px'
-              }}
-            >
-              {part}
-            </span>
-          );
-        })}
-      </span>
-    </>
+    <div
+      className={`transition-all duration-700 leading-relaxed ${
+        isActive
+          ? 'text-3md  font-bold drop-shadow-2xl'
+          : isPrev || isNext
+          ? 'text-2md font-medium text-gray-500'
+          : 'text-1md  text-gray-700 opacity-30'
+      }`}
+      style={{ textShadow: isActive ? '0 0 30px rgba(0,0,0,0.8)' : undefined }}
+    >
+      {lineText.split(/(\s+)/).map((part: string, i: number) => {
+        if (/\s/.test(part)) return part;
+        const wordIndex = Math.floor(i / 2);
+        const isFilled = isActive && wordIndex < filledWords;
+        return (
+          <span
+            key={i}
+            style={{
+              background: isFilled
+                ? 'linear-gradient(90deg, #29e2f6ff, #b0e9faff)'
+                : undefined,
+              backgroundClip: isFilled ? 'text' : undefined,
+              WebkitBackgroundClip: isFilled ? 'text' : undefined,
+              color: isFilled ? 'transparent' : (isActive ? 'white' : 'rgba(255,255,255,0.5)'),
+              transition: 'all 0.2s ease',
+            }}
+          >
+            {part}
+          </span>
+        );
+      })}
+    </div>
   );
 }
