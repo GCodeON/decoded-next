@@ -41,6 +41,21 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
   const isViewMode = hasSynced && !editMode && !syncMode;
   const { isPlaying, currentPosition, currentPositionMs, togglePlayback } = usePlaybackSync(id, !!track, syncMode, isViewMode);
 
+  // Compute synced lyrics configuration
+  const syncConfig = useMemo(() => {
+    if (!displayLyrics || !hasSynced) return null;
+    
+    const useWordSync = wordSyncEnabled && hasWordSynced;
+    
+    return {
+      lyrics: useWordSync 
+        ? displayLyrics.wordSynced! 
+        : displayLyrics.wordSynced || displayLyrics.synced!,
+      mode: (useWordSync ? 'word' : 'line') as 'word' | 'line',
+      rhymeEncodedLines: displayLyrics.rhymeEncodedLines || undefined,
+    };
+  }, [displayLyrics, hasSynced, wordSyncEnabled, hasWordSynced]);
+
   // Listen for LrcLib publish event to show toast
   useEffect(() => {
     const onPublished = (e: Event) => {
@@ -170,27 +185,15 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
           />
         )}
 
-       {/* Word-synced animated view */}
-        {displayLyrics && !editMode && !syncMode && hasSynced && wordSyncEnabled && hasWordSynced && (
+        {/* Synced lyrics view */}
+        {syncConfig && !editMode && !syncMode && (
           <SyncedLyrics
-            syncedLyrics={displayLyrics.wordSynced!}
+            syncedLyrics={syncConfig.lyrics}
             currentPositionMs={currentPositionMs}
             isPlaying={isPlaying}
-            rhymeEncodedLines={displayLyrics.rhymeEncodedLines || undefined}
+            rhymeEncodedLines={syncConfig.rhymeEncodedLines}
             showRhymes={showRhymes}
-            mode="word"  // ← forces word sync
-          />
-        )}
-
-        {/* Regular synced view (fallback) */}
-        {displayLyrics && !editMode && !syncMode && hasSynced && (!wordSyncEnabled || !hasWordSynced) && (
-          <SyncedLyrics
-            syncedLyrics={displayLyrics.wordSynced || displayLyrics.synced!}
-            currentPositionMs={currentPositionMs}
-            isPlaying={isPlaying}
-            rhymeEncodedLines={displayLyrics.rhymeEncodedLines || undefined}
-            showRhymes={showRhymes}
-            mode="line"  // ← forces line-level
+            mode={syncConfig.mode}
           />
         )}
 
