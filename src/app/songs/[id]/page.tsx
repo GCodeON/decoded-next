@@ -3,7 +3,7 @@ import { use, useState, useMemo, useEffect } from 'react';
 import { FaEdit, FaClock, FaFont } from 'react-icons/fa';
 import { useSpotifyTrack, usePlaybackSync } from '@/modules/spotify';
 import { useSavedSong, LyricsEditor, SyncedLyrics, lyricsToHtml, mapLrcToRhymeHtml } from '@/modules/lyrics';
-import SyncLyricsEditorUnified from '@/modules/lyrics/components/SyncLyricsEditor';
+import SyncLyricsEditor from '@/modules/lyrics/components/SyncLyricsEditor';
 import SongHeader from '@/components/SongHeader';
 
 export default function Song({ params }: { params: Promise<{ id: string }> }) {
@@ -165,7 +165,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
 
         {/* Sync Mode */}
         {syncMode && displayLyrics && (
-          <SyncLyricsEditorUnified
+          <SyncLyricsEditor
             plainLyrics={plainLyrics}
             existingLrc={displayLyrics.synced}
             existingWordLrc={displayLyrics.wordSynced}
