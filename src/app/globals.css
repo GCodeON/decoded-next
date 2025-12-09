@@ -43,37 +43,3 @@ body {
 .lyric-word-cursor.active {
   display: block;
 }
-
-/* Simplified word styling - no scale animation for cursor mode */
-span[data-word-index] {
-  display: inline-block;
-  position: relative;
-}
-
-/* Subtle fade for future lines, keep past and active at full opacity */
-.synced-line {
-  opacity: 0.5;
-  transition: opacity 0.2s ease-out;
-}
-
-.synced-line.active-line,
-.synced-line.past-line {
-  opacity: 1;
-}
-
-/* Hide rhyme colors in future lines - only applies to spans without revealed class */
-.synced-line:not(.active-line):not(.past-line) span:not(.bg-revealed) {
-  background-color: transparent !important;
-  background-image: none !important;
-}
-
-/* Hide colors on active lines until revealed */
-.synced-line.active-line span[data-original-bg]:not(.bg-revealed) {
-  background-color: transparent !important;
-  background-image: none !important;
-}
-
-/* .synced-line:not(.active-line):not(.past-line) span {
-  background-color: transparent !important;
-  background-image: none !important;
-} */
