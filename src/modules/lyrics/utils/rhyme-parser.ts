@@ -59,24 +59,52 @@ export const parseRhymeLine = (html?: string): ParsedRhymeLine | null => {
 };
 
 /**
+ * Extract trailing punctuation from a word
+ * Returns { cleanWord, punctuation }
+ */
+const splitWordAndPunctuation = (text: string): { clean: string; punctuation: string } => {
+  const match = text.match(/^(.*?)([^\w\s']*)$/);
+  return {
+    clean: match?.[1] || text,
+    punctuation: match?.[2] || '',
+  };
+};
+
+/**
  * Find character positions of words within line text
+ * Strips punctuation for matching but preserves full word.text in ranges
  * Supports case-insensitive matching as fallback
  */
 export const buildWordRanges = (lineText: string, words: Word[]) => {
-  const ranges: { start: number; end: number; text: string }[] = [];
+  const ranges: { start: number; end: number; text: string; clean: string }[] = [];
   let searchFrom = 0;
 
   for (const word of words) {
-    const idx =
-      lineText.indexOf(word.text, searchFrom) !== -1
-        ? lineText.indexOf(word.text, searchFrom)
-        : lineText.toLowerCase().indexOf(word.text.toLowerCase(), searchFrom);
+    const { clean: cleanWord, punctuation } = splitWordAndPunctuation(word.text);
+    
+    // Search for clean word (without punctuation)
+    let idx = lineText.indexOf(cleanWord, searchFrom);
+    if (idx === -1) {
+      idx = lineText.toLowerCase().indexOf(cleanWord.toLowerCase(), searchFrom);
+    }
 
     if (idx === -1) {
-      ranges.push({ start: -1, end: -1, text: word.text });
+      ranges.push({ start: -1, end: -1, text: word.text, clean: cleanWord });
     } else {
-      ranges.push({ start: idx, end: idx + word.text.length, text: word.text });
-      searchFrom = idx + word.text.length;
+      // Range includes punctuation if it follows immediately after the clean word
+      const endPos = idx + cleanWord.length;
+      const trailingInText = lineText.slice(endPos, endPos + punctuation.length);
+      const fullLength = (trailingInText === punctuation || trailingInText.match(/^[^\w\s']/)) 
+        ? cleanWord.length + punctuation.length 
+        : cleanWord.length;
+      
+      ranges.push({ 
+        start: idx, 
+        end: idx + fullLength, 
+        text: word.text,
+        clean: cleanWord 
+      });
+      searchFrom = idx + fullLength;
     }
   }
 
@@ -86,6 +114,7 @@ export const buildWordRanges = (lineText: string, words: Word[]) => {
 /**
  * Slice rhyme segments to align with LRC word boundaries
  * Maps colored segments from HTML to specific words in the line
+ * Handles punctuation as separate (uncolored) segments for clarity
  */
 export const sliceSegmentsToWords = (
   lineText: string,
@@ -119,9 +148,17 @@ export const sliceSegmentsToWords = (
       }
     }
 
-    return parts.length > 0
-      ? parts
-      : [{ text: range.text, color: null, start: range.start, end: range.end }];
+    // Fallback: if no segments found, create one with no color (transparent/uncolored)
+    if (parts.length === 0) {
+      parts.push({ 
+        text: range.text, 
+        color: null, 
+        start: range.start, 
+        end: range.end 
+      });
+    }
+
+    return parts;
   });
 };
 

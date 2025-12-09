@@ -1,3 +1,4 @@
+'use client';
 import { useRef, useEffect, memo } from 'react';
 import type { Word } from '../utils/lrcAdvanced';
 import type { WordRhymeParts, AnimationStyle } from '../types/rhyme';
@@ -113,7 +114,10 @@ export const RhymeWordHighlight = memo(function RhymeWordHighlight({
 
                 const visibleText = seg.text.slice(0, visibleCount);
                 const hiddenText = seg.text.slice(visibleCount);
-                const segColor = seg.color || fallbackColor;
+                
+                // Check if segment is punctuation (no alphanumeric chars)
+                const isPunctuation = /^[^\w\s']+$/.test(seg.text);
+                const segColor = isPunctuation ? null : (seg.color || fallbackColor);
 
                 return (
                   <span key={`${index}-${segIdx}`} className="inline-block">
