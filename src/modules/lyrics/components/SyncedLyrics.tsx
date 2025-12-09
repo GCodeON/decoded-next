@@ -247,15 +247,9 @@ const SyncedLyrics = ({
               />
             ) : shouldUseWordSync && words.length > 0 ? (
               <PlainWordHighlight lineText={text} isActive={isActive} filledWords={filledWords} />
-            ) : (
-              <span>{text}</span>
-            )}
-
-            {(!shouldUseWordSync || !words.length) && showRhymes && (
+            ) : showRhymes ? (
               <div dangerouslySetInnerHTML={{ __html: rhymeEncodedLines?.[i] || '' }} />
-            )}
-
-            {(!shouldUseWordSync || !words.length) && !showRhymes && (
+            ) : (
               <span>{text}</span>
             )}
           </div>
