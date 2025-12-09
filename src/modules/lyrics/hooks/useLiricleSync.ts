@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import Liricle from 'liricle';
 import type { Word } from '@/modules/lyrics/utils/lrcAdvanced';
 
+const SPOTIFY_OFFSET_MS = 0;
+
 export interface LiricleSyncResult {
   activeLine: number | null;
   activeWordIndex: number | null;
@@ -11,6 +13,7 @@ export interface LiricleSyncResult {
   lines: string[];
   wordsByLine: Word[][];
   error: string | null;
+  currentTimeSec: number; // Offset-adjusted playback time for consistent word/line sync
 }
 
 export function useLiricleSync({
@@ -28,72 +31,9 @@ export function useLiricleSync({
   const [wordsByLine, setWordsByLine] = useState<Word[][]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  // Create fresh instance on each LRC change 
-  useEffect(() => {
-    if (!lrcText) {
-      setLines([]);
-      setWordsByLine([]);
-      setActiveLine(null);
-      setActiveWordIndex(null);
-      setError(null);
-      return;
-    }
-
-    let newInstance: Liricle | null = null;
-    let isMounted = true; 
-
-    try {
-      newInstance = new Liricle();
-
-      const onLoad = (data: any) => {
-        if (!isMounted) return;
-        setLines(data.lines.map((l: any) => l.text || ''));
-        setWordsByLine(data.lines.map((l: any) => l.words || []));
-        setError(null);
-      };
-
-      const onLoadError = (err: any) => {
-        if (!isMounted) return;
-        setError(err.message || 'Failed to parse lyrics');
-      };
-
-      const onSync = (line: any, word: any) => {
-        if (!isMounted) return;
-        setActiveLine(line?.index ?? null);
-        setActiveWordIndex(word?.index ?? null);
-      };
-
-      newInstance.on('load', onLoad);
-      newInstance.on('loaderror', onLoadError);
-      newInstance.on('sync', onSync);
-
-      // Load lyrics
-      newInstance.load({ text: lrcText });
-
-      // Fine-tune sync for Spotify (~100–200ms offset)
-      newInstance.offset = 150;
-
-   
-      return () => {
-        isMounted = false; // Prevent stale updates
-        newInstance = null; // Allow GC
-      };
-    } catch (err) {
-      if (isMounted) {
-        setError((err as Error).message);
-      }
-      return () => {
-        isMounted = false;
-        newInstance = null;
-      };
-    }
-  }, [lrcText]); 
-
-  useEffect(() => {
-  }, [currentPositionMs, isPlaying]); 
-
   const instanceRef = useRef<Liricle | null>(null);
 
+  // Initialize Liricle instance once per LRC text
   useEffect(() => {
     if (!lrcText) {
       instanceRef.current = null;
@@ -134,7 +74,8 @@ export function useLiricleSync({
       newInstance.on('sync', onSync);
 
       newInstance.load({ text: lrcText });
-      newInstance.offset = 150;
+      // Fine-tune sync for Spotify (~150ms offset)
+      newInstance.offset = SPOTIFY_OFFSET_MS;
 
       return () => {
         isMounted = false;
@@ -151,13 +92,17 @@ export function useLiricleSync({
     }
   }, [lrcText]);
 
+  // Sync playback position
   useEffect(() => {
     const instance = instanceRef.current;
     if (!instance || !isPlaying) return;
 
     const currentSec = currentPositionMs / 1000;
-    instance.sync(currentSec); 
+    instance.sync(currentSec);
   }, [currentPositionMs, isPlaying]);
+
+  // Compute offset-adjusted time for word progress calculations
+  const currentTimeSec = (currentPositionMs - SPOTIFY_OFFSET_MS) / 1000;
 
   return {
     activeLine,
@@ -166,5 +111,6 @@ export function useLiricleSync({
     lines,
     wordsByLine,
     error,
+    currentTimeSec,
   };
 }

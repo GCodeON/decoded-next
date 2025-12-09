@@ -26,60 +26,60 @@ export const RhymeWordHighlight = memo(function RhymeWordHighlight({
   wordParts,
 }: RhymeWordHighlightProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const cursorRef = useRef<HTMLDivElement>(null);
+  // const cursorRef = useRef<HTMLDivElement>(null);
   const getWordProgress = useWordProgress(words, currentTimeSec, isPast, filledWords);
 
-  // Cursor animation effect
-  useEffect(() => {
-    if (!isActive || !cursorRef.current || animationStyle === 'scale') return;
+  // // Cursor animation effect
+  // useEffect(() => {
+  //   if (!isActive || !cursorRef.current || animationStyle === 'scale') return;
 
-    const activeIdx = words.findIndex((w) => currentTimeSec < w.time);
-    const currentIdx = activeIdx === -1 ? words.length - 1 : activeIdx - 1;
-    if (currentIdx < 0) return;
+  //   const activeIdx = words.findIndex((w) => currentTimeSec < w.time);
+  //   const currentIdx = activeIdx === -1 ? words.length - 1 : activeIdx - 1;
+  //   if (currentIdx < 0) return;
 
-    const spans = containerRef.current?.querySelectorAll('span[data-word]') || [];
-    const current = Array.from(spans).filter(
-      (s) => parseInt(s.getAttribute('data-word')!) === currentIdx
-    );
-    const next = Array.from(spans).filter(
-      (s) => parseInt(s.getAttribute('data-word')!) === currentIdx + 1
-    );
+  //   const spans = containerRef.current?.querySelectorAll('span[data-word]') || [];
+  //   const current = Array.from(spans).filter(
+  //     (s) => parseInt(s.getAttribute('data-word')!) === currentIdx
+  //   );
+  //   const next = Array.from(spans).filter(
+  //     (s) => parseInt(s.getAttribute('data-word')!) === currentIdx + 1
+  //   );
 
-    if (current.length === 0) return;
+  //   if (current.length === 0) return;
 
-    const rects = current.map((s) => s.getBoundingClientRect());
-    const containerRect = containerRef.current!.getBoundingClientRect();
-    const left = Math.min(...rects.map((r) => r.left)) - containerRect.left;
-    const right = Math.max(...rects.map((r) => r.right)) - containerRect.left;
+  //   const rects = current.map((s) => s.getBoundingClientRect());
+  //   const containerRect = containerRef.current!.getBoundingClientRect();
+  //   const left = Math.min(...rects.map((r) => r.left)) - containerRect.left;
+  //   const right = Math.max(...rects.map((r) => r.right)) - containerRect.left;
 
-    let finalLeft = left;
-    if (next.length > 0 && words[currentIdx + 1]) {
-      const nextLeft = next[0].getBoundingClientRect().left - containerRect.left;
-      const progress = Math.min(
-        Math.max(
-          (currentTimeSec - words[currentIdx].time) /
-            (words[currentIdx + 1].time - words[currentIdx].time),
-          0
-        ),
-        1
-      );
-      finalLeft = left + (nextLeft - left) * progress;
-    }
+  //   let finalLeft = left;
+  //   if (next.length > 0 && words[currentIdx + 1]) {
+  //     const nextLeft = next[0].getBoundingClientRect().left - containerRect.left;
+  //     const progress = Math.min(
+  //       Math.max(
+  //         (currentTimeSec - words[currentIdx].time) /
+  //           (words[currentIdx + 1].time - words[currentIdx].time),
+  //         0
+  //       ),
+  //       1
+  //     );
+  //     finalLeft = left + (nextLeft - left) * progress;
+  //   }
 
-    cursorRef.current.style.left = `${finalLeft}px`;
-    cursorRef.current.style.width = `${right - left}px`;
-    cursorRef.current.style.opacity = '1';
-  }, [isActive, currentTimeSec, words, animationStyle]);
+  //   cursorRef.current.style.left = `${finalLeft}px`;
+  //   cursorRef.current.style.width = `${right - left}px`;
+  //   cursorRef.current.style.opacity = '1';
+  // }, [isActive, currentTimeSec, words, animationStyle]);
 
   return (
     <>
-      {animationStyle !== 'scale' && (
+      {/* {animationStyle !== 'scale' && (
         <div
           ref={cursorRef}
           className="pointer-events-none absolute h-8 bg-white/60 blur-lg"
           style={CURSOR_STYLE}
         />
-      )}
+      )} */}
 
       <div ref={containerRef} className="relative inline-block leading-relaxed">
         {words.map((word, index) => {

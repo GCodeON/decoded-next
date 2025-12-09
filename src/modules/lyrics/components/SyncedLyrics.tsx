@@ -1,5 +1,5 @@
 'use client';
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useMemo } from 'react';
 import { useLiricleSync } from '@/modules/lyrics/hooks/useLiricleSync';
 import { useRhymeColorMap } from '@/modules/lyrics/hooks/useRhymeColorMap';
 import { RhymeWordHighlight } from './RhymeWordHighlight';
@@ -18,13 +18,12 @@ const SyncedLyrics = ({
 }: SyncedLyricsProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   
-  const { activeLine: activeLineIndex, lines, wordsByLine, error } = useLiricleSync({
+  const { activeLine: activeLineIndex, lines, wordsByLine, error, currentTimeSec } = useLiricleSync({
     lrcText: syncedLyrics,
     currentPositionMs,
     isPlaying,
   });
 
-  const currentTimeSec = currentPositionMs / 1000;
   const isWordSynced = wordsByLine.some((line) => line.length > 0);
   const shouldUseWordSync = mode === 'word' || (mode === 'auto' && isWordSynced);
   
@@ -34,22 +33,48 @@ const SyncedLyrics = ({
     wordsByLine
   );
 
-  // Calculate filled words in active line
-  const filledWords =
-    activeLineIndex !== null
-      ? (() => {
-          const words = wordsByLine[activeLineIndex] || [];
-          const idx = words.findIndex((w) => currentTimeSec < w.time);
-          return idx === -1 ? words.length : idx;
-        })()
-      : 0;
+  // Lead time applied only when both word sync and rhymes are enabled (keeps bg + line in sync)
+  const leadAdjustedTime = shouldUseWordSync && showRhymes ? currentTimeSec + 1.75 : currentTimeSec;
+
+  // Helper to calculate filled words for any line based on current time
+  const getFilledWordsForLine = (lineWords: typeof wordsByLine[number]) => {
+    if (lineWords.length === 0) return 0;
+    // Apply lead time when both word sync and rhymes are enabled for snappier animations
+    const idx = lineWords.findIndex((w) => w.time > leadAdjustedTime);
+    return idx === -1 ? lineWords.length : idx;
+  };
+
+  // Predict active line based on word timing for instant visual feedback
+  // Instead of waiting for Liricle's onSync callback, calculate from word positions
+  // Use this whenever word timing is available (word sync or rhyme display with word data)
+  const hasWordTiming = wordsByLine.length > 0 && wordsByLine.some((line) => line.length > 0);
+  
+  const predictedActiveLineIndex = useMemo(() => {
+    if (!hasWordTiming) return activeLineIndex;
+    
+    // Find which line the playback is currently in by checking first word times
+    for (let i = 0; i < wordsByLine.length; i++) {
+      const lineWords = wordsByLine[i];
+      if (lineWords.length === 0) continue;
+      
+      // If current time is before this line's first word, active line is previous
+      if (lineWords[0].time > leadAdjustedTime) {
+        return i > 0 ? i - 1 : 0;
+      }
+    }
+    
+    // We're past all lines
+    return wordsByLine.length > 0 ? wordsByLine.length - 1 : activeLineIndex;
+  }, [wordsByLine, leadAdjustedTime, hasWordTiming, activeLineIndex]);
+
+  const effectiveActiveLineIndex = hasWordTiming ? predictedActiveLineIndex : activeLineIndex;
 
   // Auto-scroll to active line
   useEffect(() => {
-    if (activeLineIndex === null || !containerRef.current) return;
-    const el = containerRef.current.children[activeLineIndex] as HTMLElement;
+    if (effectiveActiveLineIndex === null || !containerRef.current) return;
+    const el = containerRef.current.children[effectiveActiveLineIndex] as HTMLElement;
     el?.scrollIntoView(SCROLL_OPTIONS);
-  }, [activeLineIndex]);
+  }, [effectiveActiveLineIndex]);
 
   if (error) return <div className="text-red-500 p-4">Error: {error}</div>;
 
@@ -60,8 +85,8 @@ const SyncedLyrics = ({
     >
       {lines.map((line, i) => {
         const text = line.trim();
-        const isActive = i === activeLineIndex;
-        const isPast = activeLineIndex !== null && i < activeLineIndex;
+        const isActive = i === effectiveActiveLineIndex;
+        const isPast = effectiveActiveLineIndex !== null && i < effectiveActiveLineIndex;
         const words = wordsByLine[i] || [];
 
         // Empty line (instrumental break)
@@ -81,9 +106,9 @@ const SyncedLyrics = ({
         return (
           <div
             key={i}
-            className={`px-6 py-3 rounded-lg transition-all duration-300 ${
+            className={`px-6 py-3 rounded-lg transition-all ${
               isActive
-                ? 'bg-blue-100/70 dark:bg-blue-900/40 font-bold'
+                ? 'bg-blue-100/70 dark:bg-blue-900/40'
                 : isPast
                 ? 'opacity-80'
                 : 'opacity-50'
@@ -95,7 +120,7 @@ const SyncedLyrics = ({
                 rhymeColorMap={rhymeColorMap}
                 isActive={isActive}
                 isPast={isPast}
-                filledWords={isActive ? filledWords : 0}
+                filledWords={getFilledWordsForLine(words)}
                 animationStyle={animationStyle}
                 currentTimeSec={currentTimeSec}
                 wordParts={wordPartsByLine[i]}
@@ -104,7 +129,7 @@ const SyncedLyrics = ({
               <PlainWordHighlight
                 lineText={text}
                 isActive={isActive}
-                filledWords={filledWords}
+                filledWords={getFilledWordsForLine(words)}
               />
             ) : showRhymes ? (
               <div dangerouslySetInnerHTML={{ __html: rhymeEncodedLines?.[i] || '' }} />
