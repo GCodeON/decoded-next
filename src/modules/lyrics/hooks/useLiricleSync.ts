@@ -47,7 +47,6 @@ export function useLiricleSync({
 
       const onLoad = (data: any) => {
         if (!isMounted) return;
-        console.log('Liricle loaded:', data);
         setLines(data.lines.map((l: any) => l.text || ''));
         setWordsByLine(data.lines.map((l: any) => l.words || []));
         setError(null);
