@@ -1,17 +1,20 @@
 'use client';
 import { use, useState, useMemo, useEffect } from 'react';
-import { FaEdit, FaClock } from 'react-icons/fa';
+import { FaEdit, FaClock, FaFont } from 'react-icons/fa';
 import { useSpotifyTrack, usePlaybackSync } from '@/modules/spotify';
-import { useSavedSong, LyricsEditor, SyncLyricsEditor, SyncedLyrics, lyricsToHtml, mapLrcToRhymeHtml } from '@/modules/lyrics';
+import { useSavedSong, LyricsEditor, SyncedLyrics, lyricsToHtml, mapLrcToRhymeHtml } from '@/modules/lyrics';
+import SyncLyricsEditor from '@/modules/lyrics/components/SyncLyricsEditor';
 import SongHeader from '@/components/SongHeader';
 
 export default function Song({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { track,  loading: trackLoading, error: trackError } = useSpotifyTrack(id);
-  const { savedSong, isSaving, lyricsLoading, lyricsError, updateLyrics, updateSynced } = useSavedSong({track, trackId: id});
+  const { savedSong, isSaving, lyricsLoading, lyricsError, updateLyrics, updateSynced, updateWordSynced } = useSavedSong({track, trackId: id});
   
   const [editMode, setEditMode] = useState(false);
   const [syncMode, setSyncMode] = useState(false);
+  const [wordSyncEnabled, setWordSyncEnabled] = useState(false);
+  const [showRhymes, setShowRhymes] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
 
   const displayLyrics = useMemo(() => {
@@ -32,10 +35,26 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
   }, [savedSong]);
 
   const hasSynced = !!displayLyrics?.synced;
+  const hasWordSynced = !!displayLyrics?.wordSynced;
   
   // Enable high-frequency polling when: in sync editor mode OR viewing synced lyrics
   const isViewMode = hasSynced && !editMode && !syncMode;
   const { isPlaying, currentPosition, currentPositionMs, togglePlayback } = usePlaybackSync(id, !!track, syncMode, isViewMode);
+
+  // Compute synced lyrics configuration
+  const syncConfig = useMemo(() => {
+    if (!displayLyrics || !hasSynced) return null;
+    
+    const useWordSync = wordSyncEnabled && hasWordSynced;
+    
+    return {
+      lyrics: useWordSync 
+        ? displayLyrics.wordSynced! 
+        : displayLyrics.wordSynced || displayLyrics.synced!,
+      mode: (useWordSync ? 'word' : 'line') as 'word' | 'line',
+      rhymeEncodedLines: displayLyrics.rhymeEncodedLines || undefined,
+    };
+  }, [displayLyrics, hasSynced, wordSyncEnabled, hasWordSynced]);
 
   // Listen for LrcLib publish event to show toast
   useEffect(() => {
@@ -88,6 +107,27 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
           <h2 className="text-black text-2xl font-bold">Lyrics</h2>
           {displayLyrics && !editMode && !syncMode && (
             <div className="flex gap-4">
+              {hasSynced && (
+                <button
+                  onClick={() => setWordSyncEnabled(!wordSyncEnabled)}
+                  className={`flex items-center gap-2 font-semibold ${
+                    wordSyncEnabled
+                      ? 'text-purple-600 hover:text-purple-700'
+                      : 'text-gray-600 hover:text-gray-700'
+                  }`}
+                >
+                  <FaFont /> {wordSyncEnabled ? 'Word Sync ON' : 'Word Sync'}
+                </button>
+              )}
+              <button
+                onClick={() => setShowRhymes(!showRhymes)}
+                className={`flex items-center gap-2 font-semibold ${
+                  showRhymes ? 'text-green-600 hover:text-green-700' : 'text-gray-600 hover:text-gray-700'
+                }`}
+              >
+                {/* Palette icon optional; using label for clarity */}
+                {showRhymes ? 'Rhymes ON' : 'Rhymes OFF'}
+              </button>
               {!hasSynced ? (
                 <button
                   onClick={() => setSyncMode(true)}
@@ -128,26 +168,32 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
           <SyncLyricsEditor
             plainLyrics={plainLyrics}
             existingLrc={displayLyrics.synced}
+            existingWordLrc={displayLyrics.wordSynced}
             currentPosition={currentPosition}
             currentPositionMs={currentPositionMs}
             isPlaying={isPlaying}
             togglePlayback={togglePlayback}
-            onSave={(lrc) => {
+            onSave={(lrc: string) => {
               updateSynced(lrc);
+              setSyncMode(false);
+            }}
+            onSaveWordSync={(wordLrc: string) => {
+              updateWordSynced(wordLrc);
               setSyncMode(false);
             }}
             onCancel={() => setSyncMode(false)}
           />
         )}
 
-        {/* Synced View */}
-        {displayLyrics && !editMode && !syncMode && hasSynced && (
+        {/* Synced lyrics view */}
+        {syncConfig && !editMode && !syncMode && (
           <SyncedLyrics
-            syncedLyrics={displayLyrics.synced!}
-            currentPosition={currentPosition}
+            syncedLyrics={syncConfig.lyrics}
             currentPositionMs={currentPositionMs}
             isPlaying={isPlaying}
-            rhymeEncodedLines={displayLyrics.rhymeEncodedLines}
+            rhymeEncodedLines={syncConfig.rhymeEncodedLines}
+            showRhymes={showRhymes}
+            mode={syncConfig.mode}
           />
         )}
 

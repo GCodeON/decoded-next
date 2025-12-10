@@ -1,49 +1,72 @@
 'use client';
 import { useRef, useCallback, useEffect, useMemo, useState } from 'react';
-import { FaClock } from 'react-icons/fa';
-import { 
-  formatTime, 
-  generateLrc, 
-  useLyricSync, 
-  useTimestampEditor, 
-  TimestampDisplay, 
-  SyncControls
-} from '@/modules/lyrics';
+import { FaClock, FaFont } from 'react-icons/fa';
+import { formatTime, generateLrc, useLyricSync, useTimestampEditor, SyncControls, generateEnhancedLrc, parseEnhancedLrc, type Word } from '@/modules/lyrics';
+import LineEditor from  './sync-editor/LineEditor';
+import WordEditor from './sync-editor/WordEditor';
+
 interface Props {
   plainLyrics: string;
   existingLrc?: string | null;
+  existingWordLrc?: string | null;
   currentPosition: number;
   currentPositionMs?: number;
   isPlaying: boolean;
   togglePlayback: () => void;
   onSave: (lrc: string) => void;
+  onSaveWordSync?: (wordLrc: string) => void;
   onCancel: () => void;
 }
 
 export default function SyncLyricsEditor({
   plainLyrics,
   existingLrc,
+  existingWordLrc,
   currentPosition,
   currentPositionMs,
   isPlaying,
   togglePlayback,
   onSave,
+  onSaveWordSync,
   onCancel
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [wordTimingMode, setWordTimingMode] = useState(false);
+  const [wordTimestamps, setWordTimestamps] = useState<Map<number, Word[]>>(new Map());
+  const [currentWordIndex, setCurrentWordIndex] = useState(0);
 
-  // Sync state - autoScroll true so we get activeLine for auto-follow
+  // Load existing word timestamps from existingWordLrc
+  useEffect(() => {
+    if (existingWordLrc) {
+      try {
+        const parsed = parseEnhancedLrc(existingWordLrc);
+        const wordMap = new Map<number, Word[]>();
+        
+        parsed.lines.forEach((timedLine, index) => {
+          if (timedLine.words && timedLine.words.length > 0) {
+            wordMap.set(index, timedLine.words);
+          }
+        });
+        
+        setWordTimestamps(wordMap);
+      } catch (error) {
+        console.error('Failed to parse existing word-synced LRC:', error);
+      }
+    }
+  }, [existingWordLrc]);
+
+  // Sync state - shared between line and word modes
   const { lines, timestamps, setTimestamps, allStamped, activeLine } = useLyricSync({
     plainLyrics,
     existingLrc,
     currentPosition,
     currentPositionMs,
     isPlaying,
-    autoScroll: true,
-    debug: true
+    autoScroll: true, // Enables activeLine tracking during playback
+    debug: false
   });
 
-  // Timestamp editing
+  // Timestamp editing - shared
   const {
     editingIndex,
     editValue,
@@ -53,54 +76,33 @@ export default function SyncLyricsEditor({
     saveEdit
   } = useTimestampEditor();
 
-  // Manual navigation state
+  // Navigation state - shared
   const [manualLineOverride, setManualLineOverride] = useState<number | null>(null);
   const [manualNavigation, setManualNavigation] = useState(false);
 
-  // Compute currentLine synchronously
-  // Behavior:
-  // - If we have a manual override (set by navigation or last-follow), use it
-  // - Else use activeLine when available
-  // - Fallback to 0 only when neither exists (initial state)
+  // Current line computation - prioritizes activeLine during playback when auto-scroll is enabled
   const currentLine = useMemo(() => {
-    // When paused, retain the last manual override to avoid skipping lines on resume
-    if (!isPlaying && manualLineOverride !== null) return manualLineOverride;
+    // If auto-scroll is enabled (manualNavigation false), follow activeLine during playback
+    if (!manualNavigation && isPlaying && activeLine !== null) {
+      return activeLine;
+    }
+    // If in manual navigation mode, use manual override
+    if (manualNavigation && manualLineOverride !== null) {
+      return manualLineOverride;
+    }
+    // Default fallback
     if (activeLine !== null) return activeLine;
     return 0;
-  }, [manualLineOverride, activeLine, isPlaying]);
+  }, [manualNavigation, isPlaying, activeLine, manualLineOverride]);
 
-  // Update manual override when activeLine changes (auto-follow when not manually navigating)
+  // Update manual override to sync with activeLine when auto-scroll is enabled
   useEffect(() => {
-    if (activeLine !== null && !manualNavigation && editingIndex === null) {
+    if (!manualNavigation && activeLine !== null && editingIndex === null) {
       setManualLineOverride(activeLine);
     }
   }, [activeLine, manualNavigation, editingIndex]);
 
-  // Debug: log active/current line transitions and unpause responsiveness
-  useEffect(() => {
-    console.log('[SyncLyricsEditor] isPlaying', { isPlaying, ts: Math.floor(performance.now()) });
-  }, [isPlaying]);
-
-  useEffect(() => {
-    console.log('[SyncLyricsEditor] activeLine', { activeLine, ts: Math.floor(performance.now()) });
-  }, [activeLine]);
-
-  useEffect(() => {
-    console.log('[SyncLyricsEditor] currentLine', { currentLine, ts: Math.floor(performance.now()) });
-  }, [currentLine]);
-
-  // Navigation callbacks
-  const stampCurrent = useCallback(() => {
-    const ms = typeof currentPositionMs === 'number' ? currentPositionMs : currentPosition * 1000;
-    const sec = Math.floor(ms / 1000);
-    setTimestamps(prev => {
-      const next = [...prev];
-      next[currentLine] = Number(sec.toFixed(2));
-      return next;
-    });
-    setManualLineOverride(Math.min(lines.length - 1, currentLine + 1));
-  }, [currentPositionMs, currentPosition, lines.length, setTimestamps, currentLine]);
-
+  // Navigation callbacks - shared
   const goBack = useCallback(() => {
     setManualLineOverride(prev => Math.max(0, (prev ?? currentLine) - 1));
   }, [currentLine]);
@@ -112,6 +114,7 @@ export default function SyncLyricsEditor({
   const goToLine = useCallback((index: number) => {
     setManualLineOverride(index);
     setManualNavigation(true);
+    setCurrentWordIndex(0); // Reset word index when manually navigating to a line
   }, []);
 
   const enableAutoScroll = useCallback(() => {
@@ -123,7 +126,7 @@ export default function SyncLyricsEditor({
 
   const allStampedStatus = useMemo(() => timestamps.every(t => t !== null), [timestamps]);
 
-  // Auto-scroll to current line - use rAF for smooth, immediate scrolling
+  // Auto-scroll - scrolls to current line (works in both auto and manual navigation)
   useEffect(() => {
     const element = containerRef.current?.children[currentLine] as HTMLElement | undefined;
     if (element) {
@@ -133,7 +136,7 @@ export default function SyncLyricsEditor({
     }
   }, [currentLine]);
 
-  // Handlers
+  // Line stamping handler - shared
   const handleStampLine = useCallback((index: number) => {
     const ms = typeof currentPositionMs === 'number' ? currentPositionMs : currentPosition * 1000;
     const sec = Math.floor(ms / 1000);
@@ -145,7 +148,133 @@ export default function SyncLyricsEditor({
     if (index === currentLine) {
       setManualLineOverride(Math.min(lines.length - 1, index + 1));
     }
-  }, [currentPositionMs, currentPosition, currentLine, lines.length, setTimestamps]);
+    // Disable auto-scroll when user manually stamps during playback
+    if (isPlaying) {
+      setManualNavigation(true);
+    }
+  }, [currentPositionMs, currentPosition, currentLine, lines.length, setTimestamps, isPlaying]);
+
+  // Word stamping handler - word mode only (must be before keyboard shortcuts)
+  const handleStampWord = useCallback((lineIndex: number, wordIndex: number, wordText: string) => {
+    if (!wordText || wordText.trim().length === 0) {
+      console.warn('Attempted to stamp empty word');
+      return;
+    }
+    
+    const ms = typeof currentPositionMs === 'number' ? currentPositionMs : currentPosition * 1000;
+    const timeSec = Number((ms / 1000).toFixed(3));
+    
+    setWordTimestamps(prev => {
+      const newMap = new Map(prev);
+      const lineWords = newMap.get(lineIndex) || [];
+      const lineText = lines[lineIndex]?.trim() || '';
+      
+      // Calculate character positions for the word in the line
+      const wordStart = lineText.indexOf(wordText.trim());
+      const wordEnd = wordStart >= 0 ? wordStart + wordText.trim().length : -1;
+      
+      const newWord: Word = { 
+        text: wordText.trim(), 
+        time: timeSec,
+        start: wordStart >= 0 ? wordStart : 0,
+        end: wordEnd >= 0 ? wordEnd : wordText.trim().length,
+      };
+      const existingIndex = lineWords.findIndex(w => w && w.text === wordText.trim());
+      
+      if (existingIndex !== -1) {
+        const updatedWords = [...lineWords];
+        updatedWords[existingIndex] = newWord;
+        newMap.set(lineIndex, updatedWords);
+      } else {
+        const updatedWords = [...lineWords, newWord];
+        updatedWords.sort((a, b) => (a?.time || 0) - (b?.time || 0));
+        newMap.set(lineIndex, updatedWords);
+      }
+      
+      return newMap;
+    });
+  }, [currentPositionMs, currentPosition]);
+
+  // Keyboard shortcuts - different behavior for line vs word mode
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      switch (e.key) {
+        case ' ':
+          e.preventDefault();
+          // Space only stamps lines in line mode, not in word mode
+          if (!wordTimingMode) {
+            handleStampLine(currentLine);
+          }
+          break;
+        case 'Enter':
+          e.preventDefault();
+          // Enter stamps words in word mode, lines in line mode
+          if (wordTimingMode) {
+            const currentLineText = lines[currentLine];
+            const lineWords = currentLineText?.trim() ? currentLineText.trim().split(/\s+/) : [];
+            if (lineWords.length > 0 && currentWordIndex < lineWords.length) {
+              const wordText = lineWords[currentWordIndex];
+              handleStampWord(currentLine, currentWordIndex, wordText);
+              // Move to next word, or next line if at end of words
+              if (currentWordIndex < lineWords.length - 1) {
+                setCurrentWordIndex(currentWordIndex + 1);
+              } else {
+                // Move to next line and reset word index
+                if (currentLine < lines.length - 1) {
+                  setManualLineOverride(currentLine + 1);
+                  setCurrentWordIndex(0);
+                }
+              }
+            }
+            // Disable auto-scroll when manually stamping during playback
+            if (isPlaying) {
+              setManualNavigation(true);
+            }
+          } else {
+            // In line mode, Enter stamps the line
+            handleStampLine(currentLine);
+          }
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          goBack();
+          setManualNavigation(true);
+          if (wordTimingMode) setCurrentWordIndex(0);
+          break;
+        case 'ArrowDown':
+          e.preventDefault();
+          goNext();
+          setManualNavigation(true);
+          if (wordTimingMode) setCurrentWordIndex(0);
+          break;
+        case 'ArrowLeft':
+          e.preventDefault();
+          if (wordTimingMode) {
+            setCurrentWordIndex(prev => Math.max(0, prev - 1));
+          }
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          if (wordTimingMode) {
+            const currentLineText = lines[currentLine];
+            const lineWords = currentLineText?.trim() ? currentLineText.trim().split(/\s+/) : [];
+            setCurrentWordIndex(prev => Math.min(lineWords.length - 1, prev + 1));
+          }
+          break;
+        case 'Escape':
+          e.preventDefault();
+          enableAutoScroll();
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentLine, currentWordIndex, wordTimingMode, lines, handleStampLine, handleStampWord, goBack, goNext, enableAutoScroll, setManualLineOverride, isPlaying]);
 
   const handleSaveTimestamp = useCallback((index: number, value: number) => {
     setTimestamps(prev => {
@@ -156,11 +285,20 @@ export default function SyncLyricsEditor({
   }, [setTimestamps]);
 
   const handleSave = useCallback(() => {
-    const lrc = generateLrc(lines, timestamps);
-    onSave(lrc);
-  }, [lines, timestamps, onSave]);
+    // Always save line-level LRC
+    const lineLrc = generateLrc(lines, timestamps);
+    onSave(lineLrc);
+    
+    // Additionally save word-level if in word mode and callback provided
+    if (wordTimingMode && wordTimestamps.size > 0 && onSaveWordSync) {
+      const wordLrc = generateEnhancedLrc(lines, timestamps, wordTimestamps);
+      onSaveWordSync(wordLrc);
+    }
+  }, [lines, timestamps, wordTimestamps, wordTimingMode, onSave, onSaveWordSync]);
 
-  const lrc = generateLrc(lines, timestamps);
+  const lrc = wordTimingMode 
+    ? generateEnhancedLrc(lines, timestamps, wordTimestamps)
+    : generateLrc(lines, timestamps);
 
   return (
     <div className="space-y-6">
@@ -173,6 +311,36 @@ export default function SyncLyricsEditor({
         onEnableAutoScroll={enableAutoScroll}
       />
 
+      {/* Word Timing Mode Toggle - only show if onSaveWordSync provided */}
+      {onSaveWordSync && (
+        <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="flex items-center gap-3">
+            <FaFont className="text-blue-600" />
+            <div>
+              <h3 className="font-semibold text-gray-800">Word Timing Mode</h3>
+              <p className="text-sm text-gray-600">
+                {wordTimingMode 
+                  ? 'Press Enter to stamp each word, ← → to navigate words, ↑ ↓ for lines' 
+                  : 'Enable to sync individual words (karaoke-style)'}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              setWordTimingMode(!wordTimingMode);
+              setCurrentWordIndex(0);
+            }}
+            className={`px-6 py-2 rounded-lg font-semibold transition-all ${
+              wordTimingMode
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+          >
+            {wordTimingMode ? 'ON' : 'OFF'}
+          </button>
+        </div>
+      )}
+
       <div
         ref={containerRef}
         className="max-h-96 overflow-y-auto space-y-3 p-4 bg-gray-50 rounded-lg border"
@@ -181,47 +349,41 @@ export default function SyncLyricsEditor({
           const time = timestamps[i];
           const isActive = i === currentLine;
 
-          return (
-            <div
+          return wordTimingMode ? (
+            <WordEditor
               key={i}
-              className={`flex gap-4 p-4 rounded-lg border-2 transition-all cursor-pointer ${
-                isActive
-                  ? 'bg-yellow-100 border-yellow-500 shadow-xl'
-                  : time !== null
-                  ? 'bg-green-50 border-green-300'
-                  : 'bg-white border-gray-300'
-              }`}
-              onClick={() => goToLine(i)}
-            >
-              <TimestampDisplay
-                time={time}
-                isEditing={editingIndex === i}
-                editValue={editValue}
-                onEditChange={setEditValue}
-                onStartEdit={() => startEdit(i, formatTime(time!))}
-                onSaveEdit={() => saveEdit(handleSaveTimestamp)}
-                onCancelEdit={cancelEdit}
-              />
-
-              <div className="flex-1 font-medium text-lg text-black">
-                {line?.trim() ? line : '(instrumental)'}
-              </div>
-
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleStampLine(i);
-                }}
-                className={`text-xs px-3 py-1 rounded font-medium text-white transition ${
-                  time !== null
-                    ? 'bg-orange-600 hover:bg-orange-700'
-                    : 'bg-blue-600 hover:bg-blue-700'
-                }`}
-              >
-                <FaClock className="inline mr-1" />
-                {time !== null ? 'Re-stamp' : 'Set Now'}
-              </button>
-            </div>
+              line={line}
+              lineIndex={i}
+              time={time}
+              isActive={isActive}
+              editingIndex={editingIndex}
+              editValue={editValue}
+              wordTimestamps={wordTimestamps.get(i) || []}
+              currentWordIndex={isActive ? currentWordIndex : -1}
+              onStampLine={() => handleStampLine(i)}
+              onStampWord={(wordIndex: number, wordText: string) => handleStampWord(i, wordIndex, wordText)}
+              onGoToLine={() => goToLine(i)}
+              onEditChange={setEditValue}
+              onStartEdit={() => startEdit(i, formatTime(time!))}
+              onSaveEdit={() => saveEdit(handleSaveTimestamp)}
+              onCancelEdit={cancelEdit}
+            />
+          ) : (
+            <LineEditor
+              key={i}
+              line={line}
+              lineIndex={i}
+              time={time}
+              isActive={isActive}
+              editingIndex={editingIndex}
+              editValue={editValue}
+              onStampLine={() => handleStampLine(i)}
+              onGoToLine={() => goToLine(i)}
+              onEditChange={setEditValue}
+              onStartEdit={() => startEdit(i, formatTime(time!))}
+              onSaveEdit={() => saveEdit(handleSaveTimestamp)}
+              onCancelEdit={cancelEdit}
+            />
           );
         })}
       </div>
@@ -232,7 +394,7 @@ export default function SyncLyricsEditor({
           disabled={!allStampedStatus}
           className="px-8 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
         >
-          Save Synced Lyrics
+          {wordTimingMode ? 'Save Word-Synced Lyrics' : 'Save Synced Lyrics'}
         </button>
         <button onClick={onCancel} className="text-gray-600 hover:text-gray-900">
           Cancel
@@ -242,7 +404,7 @@ export default function SyncLyricsEditor({
       {lrc && (
         <details className="mt-4">
           <summary className="cursor-pointer font-medium text-gray-700">
-            Preview LRC Output
+            Preview LRC Output {wordTimingMode && '(Enhanced Format)'}
           </summary>
           <pre className="mt-3 p-4 bg-gray-900 text-gray-300 text-xs font-mono rounded overflow-x-auto">
             {lrc}

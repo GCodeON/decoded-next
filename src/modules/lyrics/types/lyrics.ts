@@ -3,6 +3,7 @@ export interface LyricsResult {
   lyrics: {
     plain: string;
     synced: string | null;
+    wordSynced?: string | null; // Enhanced LRC with word-level timing
     rhymeEncoded: string;
   };
 }

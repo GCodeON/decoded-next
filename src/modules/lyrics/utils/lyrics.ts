@@ -62,3 +62,8 @@ export function mapLrcToRhymeHtml(lrc: string, rhymeEncoded: string): string[] {
 
   return result;
 }
+
+// Utility function to normalize word keys consistently
+export const normalizeWordKey = (word: string): string => {
+  return word.toLowerCase().replace(/[^\\w']/g, '');
+};

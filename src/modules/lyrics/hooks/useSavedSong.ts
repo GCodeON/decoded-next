@@ -41,6 +41,7 @@ export function useSavedSong({ track, trackId }: UseSavedSongParams) {
           lyrics: {
             plain: data.lyrics?.plain || '',
             synced: data.lyrics?.synced || null,
+            wordSynced: data.lyrics?.wordSynced || null,
             rhymeEncoded: data.lyrics?.rhymeEncoded || lyricsToHtml(data.lyrics?.plain || ''),
           },
         });
@@ -68,7 +69,7 @@ export function useSavedSong({ track, trackId }: UseSavedSongParams) {
         title: cleanTrackName(track.name),
         artist: artistName,
         spotify: trackId,
-        lyrics: { plain, synced, rhymeEncoded },
+        lyrics: { plain, synced, wordSynced: null, rhymeEncoded },
       };
 
       try {
@@ -130,6 +131,27 @@ export function useSavedSong({ track, trackId }: UseSavedSongParams) {
     [savedSong, trackId, publishIfReady]
   );
 
+  const updateWordSynced = useCallback(
+    async (wordSyncedLrc: string) => {
+      if (!savedSong) return;
+
+      const trimmed = wordSyncedLrc.trim() || null;
+      const updated = {
+        ...savedSong,
+        lyrics: { ...savedSong.lyrics, wordSynced: trimmed },
+      };
+
+      setSavedSong(updated);
+
+      try {
+        await songService.updateWordSyncedLyrics(trackId, trimmed);
+      } catch (err) {
+        console.error('Failed to update word-synced lyrics:', err);
+      }
+    },
+    [savedSong, trackId]
+  );
+
   return {
     savedSong,
     isSaving,
@@ -137,5 +159,6 @@ export function useSavedSong({ track, trackId }: UseSavedSongParams) {
     lyricsError,
     updateLyrics,
     updateSynced,
+    updateWordSynced,
   };
 }

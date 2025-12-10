@@ -26,7 +26,7 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-icons": "^4.11.0",
-    "react-spotify-web-playback": "^0.10.1",
+    "react-spotify-web-playback": "^0.14.7",
     "suneditor": "^2.47.8",
     "suneditor-react": "^3.6.1",
     "tailwindcss": "^4.1.17",

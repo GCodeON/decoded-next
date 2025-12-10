@@ -28,6 +28,12 @@ export class SongService {
     });
   }
 
+  async updateWordSyncedLyrics(trackId: string, wordSynced: string | null): Promise<void> {
+    await updateDoc(doc(db, this.collection, trackId), {
+      'lyrics.wordSynced': wordSynced,
+    });
+  }
+
   async updatePublishMetadata(trackId: string, signature: string, timestamp: number): Promise<void> {
     await updateDoc(doc(db, this.collection, trackId), {
       'lrclib.published': true,

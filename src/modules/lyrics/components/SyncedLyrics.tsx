@@ -1,137 +1,155 @@
 'use client';
-import { useRef, useEffect, useState } from 'react';
-import { FaPalette } from 'react-icons/fa';
-import { useLyricSync, SyncedTrack  } from '@/modules/lyrics';
+import { useRef, useEffect, useMemo } from 'react';
+import { useLyricSync } from '@/modules/lyrics/hooks/useLyricSync';
+import { useRhymeColorMap } from '@/modules/lyrics/hooks/useRhymeColorMap';
+import { parseEnhancedLrc } from '@/modules/lyrics/utils/lrcAdvanced';
+import { RhymeWordHighlight } from './RhymeWordHighlight';
+import { PlainWordHighlight } from './PlainWordHighlight';
+import { SCROLL_OPTIONS } from '@/modules/lyrics/config/sync-constants';
+import type { SyncedLyricsProps } from '@/modules/lyrics/types/rhyme';
 
-export default function SyncedLyrics({
+const SyncedLyrics = ({
   syncedLyrics,
-  currentPosition,
   currentPositionMs,
   isPlaying,
-  rhymeEncodedLines
-}: SyncedTrack ) {
+  rhymeEncodedLines,
+  showRhymes = true,
+  mode = 'auto'
+}: SyncedLyricsProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [showRhymes, setShowRhymes] = useState(true);
+  const currentPositionSec = currentPositionMs / 1000;
 
-  const { lines, activeLine } = useLyricSync({
-    plainLyrics: '',
+  // Parse enhanced LRC to extract word timings
+  const { lines, wordsByLine } = useMemo(() => {
+    const parsed = parseEnhancedLrc(syncedLyrics);
+    const extractedLines = parsed.lines.map((l) => l.text);
+    const extractedWords = parsed.lines.map((l) => l.words);
+    return { lines: extractedLines, wordsByLine: extractedWords };
+  }, [syncedLyrics]);
+
+  // Use useLyricSync for line-level sync with smart hysteresis
+  const { activeLine: activeLineIndex } = useLyricSync({
+    plainLyrics: lines.join('\n'),
     existingLrc: syncedLyrics,
-    currentPosition,
+    currentPosition: currentPositionSec,
     currentPositionMs,
     isPlaying,
     autoScroll: true,
-    debug: true
   });
 
-  // Retain last active line while paused to avoid snapping/clearing
-  const lastActiveLineRef = useRef<number | null>(null);
-  const effectiveActiveLine = isPlaying ? activeLine : (lastActiveLineRef.current ?? activeLine);
+  const isWordSynced = wordsByLine.some((line) => line.length > 0);
+  const shouldUseWordSync = mode === 'word' || (mode === 'auto' && isWordSynced);
+  
+  const { colorMap: rhymeColorMap, wordPartsByLine } = useRhymeColorMap(
+    rhymeEncodedLines,
+    lines,
+    wordsByLine
+  );
 
-  useEffect(() => {
-    if (activeLine !== null && isPlaying) {
-      lastActiveLineRef.current = activeLine;
-    }
-  }, [activeLine, isPlaying]);
+  // Lead time applied only when both word sync and rhymes are enabled (keeps bg + line in sync)
+  const leadAdjustedTime = shouldUseWordSync && showRhymes ? currentPositionSec + 1.75 : currentPositionSec;
 
-  // Debug: log active line changes and unpause responsiveness
-  useEffect(() => {
-    if (isPlaying && activeLine !== null) {
-      console.log('[SyncedLyrics] activeLine', {
-        line: activeLine,
-        ts: Math.floor(performance.now())
-      });
-    }
-  }, [isPlaying, activeLine]);
+  // Helper to calculate filled words for any line based on current time
+  const getFilledWordsForLine = (lineWords: typeof wordsByLine[number]) => {
+    if (lineWords.length === 0) return 0;
+    // Apply lead time when both word sync and rhymes are enabled for snappier animations
+    const idx = lineWords.findIndex((w) => w.time > leadAdjustedTime);
+    return idx === -1 ? lineWords.length : idx;
+  };
 
-  useEffect(() => {
-    if (isPlaying) {
-      console.log('[SyncedLyrics] unpaused', { ts: Math.floor(performance.now()) });
-    } else {
-      console.log('[SyncedLyrics] paused', { ts: Math.floor(performance.now()) });
+  // Predict active line based on word timing for instant visual feedback
+  // Use this whenever word timing is available (word sync or rhyme display with word data)
+  const hasWordTiming = wordsByLine.length > 0 && wordsByLine.some((line) => line.length > 0);
+  
+  const predictedActiveLineIndex = useMemo(() => {
+    if (!hasWordTiming) return activeLineIndex;
+    
+    // Find which line the playback is currently in by checking first word times
+    for (let i = 0; i < wordsByLine.length; i++) {
+      const lineWords = wordsByLine[i];
+      if (lineWords.length === 0) continue;
+      
+      // If current time is before this line's first word, active line is previous
+      if (lineWords[0].time > leadAdjustedTime) {
+        return i > 0 ? i - 1 : 0;
+      }
     }
-  }, [isPlaying]);
+    
+    // We're past all lines
+    return wordsByLine.length > 0 ? wordsByLine.length - 1 : activeLineIndex;
+  }, [wordsByLine, leadAdjustedTime, hasWordTiming, activeLineIndex]);
+
+  const effectiveActiveLineIndex = hasWordTiming ? predictedActiveLineIndex : activeLineIndex;
 
   // Auto-scroll to active line
   useEffect(() => {
-    if (effectiveActiveLine === null) return;
-    
-    const container = containerRef.current;
-    if (!container) return;
-    
-    const targetElement = Array.from(container.children)[effectiveActiveLine] as HTMLElement | undefined;
-    
-    if (targetElement) {
-      targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-  }, [effectiveActiveLine]);
-
-  const htmlIsVisuallyEmpty = (html?: string): boolean => {
-    if (!html) return true;
-    const stripped = html
-      .replace(/<br\s*\/?>/gi, '')
-      .replace(/&nbsp;/gi, '')
-      .replace(/<[^>]+>/g, '')
-      .trim();
-    return stripped.length === 0;
-  };
+    if (effectiveActiveLineIndex === null || !containerRef.current) return;
+    const el = containerRef.current.children[effectiveActiveLineIndex] as HTMLElement;
+    el?.scrollIntoView(SCROLL_OPTIONS);
+  }, [effectiveActiveLineIndex]);
 
   return (
-    <>
-      <div className="flex justify-end mb-4">
-        <button
-          onClick={() => setShowRhymes(!showRhymes)}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-full font-semibold text-sm transition-all shadow-md ${
-            showRhymes
-              ? 'bg-gradient-to-r from-green-100 to-white-500 text-black'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-          }`}
-        >
-          <FaPalette className={showRhymes ? 'animate-pulse' : ''} />
-          {showRhymes ? 'Rhymes ON' : 'Show Rhyme Colors'}
-        </button>
-      </div>
+    <div
+      ref={containerRef}
+      className="max-h-96 overflow-y-auto bg-gray-50 dark:bg-zinc-900 rounded-xl py-5 md:space-y-2 scrollbar-thin scrollbar-thumb-gray-400"
+    >
+      {lines.map((line, i) => {
+        const text = line.trim();
+        const isActive = i === effectiveActiveLineIndex;
+        const isPast = effectiveActiveLineIndex !== null && i < effectiveActiveLineIndex;
+        const words = wordsByLine[i] || [];
 
-      <div
-        ref={containerRef}
-        className="max-h-96 overflow-y-auto bg-gray-50 rounded-xl py-5 md:space-y-2 scrollbar-thin scrollbar-thumb-gray-400"
-      >
-        {lines.map((line, i) => {
-          const isActive = i === effectiveActiveLine;
-          const lineText = line.trim();
-          
-          // For empty lines, always show as instrumental
-          if (!lineText) {
-            return (
-              <div
-                key={i}
-                className={`synced-line px-4 py-2 rounded-lg shadow-sm transition-all duration-200 text-black text-md md:text-xl font-medium ${
-                  isActive ? 'bg-yellow-100 scale-105' : 'bg-white'
-                }`}
-              >
-                <span className="text-gray-400 italic">(instrumental)</span>
-              </div>
-            );
-          }
-          
-          const rhymeHtml = rhymeEncodedLines?.[i];
-          const showRhymeContent = showRhymes && rhymeHtml && !htmlIsVisuallyEmpty(rhymeHtml);
-
+        // Empty line (instrumental break)
+        if (!text) {
           return (
             <div
               key={i}
-              className={`synced-line px-2 py-2 rounded-lg shadow-sm transition-all duration-400 text-black text-md md:text-xl font-medium ${
-                isActive ? 'bg-yellow-100 scale-101' : 'bg-white'
+              className={`synced-line px-6 py-3 text-center text-gray-500 italic text-md ${
+                isActive ? 'opacity-100' : isPast ? 'opacity-70' : 'opacity-40'
               }`}
             >
-              {showRhymeContent ? (
-                <div dangerouslySetInnerHTML={{ __html: rhymeHtml }} />
-              ) : (
-                <span>{lineText}</span>
-              )}
+              (instrumental)
             </div>
           );
-        })}
-      </div>
-    </>
+        }
+
+        return (
+          <div
+            key={i}
+            className={`px-6 py-3 rounded-lg transition-all ${
+              isActive
+                ? 'bg-blue-100/70 dark:bg-blue-900/40'
+                : isPast
+                ? 'opacity-80'
+                : 'opacity-50'
+            }`}
+          >
+            {shouldUseWordSync && words.length > 0 && showRhymes ? (
+              <RhymeWordHighlight
+                words={words}
+                rhymeColorMap={rhymeColorMap}
+                isActive={isActive}
+                isPast={isPast}
+                filledWords={getFilledWordsForLine(words)}
+                currentTimeSec={currentPositionSec}
+                wordParts={wordPartsByLine[i]}
+              />
+            ) : shouldUseWordSync && words.length > 0 ? (
+              <PlainWordHighlight
+                lineText={text}
+                isActive={isActive}
+                filledWords={getFilledWordsForLine(words)}
+              />
+            ) : showRhymes ? (
+              <div dangerouslySetInnerHTML={{ __html: rhymeEncodedLines?.[i] || '' }} />
+            ) : (
+              <span>{text}</span>
+            )}
+          </div>
+        );
+      })}
+    </div>
   );
-}
+};
+
+export default SyncedLyrics;
