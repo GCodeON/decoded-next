@@ -1,7 +1,8 @@
 'use client';
 import { useRef, useEffect, useMemo } from 'react';
-import { useLiricleSync } from '@/modules/lyrics/hooks/useLiricleSync';
+import { useLyricSync } from '@/modules/lyrics/hooks/useLyricSync';
 import { useRhymeColorMap } from '@/modules/lyrics/hooks/useRhymeColorMap';
+import { parseEnhancedLrc } from '@/modules/lyrics/utils/lrcAdvanced';
 import { RhymeWordHighlight } from './RhymeWordHighlight';
 import { PlainWordHighlight } from './PlainWordHighlight';
 import { SCROLL_OPTIONS } from '@/modules/lyrics/config/sync-constants';
@@ -17,11 +18,24 @@ const SyncedLyrics = ({
   animationStyle = 'scale',
 }: SyncedLyricsProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  
-  const { activeLine: activeLineIndex, lines, wordsByLine, error, currentTimeSec } = useLiricleSync({
-    lrcText: syncedLyrics,
+  const currentPositionSec = currentPositionMs / 1000;
+
+  // Parse enhanced LRC to extract word timings
+  const { lines, wordsByLine } = useMemo(() => {
+    const parsed = parseEnhancedLrc(syncedLyrics);
+    const extractedLines = parsed.lines.map((l) => l.text);
+    const extractedWords = parsed.lines.map((l) => l.words);
+    return { lines: extractedLines, wordsByLine: extractedWords };
+  }, [syncedLyrics]);
+
+  // Use useLyricSync for line-level sync with smart hysteresis
+  const { activeLine: activeLineIndex } = useLyricSync({
+    plainLyrics: lines.join('\n'),
+    existingLrc: syncedLyrics,
+    currentPosition: currentPositionSec,
     currentPositionMs,
     isPlaying,
+    autoScroll: true,
   });
 
   const isWordSynced = wordsByLine.some((line) => line.length > 0);
@@ -34,7 +48,7 @@ const SyncedLyrics = ({
   );
 
   // Lead time applied only when both word sync and rhymes are enabled (keeps bg + line in sync)
-  const leadAdjustedTime = shouldUseWordSync && showRhymes ? currentTimeSec + 1.75 : currentTimeSec;
+  const leadAdjustedTime = shouldUseWordSync && showRhymes ? currentPositionSec + 1.75 : currentPositionSec;
 
   // Helper to calculate filled words for any line based on current time
   const getFilledWordsForLine = (lineWords: typeof wordsByLine[number]) => {
@@ -75,8 +89,6 @@ const SyncedLyrics = ({
     const el = containerRef.current.children[effectiveActiveLineIndex] as HTMLElement;
     el?.scrollIntoView(SCROLL_OPTIONS);
   }, [effectiveActiveLineIndex]);
-
-  if (error) return <div className="text-red-500 p-4">Error: {error}</div>;
 
   return (
     <div
@@ -122,7 +134,7 @@ const SyncedLyrics = ({
                 isPast={isPast}
                 filledWords={getFilledWordsForLine(words)}
                 animationStyle={animationStyle}
-                currentTimeSec={currentTimeSec}
+                currentTimeSec={currentPositionSec}
                 wordParts={wordPartsByLine[i]}
               />
             ) : shouldUseWordSync && words.length > 0 ? (

@@ -2,7 +2,7 @@ export interface Word {
   text: string;
   time: number;  // seconds, 3 decimals
   start?: number;
-  end?:  number;
+  end?: number;
 }
 
 export interface TimedLine {
@@ -15,6 +15,8 @@ export interface LrcFile {
   metadata: Record<string, string>;
   lines: TimedLine[];
 }
+
+const escapeRegex = (str: string): string => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 // ──────────────────────────────────────────────────────────────
 // 1. Parse full enhanced LRC
@@ -55,23 +57,68 @@ export function parseEnhancedLrc(content: string): LrcFile {
     const words: Word[] = [];
     let cleanText = rest;
 
+    // Collect timed words (and split multi-word entries)
+    const timedWords: Array<{ text: string; time: number | null }> = [];
     const wordMatches = Array.from(rest.matchAll(/<((?:\d+:)?\d+(?:\.\d+)?)>([^<]+)/g));
     for (const wm of wordMatches) {
       const timeStr = wm[1];
-      const word = wm[2];
+      const wordText = wm[2];
 
       const time = timeStr.includes(':')
         ? (parseInt(timeStr.split(':')[0]) * 60 + parseFloat(timeStr.split(':')[1]))
         : parseFloat(timeStr);
 
-      words.push({ text: word, time: Number(time.toFixed(3)) });
-      cleanText = cleanText.replace(wm[0], word);
+      const parts = wordText.split(/\s+/);
+      parts.forEach((part, idx) => {
+        if (!part) return;
+        timedWords.push({ text: part, time: idx === 0 ? Number(time.toFixed(3)) : null });
+      });
+
+      // Replace timed word tags with plain text to reconstruct the visible line
+      cleanText = cleanText.replace(wm[0], wordText);
+    }
+
+    // Build full word list in order from the clean text
+    const finalText = cleanText.trim();
+    const allWords = finalText.split(/\s+/).filter(Boolean);
+
+    // Walk words in order, assign times, and compute character ranges
+    let timedIdx = 0;
+    let searchPos = 0;
+
+    for (const wordText of allWords) {
+      // Locate this word in the remaining text using word boundaries when possible
+      const searchText = finalText.slice(searchPos);
+      const boundary = new RegExp(`\\b${escapeRegex(wordText)}\\b`);
+      const relIdx = searchText.search(boundary);
+      const foundIdx = relIdx >= 0 ? relIdx : searchText.indexOf(wordText);
+      if (foundIdx < 0) {
+        // If not found, still push with fallback timing
+        const fallbackTime = timedIdx < timedWords.length && wordText === timedWords[timedIdx].text
+          ? timedWords[timedIdx].time ?? Number(lineTimes[0].toFixed(3))
+          : Number(lineTimes[0].toFixed(3));
+        words.push({ text: wordText, time: fallbackTime });
+        if (timedIdx < timedWords.length && wordText === timedWords[timedIdx].text) timedIdx++;
+        continue;
+      }
+
+      const wordStart = searchPos + foundIdx;
+      const wordEnd = wordStart + wordText.length;
+
+      const timedMatch = timedIdx < timedWords.length && wordText === timedWords[timedIdx].text;
+      const wordTime = timedMatch
+        ? (timedWords[timedIdx].time ?? Number(lineTimes[0].toFixed(3)))
+        : Number(lineTimes[0].toFixed(3));
+
+      words.push({ text: wordText, time: wordTime, start: wordStart, end: wordEnd });
+      if (timedMatch) timedIdx++;
+      searchPos = wordEnd;
     }
 
     const line: TimedLine = {
       lineTime: lineTimes[0],
-      text: cleanText.trim(),
-      words: words.length > 0 ? words : [],
+      text: finalText,
+      words,
     };
 
     lines.push(line);
@@ -109,27 +156,23 @@ export function generateEnhancedLrc(
       let pos = 0;
       let built = '';
       for (const w of words) {
-        // Skip undefined or invalid words
-        if (!w || !w.text || typeof w.time !== 'number') {
-          continue;
-        }
-        
-        // Add text before this word (spaces, punctuation)
-        const wordStart = lineText.indexOf(w.text, pos);
-        if (wordStart === -1) {
-          // Word not found, skip
-          continue;
-        }
-        const prefix = lineText.slice(pos, wordStart);
-        built += prefix;
+        if (!w || !w.text || typeof w.time !== 'number') continue;
 
-        // Add timed word
+        const searchText = lineText.slice(pos);
+        const boundary = new RegExp(`\\b${escapeRegex(w.text)}\\b`);
+        const relIdx = searchText.search(boundary);
+        const foundIdx = relIdx >= 0 ? relIdx : searchText.indexOf(w.text);
+        if (foundIdx < 0) continue;
+
+        const wordStart = pos + foundIdx;
+        built += lineText.slice(pos, wordStart);
+
         const wm = Math.floor(w.time / 60).toString().padStart(2, '0');
         const ws = (w.time % 60).toFixed(2).padStart(5, '0');
         built += `<${wm}:${ws}>${w.text}`;
+
         pos = wordStart + w.text.length;
       }
-      // Add remaining text after last word
       built += lineText.slice(pos);
       lrcLine += built;
     }
@@ -178,24 +221,19 @@ export function splitLineIntoSegments(lineText: string, words: Word[]): WordSegm
   let pos = 0;
 
   for (const word of words) {
-    const wordStart = lineText.indexOf(word.text, pos);
-    if (wordStart === -1) continue;
+    const searchText = lineText.slice(pos);
+    const boundary = new RegExp(`\\b${escapeRegex(word.text)}\\b`);
+    const relIdx = searchText.search(boundary);
+    const foundIdx = relIdx >= 0 ? relIdx : searchText.indexOf(word.text);
+    if (foundIdx < 0) continue;
 
-    // Add prefix (spaces, punctuation) as non-word segment
+    const wordStart = pos + foundIdx;
+
     if (wordStart > pos) {
-      segments.push({
-        text: lineText.slice(pos, wordStart),
-        time: null,
-        isWord: false
-      });
+      segments.push({ text: lineText.slice(pos, wordStart), time: null, isWord: false });
     }
 
-    // Add word segment
-    segments.push({
-      text: word.text,
-      time: word.time,
-      isWord: true
-    });
+    segments.push({ text: word.text, time: word.time, isWord: true });
 
     pos = wordStart + word.text.length;
   }

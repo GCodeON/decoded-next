@@ -80,6 +80,13 @@ export const buildWordRanges = (lineText: string, words: Word[]) => {
   let searchFrom = 0;
 
   for (const word of words) {
+    // If parser already provided exact positions, prefer them
+    if (typeof word.start === 'number' && typeof word.end === 'number') {
+      ranges.push({ start: word.start, end: word.end, text: word.text, clean: word.text });
+      searchFrom = word.end;
+      continue;
+    }
+
     const { clean: cleanWord, punctuation } = splitWordAndPunctuation(word.text);
     
     // Search for clean word (without punctuation)

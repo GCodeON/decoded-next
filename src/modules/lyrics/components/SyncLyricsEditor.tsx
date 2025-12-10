@@ -167,7 +167,18 @@ export default function SyncLyricsEditor({
     setWordTimestamps(prev => {
       const newMap = new Map(prev);
       const lineWords = newMap.get(lineIndex) || [];
-      const newWord: Word = { text: wordText.trim(), time: timeSec };
+      const lineText = lines[lineIndex]?.trim() || '';
+      
+      // Calculate character positions for the word in the line
+      const wordStart = lineText.indexOf(wordText.trim());
+      const wordEnd = wordStart >= 0 ? wordStart + wordText.trim().length : -1;
+      
+      const newWord: Word = { 
+        text: wordText.trim(), 
+        time: timeSec,
+        start: wordStart >= 0 ? wordStart : 0,
+        end: wordEnd >= 0 ? wordEnd : wordText.trim().length,
+      };
       const existingIndex = lineWords.findIndex(w => w && w.text === wordText.trim());
       
       if (existingIndex !== -1) {
