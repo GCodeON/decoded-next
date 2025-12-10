@@ -1,9 +1,16 @@
 'use client';
-
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 export default function CallbackPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <CallbackHandler />
+    </Suspense>
+  );
+}
+
+function CallbackHandler() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -26,7 +33,7 @@ export default function CallbackPage() {
 
     if (code) {
       const callbackUrl = `/api/auth/callback?code=${code}&state=${state || ''}`;
-      
+
       fetch(callbackUrl, { credentials: 'include' })
         .then(async res => {
           const data = await res.json();

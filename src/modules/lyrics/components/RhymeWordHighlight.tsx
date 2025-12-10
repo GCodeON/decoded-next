@@ -1,4 +1,5 @@
-import { useRef, useEffect, memo } from 'react';
+'use client';
+import { useRef, memo } from 'react';
 import type { Word } from '../utils/lrcAdvanced';
 import type { WordRhymeParts } from '../types/rhyme';
 import { useWordProgress } from '../hooks/useWordProgress';
