@@ -1,6 +1,6 @@
 import { useRef, useEffect, memo } from 'react';
 import type { Word } from '../utils/lrcAdvanced';
-import type { WordRhymeParts, AnimationStyle } from '../types/rhyme';
+import type { WordRhymeParts } from '../types/rhyme';
 import { useWordProgress } from '../hooks/useWordProgress';
 import { WORD_STYLE, SEGMENT_STYLE } from '../config/sync-constants';
 
@@ -10,7 +10,6 @@ interface RhymeWordHighlightProps {
   isActive: boolean;
   isPast: boolean;
   filledWords: number;
-  animationStyle: AnimationStyle;
   currentTimeSec: number;
   wordParts?: WordRhymeParts[];
 }
@@ -21,7 +20,6 @@ export const RhymeWordHighlight = memo(function RhymeWordHighlight({
   isActive,
   isPast,
   filledWords,
-  animationStyle,
   currentTimeSec,
   wordParts,
 }: RhymeWordHighlightProps) {

@@ -131,7 +131,6 @@ const SyncedLyrics = ({
                 isActive={isActive}
                 isPast={isPast}
                 filledWords={getFilledWordsForLine(words)}
-                animationStyle={animationStyle}
                 currentTimeSec={currentPositionSec}
                 wordParts={wordPartsByLine[i]}
               />
