@@ -19,7 +19,6 @@
     "eslint-config-next": "^16.0.4",
     "firebase": "^12.5.0",
     "hamburger-react": "^2.5.0",
-    "liricle": "^4.2.0",
     "next": "^16.0.4",
     "node-fetch": "^3.3.2",
     "postcss": "^8.5.6",

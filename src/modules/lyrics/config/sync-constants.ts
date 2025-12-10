@@ -5,13 +5,6 @@ export const WORD_STYLE = {
   display: 'inline-block' as const,
 };
 
-export const CURSOR_STYLE = {
-  width: '4px',
-  top: '4px',
-  transition: 'all 0.05s linear',
-  opacity: 0,
-};
-
 export const SEGMENT_STYLE = {
   transition: 'background-color 0.35s ease',
 };

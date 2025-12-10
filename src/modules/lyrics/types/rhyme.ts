@@ -17,7 +17,6 @@ export type RhymeColorData = {
   wordPartsByLine: WordRhymeParts[][];
 };
 
-export type AnimationStyle = 'cursor' | 'scale' | 'hybrid';
 export type SyncMode = 'auto' | 'word' | 'line';
 
 export interface SyncedLyricsProps {
@@ -27,5 +26,4 @@ export interface SyncedLyricsProps {
   rhymeEncodedLines?: string[];
   showRhymes?: boolean;
   mode?: SyncMode;
-  animationStyle?: AnimationStyle;
 }

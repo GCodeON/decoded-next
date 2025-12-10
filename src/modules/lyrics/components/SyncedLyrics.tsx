@@ -14,8 +14,7 @@ const SyncedLyrics = ({
   isPlaying,
   rhymeEncodedLines,
   showRhymes = true,
-  mode = 'auto',
-  animationStyle = 'scale',
+  mode = 'auto'
 }: SyncedLyricsProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const currentPositionSec = currentPositionMs / 1000;
@@ -59,7 +58,6 @@ const SyncedLyrics = ({
   };
 
   // Predict active line based on word timing for instant visual feedback
-  // Instead of waiting for Liricle's onSync callback, calculate from word positions
   // Use this whenever word timing is available (word sync or rhyme display with word data)
   const hasWordTiming = wordsByLine.length > 0 && wordsByLine.some((line) => line.length > 0);
   
