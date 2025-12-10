@@ -1,8 +1,6 @@
 // Components
 export { default as LyricsEditor } from './components/LyricsEditor';
-// export { default as SyncLyricsEditor } from './components/archive/SyncLyricsEditor';
-// export { default as SyncLyricsEditorWithWords } from './components/archive/SyncLyricsEditorWithWords';
-export { default as SyncLyricsEditorUnified } from './components/SyncLyricsEditor';
+export { default as SyncLyricsEditor } from './components/SyncLyricsEditor';
 export { default as SyncedLyrics } from './components/SyncedLyrics';
 export { RhymeWordHighlight } from './components/RhymeWordHighlight';
 export { PlainWordHighlight } from './components/PlainWordHighlight';
@@ -28,6 +26,7 @@ export { songService } from './services/songService';
 // Utils
 export { lyricsToHtml, htmlToLyrics, mapLrcToRhymeHtml } from './utils/lyrics';
 export { cleanTrackName, mstoSeconds, formatTime, parseLrcTime, parseLrcForEditing, matchLrcToPlainLines, generateLrc, isLikelySynced, isFullyStamped } from './utils/lrc';
+export { replaceLyricsInLrc, validateLyricsConsistency, detectCaseVariants, applyCaseTransformation, extractLineText } from './utils/lrc-replace';
 export { parseEnhancedLrc, generateEnhancedLrc, getActiveWordIndex, splitLineIntoSegments } from './utils/lrcAdvanced';
 export { parseRhymeLine, buildWordRanges, sliceSegmentsToWords, extractColor, buildColorMap } from './utils/rhyme-parser';
 export type { Word, TimedLine, LrcFile, WordSegment } from './utils/lrcAdvanced';

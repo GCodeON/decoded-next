@@ -15,11 +15,27 @@ export class SongService {
     await setDoc(doc(db, this.collection, trackId), song);
   }
 
-  async updateLyrics(trackId: string, plain: string, rhymeEncoded: string): Promise<void> {
-    await updateDoc(doc(db, this.collection, trackId), {
+  async updateLyrics(
+    trackId: string,
+    plain: string,
+    rhymeEncoded: string,
+    synced?: string | null,
+    wordSynced?: string | null
+  ): Promise<void> {
+    const updates: Record<string, any> = {
       'lyrics.plain': plain,
       'lyrics.rhymeEncoded': rhymeEncoded,
-    });
+    };
+
+    // Only include synced/wordSynced if explicitly provided
+    if (synced !== undefined) {
+      updates['lyrics.synced'] = synced;
+    }
+    if (wordSynced !== undefined) {
+      updates['lyrics.wordSynced'] = wordSynced;
+    }
+
+    await updateDoc(doc(db, this.collection, trackId), updates);
   }
 
   async updateSyncedLyrics(trackId: string, synced: string | null): Promise<void> {

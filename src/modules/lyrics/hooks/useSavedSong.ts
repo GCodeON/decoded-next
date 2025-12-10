@@ -1,11 +1,78 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react';
 import { useSongLyrics, cleanTrackName, mstoSeconds, htmlToLyrics, lyricsToHtml, SavedSong, songService, useLrcLibPublish } from '@/modules/lyrics';
+import { replaceLyricsInLrc, validateLyricsConsistency } from '@/modules/lyrics/utils/lrc-replace';
 import { SpotifyTrack } from '@/modules/spotify';
 
 interface UseSavedSongParams {
   track: SpotifyTrack | null;
   trackId: string;
+}
+
+/**
+ * Detects word-level differences between two texts
+ * Returns array of {oldWord, newWord, lineNumber} for changed words
+ */
+function detectTextChanges(oldPlain: string, newPlain: string): Array<{ oldWord: string; newWord: string; lineNumber: number }> {
+  const oldLines = oldPlain.split('\n');
+  const newLines = newPlain.split('\n');
+  const changes: Array<{ oldWord: string; newWord: string; lineNumber: number }> = [];
+
+  for (let i = 0; i < Math.max(oldLines.length, newLines.length); i++) {
+    const oldLine = oldLines[i] || '';
+    const newLine = newLines[i] || '';
+
+    if (oldLine === newLine) continue;
+
+    // Split into words and find differences
+    const oldWords = oldLine.split(/\s+/).filter(w => w.length > 0);
+    const newWords = newLine.split(/\s+/).filter(w => w.length > 0);
+
+    for (let j = 0; j < Math.max(oldWords.length, newWords.length); j++) {
+      const oldWord = oldWords[j] || '';
+      const newWord = newWords[j] || '';
+
+      if (oldWord !== newWord && oldWord && newWord) {
+        changes.push({ oldWord, newWord, lineNumber: i });
+      }
+    }
+  }
+
+  return changes;
+}
+
+/**
+ * Counts occurrences of a word in text with exact case and word boundaries
+ */
+function countWordOccurrences(text: string, word: string): number {
+  const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`\\b${escapedWord}\\b`, 'g');
+  return (text.match(regex) || []).length;
+}
+
+/**
+ * Finds which lines contain a specific word (case-sensitive, whole word match)
+ */
+function findLinesWithWord(lrcContent: string, word: string): number[] {
+  const lines = lrcContent.split('\n');
+  const lineNumbers: number[] = [];
+
+  const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`\\b${escapedWord}\\b`);
+
+  lines.forEach((line, idx) => {
+    // Remove timestamps to get clean text
+    const cleanText = line
+      .replace(/\[\d+:\d+(?:\.\d+)?\]/g, '')
+      .replace(/<\d+:\d+(?:\.\d+)?>/g, '')
+      .trim();
+
+    if (regex.test(cleanText)) {
+      lineNumbers.push(idx);
+    }
+  });
+
+  return lineNumbers;
 }
 
 export function useSavedSong({ track, trackId }: UseSavedSongParams) {
@@ -91,15 +158,83 @@ export function useSavedSong({ track, trackId }: UseSavedSongParams) {
       if (!savedSong) return;
 
       const plain = htmlToLyrics(htmlContent);
+      const oldPlain = savedSong.lyrics.plain;
+
+      // Detect text changes (word-level differences)
+      const changes = detectTextChanges(oldPlain, plain);
+
+      // Prepare synced/wordSynced updates
+      let updatedSynced = savedSong.lyrics.synced;
+      let updatedWordSynced = savedSong.lyrics.wordSynced;
+
+      // Apply text replacements to synced/wordSynced versions
+      if (changes.length > 0) {
+        for (const change of changes) {
+          const { oldWord, newWord } = change;
+
+          // Find all lines containing the old word
+          const oldWordCount = countWordOccurrences(oldPlain, oldWord);
+          const newWordCount = countWordOccurrences(plain, newWord);
+
+          // Only proceed with replacement if counts match (word was edited, not added/removed)
+          if (oldWordCount === newWordCount && oldWordCount === 1) {
+            // Single occurrence - replace everywhere
+            if (updatedSynced) {
+              const syncedResult = replaceLyricsInLrc(updatedSynced, oldWord, newWord);
+              updatedSynced = syncedResult.updated;
+            }
+            if (updatedWordSynced) {
+              const wordSyncedResult = replaceLyricsInLrc(updatedWordSynced, oldWord, newWord);
+              updatedWordSynced = wordSyncedResult.updated;
+            }
+          } else if (oldWordCount > 1 && oldWordCount === newWordCount) {
+            // Multiple occurrences - replace only on the changed line
+            const changedLineNumbers = findLinesWithWord(oldPlain, oldWord);
+            if (changedLineNumbers.length > 0) {
+              if (updatedSynced) {
+                const syncedResult = replaceLyricsInLrc(updatedSynced, oldWord, newWord, changedLineNumbers);
+                updatedSynced = syncedResult.updated;
+              }
+              if (updatedWordSynced) {
+                const wordSyncedResult = replaceLyricsInLrc(updatedWordSynced, oldWord, newWord, changedLineNumbers);
+                updatedWordSynced = wordSyncedResult.updated;
+              }
+            }
+          }
+        }
+      }
+
+      // Validate consistency
+      const syncConsistency = validateLyricsConsistency(plain, updatedSynced || null);
+      const wordSyncConsistency = validateLyricsConsistency(plain, updatedWordSynced || null);
+
+      if (!syncConsistency.isConsistent && updatedSynced) {
+        console.warn(
+          `Synced lyrics consistency check: plain has ${syncConsistency.plainWordCount} words, synced has ${syncConsistency.syncedWordCount} words (tolerance: ${syncConsistency.tolerance})`
+        );
+      }
+      if (!wordSyncConsistency.isConsistent && updatedWordSynced) {
+        console.warn(
+          `Word-synced lyrics consistency check: plain has ${wordSyncConsistency.plainWordCount} words, synced has ${wordSyncConsistency.syncedWordCount} words (tolerance: ${wordSyncConsistency.tolerance})`
+        );
+      }
+
       const updated = {
         ...savedSong,
-        lyrics: { ...savedSong.lyrics, plain, rhymeEncoded: htmlContent },
+        lyrics: {
+          ...savedSong.lyrics,
+          plain,
+          rhymeEncoded: htmlContent,
+          synced: updatedSynced,
+          wordSynced: updatedWordSynced,
+        },
       };
 
       setSavedSong(updated);
 
       try {
-        await songService.updateLyrics(trackId, plain, htmlContent);
+        // Update all fields together for consistency
+        await songService.updateLyrics(trackId, plain, htmlContent, updatedSynced, updatedWordSynced);
       } catch (err) {
         console.error('Failed to update lyrics:', err);
       }
