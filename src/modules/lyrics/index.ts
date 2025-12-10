@@ -35,9 +35,9 @@ export { computeSignature } from './utils/signature';
 
 // Config
 export { customColors, vowels } from './config/rhyme-colors';
-export { WORD_STYLE, CURSOR_STYLE, SEGMENT_STYLE, DEFAULT_WORD_DURATION, SCROLL_OPTIONS } from './config/sync-constants';
+export { WORD_STYLE, SEGMENT_STYLE, DEFAULT_WORD_DURATION, SCROLL_OPTIONS } from './config/sync-constants';
 
 // Types
 export type { LrcLibData, LyricsResponse, LyricsResult, LyricsSearchParams, PublishPayload, GetLyricsResult, PublishResult, ChallengeData } from './types/lyrics';
 export type { SavedSong, SyncedLine, SyncedTrack } from './types/track';
-export type { RhymeSegment, WordRhymeParts, ParsedRhymeLine, RhymeColorData, AnimationStyle, SyncMode, SyncedLyricsProps } from './types/rhyme';
+export type { RhymeSegment, WordRhymeParts, ParsedRhymeLine, RhymeColorData, SyncMode, SyncedLyricsProps } from './types/rhyme';
