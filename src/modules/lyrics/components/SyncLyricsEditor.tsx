@@ -140,11 +140,56 @@ export default function SyncLyricsEditor({
   const handleStampLine = useCallback((index: number) => {
     const ms = typeof currentPositionMs === 'number' ? currentPositionMs : currentPosition * 1000;
     const sec = Math.floor(ms / 1000);
+    const lineTime = Number(sec.toFixed(2));
+    
     setTimestamps(prev => {
       const next = [...prev];
-      next[index] = Number(sec.toFixed(2));
+      next[index] = lineTime;
       return next;
     });
+
+    // Auto-sync: Assign line timestamp to first word if it doesn't already have one
+    // This prevents discrepancies where a word has a timestamp before its line
+    setWordTimestamps(prev => {
+      const newMap = new Map(prev);
+      const existingWords = newMap.get(index) || [];
+      
+      // Only auto-assign if:
+      // 1. Line has words in the map (or will create one)
+      // 2. First word doesn't already have a timestamp (preserve manual edits)
+      if (existingWords.length === 0 && lines[index]?.trim()) {
+        const lineText = lines[index].trim();
+        const firstWordMatch = lineText.match(/\S+/);
+        
+        if (firstWordMatch) {
+          const firstWord: Word = {
+            text: firstWordMatch[0],
+            time: lineTime,
+            start: 0,
+            end: firstWordMatch[0].length
+          };
+          newMap.set(index, [firstWord]);
+        }
+      } else if (existingWords.length > 0) {
+        // If words already exist, check if first word is missing a timestamp
+        const lineText = lines[index]?.trim() || '';
+        const firstWordMatch = lineText.match(/\S+/);
+        
+        if (firstWordMatch) {
+          const firstWordInTimestamps = existingWords[0];
+          
+          // Only update if first word doesn't have a time (preserve manual edits)
+          if (firstWordInTimestamps && !firstWordInTimestamps.time) {
+            const updatedWords = [...existingWords];
+            updatedWords[0] = { ...firstWordInTimestamps, time: lineTime };
+            newMap.set(index, updatedWords);
+          }
+        }
+      }
+      
+      return newMap;
+    });
+
     if (index === currentLine) {
       setManualLineOverride(Math.min(lines.length - 1, index + 1));
     }
@@ -152,7 +197,7 @@ export default function SyncLyricsEditor({
     if (isPlaying) {
       setManualNavigation(true);
     }
-  }, [currentPositionMs, currentPosition, currentLine, lines.length, setTimestamps, isPlaying]);
+  }, [currentPositionMs, currentPosition, currentLine, lines.length, setTimestamps, isPlaying, lines]);
 
   // Word stamping handler - word mode only (must be before keyboard shortcuts)
   const handleStampWord = useCallback((lineIndex: number, wordIndex: number, wordText: string) => {

@@ -7,7 +7,7 @@ export { PlainWordHighlight } from './components/PlainWordHighlight';
 // export { default as AnimatedSyncedLyrics } from './components/AnimatedSyncedLyrics';
 export { default as Legend } from './components/VowelLegend';
 export { SyncControls } from './components/SyncControls';
-export { TimestampDisplay } from './components/TimestampDisplay';
+export { TimestampDisplay, type TimestampDisplayProps } from './components/TimestampDisplay';
 
 // Hooks
 export { useSavedSong } from './hooks/useSavedSong';

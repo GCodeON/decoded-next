@@ -28,7 +28,7 @@ export default function LyricsEditor({
             onChange={setContent}
             setOptions={{
               height: '100%',
-              buttonList: [['undo', 'redo'], ['fontColor', 'hiliteColor']],
+              // buttonList: [['undo', 'redo'], ['fontColor', 'hiliteColor']],
               colorList: customColors
             }}
             setDefaultStyle="font-size: 20px;"

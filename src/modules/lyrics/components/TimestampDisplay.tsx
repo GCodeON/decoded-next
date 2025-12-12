@@ -1,13 +1,16 @@
 import { formatTime } from '../utils/lrc';
 
-interface TimestampDisplayProps {
+export interface TimestampDisplayProps {
   time: number | null;
   isEditing: boolean;
   editValue: string;
   onEditChange: (value: string) => void;
-  onStartEdit: () => void;
-  onSaveEdit: () => void;
+  onStartEdit: (index?: any) => void;
+  onSaveEdit: (index?: any) => void;
   onCancelEdit: () => void;
+  editIndex?: any;
+  currentIndex?: any;
+  compact?: boolean;
 }
 
 export function TimestampDisplay({
@@ -17,19 +20,27 @@ export function TimestampDisplay({
   onEditChange,
   onStartEdit,
   onSaveEdit,
-  onCancelEdit
+  onCancelEdit,
+  editIndex,
+  currentIndex,
+  compact = false
 }: TimestampDisplayProps) {
+  // Only show editing mode if this specific item is being edited
+  const isThisItemEditing = isEditing && editIndex === currentIndex;
+  const width = compact ? 'w-20' : 'w-28';
+  const inputWidth = compact ? 'w-16' : 'w-24';
+
   if (time === null) {
     return (
-      <div className="w-28 text-right font-mono text-sm">
+      <div className={`${width} text-center font-mono text-sm`}>
         <span className="text-gray-400">[--:--.--]</span>
       </div>
     );
   }
 
-  if (isEditing) {
+  if (isThisItemEditing) {
     return (
-      <div className="w-28 text-right font-mono text-sm">
+      <div className={`${width} text-center font-mono text-sm`}>
         <input
           type="text"
           value={editValue}
@@ -37,7 +48,7 @@ export function TimestampDisplay({
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               e.preventDefault();
-              onSaveEdit();
+              onSaveEdit(currentIndex);
             }
             if (e.key === 'Escape') {
               e.preventDefault();
@@ -45,7 +56,7 @@ export function TimestampDisplay({
             }
           }}
           onBlur={onCancelEdit}
-          className="w-24 px-1 text-right font-mono text-sm border-2 border-yellow-500 rounded bg-white focus:outline-none text-black"
+          className={`w-full px-1 text-right font-mono text-sm border-2 border-yellow-500 rounded bg-white focus:outline-none text-black`}
           autoFocus
           onFocus={(e) => e.target.select()}
           onClick={(e) => e.stopPropagation()}
@@ -55,11 +66,11 @@ export function TimestampDisplay({
   }
 
   return (
-    <div className="w-28 text-right font-mono text-sm">
+    <div className={`${width} text-right font-mono text-sm`}>
       <span
         onClick={(e) => {
           e.stopPropagation();
-          onStartEdit();
+          onStartEdit(currentIndex);
         }}
         className="cursor-pointer hover:text-blue-700 hover:underline font-medium text-black"
         title="Click to edit timestamp"

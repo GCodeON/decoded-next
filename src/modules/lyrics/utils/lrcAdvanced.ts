@@ -68,7 +68,8 @@ export function parseEnhancedLrc(content: string): LrcFile {
         ? (parseInt(timeStr.split(':')[0]) * 60 + parseFloat(timeStr.split(':')[1]))
         : parseFloat(timeStr);
 
-      const parts = wordText.split(/\s+/);
+      // Trim and split captured text to handle spacing between tags
+      const parts = wordText.trim().split(/\s+/);
       parts.forEach((part, idx) => {
         if (!part) return;
         timedWords.push({ text: part, time: idx === 0 ? Number(time.toFixed(3)) : null });
@@ -172,6 +173,12 @@ export function generateEnhancedLrc(
         built += `<${wm}:${ws}>${w.text}`;
 
         pos = wordStart + w.text.length;
+        
+        // Add space after word tag if next character is a space
+        if (pos < lineText.length && lineText[pos] === ' ') {
+          built += ' ';
+          pos++;
+        }
       }
       built += lineText.slice(pos);
       lrcLine += built;

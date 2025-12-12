@@ -1,7 +1,15 @@
 'use client';
+import { useState, useCallback } from 'react';
 import { FaClock } from 'react-icons/fa';
 import { TimestampDisplay, formatTime } from '@/modules/lyrics';
+import { parseLrcTime } from '@/modules/lyrics/utils/lrc';
 import { type Word } from '@/modules/lyrics/utils/lrcAdvanced';
+
+interface WordTimestampState {
+  lineIndex: number;
+  wordIndex: number;
+  editValue: string;
+}
 
 interface WordEditorProps {
   line: string;
@@ -19,6 +27,7 @@ interface WordEditorProps {
   onStartEdit: () => void;
   onSaveEdit: () => void;
   onCancelEdit: () => void;
+  onSaveWordTime?: (lineIndex: number, wordIndex: number, time: number) => void;
 }
 
 export default function WordEditor({
@@ -36,9 +45,46 @@ export default function WordEditor({
   onEditChange,
   onStartEdit,
   onSaveEdit,
-  onCancelEdit
+  onCancelEdit,
+  onSaveWordTime
 }: WordEditorProps) {
   const lineWords = line?.trim() ? line.trim().split(/\s+/) : [];
+  const [wordTimestampState, setWordTimestampState] = useState<WordTimestampState | null>(null);
+
+  const handleStartWordEdit = useCallback(
+    (e: React.MouseEvent, lineIdx: number, wordIdx: number, wordTime: number) => {
+      e.stopPropagation();
+      setWordTimestampState({
+        lineIndex: lineIdx,
+        wordIndex: wordIdx,
+        editValue: formatTime(wordTime).replace(/[\[\]]/g, '')
+      });
+    },
+    []
+  );
+
+  const handleWordEditChange = useCallback((value: string) => {
+    setWordTimestampState((prev) =>
+      prev ? { ...prev, editValue: value } : null
+    );
+  }, []);
+
+  const handleSaveWordTime = useCallback(() => {
+    if (!wordTimestampState) return;
+    const parsedTime = parseLrcTime(wordTimestampState.editValue);
+    if (!isNaN(parsedTime) && onSaveWordTime) {
+      onSaveWordTime(
+        wordTimestampState.lineIndex,
+        wordTimestampState.wordIndex,
+        parsedTime
+      );
+      setWordTimestampState(null);
+    }
+  }, [wordTimestampState, onSaveWordTime]);
+
+  const handleCancelWordEdit = useCallback(() => {
+    setWordTimestampState(null);
+  }, []);
 
   return (
     <div
@@ -60,27 +106,12 @@ export default function WordEditor({
           onStartEdit={onStartEdit}
           onSaveEdit={onSaveEdit}
           onCancelEdit={onCancelEdit}
+          compact={false}
         />
 
         <div className="flex-1 font-medium text-lg text-black">
           {line?.trim() ? line : '(instrumental)'}
         </div>
-
-        {/* Hide line stamp button in word sync mode */}
-        {/* <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onStampLine();
-          }}
-          className={`text-xs px-3 py-1 rounded font-medium text-white transition ${
-            time !== null
-              ? 'bg-orange-600 hover:bg-orange-700'
-              : 'bg-blue-600 hover:bg-blue-700'
-          }`}
-        >
-          <FaClock className="inline mr-1" />
-          {time !== null ? 'Re-stamp' : 'Set Now'}
-        </button> */}
       </div>
 
       {/* Word-level controls */}
@@ -93,26 +124,92 @@ export default function WordEditor({
             });
             const hasTime = wordTime !== undefined && wordTime.time !== undefined;
             const isCurrent = isActive && wi === currentWordIndex;
+            const isWordEditing =
+              wordTimestampState?.wordIndex === wi &&
+              wordTimestampState?.lineIndex === lineIndex;
 
             return (
-              <button
+              <div
                 key={wi}
-                onClick={() => onStampWord(wi, word)}
-                className={`px-3 py-1.5 rounded-md transition-all text-sm font-medium ${
+                className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-md transition-all text-sm font-medium ${
                   isCurrent
-                    ? 'bg-yellow-500 text-white ring-2 ring-yellow-600 shadow-lg scale-110'
+                    ? 'bg-yellow-500 text-white ring-2 ring-yellow-600 shadow-lg'
                     : hasTime
-                    ? 'bg-green-600 text-white hover:bg-green-700'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    ? 'bg-green-400 text-black'
+                    : 'bg-gray-200 text-gray-700'
                 }`}
               >
+                {/* Word timestamp display/edit - positioned above word */}
                 {hasTime && wordTime && (
-                  <span className="text-xs opacity-75 mr-1.5">
-                    {formatTime(wordTime.time).replace(/[\[\]]/g, '')}
-                  </span>
+                  <div className="text-xs">
+                    <TimestampDisplay
+                      time={wordTime.time}
+                      isEditing={!!wordTimestampState}
+                      editValue={wordTimestampState?.editValue || ''}
+                      onEditChange={handleWordEditChange}
+                      onStartEdit={(index) =>
+                        handleStartWordEdit(
+                          new MouseEvent('click') as any,
+                          lineIndex,
+                          wi,
+                          wordTime.time
+                        )
+                      }
+                      onSaveEdit={handleSaveWordTime}
+                      onCancelEdit={handleCancelWordEdit}
+                      editIndex={wordTimestampState?.wordIndex}
+                      currentIndex={wi}
+                      compact={true}
+                    />
+                  </div>
                 )}
-                {word}
-              </button>
+
+                {/* Word text button - centered below timestamp */}
+                <button
+                  onClick={(e) => {
+                    if (!isWordEditing) {
+                      onStampWord(wi, word);
+                    }
+                  }}
+                  disabled={isWordEditing}
+                  className={`transition-opacity ${
+                    isCurrent ? '' : ''
+                  } ${isWordEditing ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-90'}`}
+                  title={
+                    isWordEditing
+                      ? 'Press Enter to save or Escape to cancel'
+                      : 'Click to stamp word time'
+                  }
+                >
+                  {word}
+                </button>
+
+                {/* Save/Cancel buttons during edit - below word */}
+                {isWordEditing && (
+                  <div className="flex gap-1 mt-1">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSaveWordTime();
+                      }}
+                      className="px-2 py-0.5 bg-green-700 hover:bg-green-800 text-white text-xs rounded"
+                      title="Save timestamp (Enter)"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCancelWordEdit();
+                      }}
+                      className="px-2 py-0.5 bg-red-600 hover:bg-red-700 text-white text-xs rounded"
+                      title="Cancel edit (Escape)"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
+              </div>
             );
           })}
         </div>

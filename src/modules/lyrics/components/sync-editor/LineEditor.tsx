@@ -1,6 +1,6 @@
 'use client';
 import { FaClock } from 'react-icons/fa';
-import { TimestampDisplay } from '@/modules/lyrics';
+import { TimestampDisplay, formatTime } from '@/modules/lyrics';
 
 interface LineEditorProps {
   line: string;
@@ -12,8 +12,8 @@ interface LineEditorProps {
   onStampLine: () => void;
   onGoToLine: () => void;
   onEditChange: (value: string) => void;
-  onStartEdit: () => void;
-  onSaveEdit: () => void;
+  onStartEdit: (index: number, value: string) => void;
+  onSaveEdit: (index: number) => void;
   onCancelEdit: () => void;
 }
 
@@ -44,12 +44,15 @@ export default function LineEditor({
     >
       <TimestampDisplay
         time={time}
-        isEditing={editingIndex === lineIndex}
+        isEditing={editingIndex !== null}
         editValue={editValue}
         onEditChange={onEditChange}
-        onStartEdit={onStartEdit}
-        onSaveEdit={onSaveEdit}
+        onStartEdit={(index) => onStartEdit(index as number, formatTime(time!))}
+        onSaveEdit={(index) => onSaveEdit(index as number)}
         onCancelEdit={onCancelEdit}
+        editIndex={editingIndex}
+        currentIndex={lineIndex}
+        compact={false}
       />
 
       <div className="flex-1 font-medium text-lg text-black">
