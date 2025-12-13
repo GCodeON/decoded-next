@@ -28,6 +28,7 @@ interface WordEditorProps {
   onSaveEdit: () => void;
   onCancelEdit: () => void;
   onSaveWordTime?: (lineIndex: number, wordIndex: number, time: number) => void;
+  onDisableAutoScroll?: () => void;
 }
 
 export default function WordEditor({
@@ -46,7 +47,8 @@ export default function WordEditor({
   onStartEdit,
   onSaveEdit,
   onCancelEdit,
-  onSaveWordTime
+  onSaveWordTime,
+  onDisableAutoScroll
 }: WordEditorProps) {
   const lineWords = line?.trim() ? line.trim().split(/\s+/) : [];
   const [wordTimestampState, setWordTimestampState] = useState<WordTimestampState | null>(null);
@@ -54,13 +56,14 @@ export default function WordEditor({
   const handleStartWordEdit = useCallback(
     (e: React.MouseEvent, lineIdx: number, wordIdx: number, wordTime: number) => {
       e.stopPropagation();
+      onDisableAutoScroll?.();
       setWordTimestampState({
         lineIndex: lineIdx,
         wordIndex: wordIdx,
         editValue: formatTime(wordTime).replace(/[\[\]]/g, '')
       });
     },
-    []
+    [onDisableAutoScroll]
   );
 
   const handleWordEditChange = useCallback((value: string) => {
@@ -103,7 +106,10 @@ export default function WordEditor({
           isEditing={editingIndex === lineIndex}
           editValue={editValue}
           onEditChange={onEditChange}
-          onStartEdit={onStartEdit}
+          onStartEdit={() => {
+            onDisableAutoScroll?.();
+            onStartEdit();
+          }}
           onSaveEdit={onSaveEdit}
           onCancelEdit={onCancelEdit}
           compact={false}
@@ -139,7 +145,6 @@ export default function WordEditor({
                     : 'bg-gray-200 text-gray-700'
                 }`}
               >
-                {/* Word timestamp display/edit - positioned above word */}
                 {hasTime && wordTime && (
                   <div className="text-xs">
                     <TimestampDisplay
@@ -164,7 +169,6 @@ export default function WordEditor({
                   </div>
                 )}
 
-                {/* Word text button - centered below timestamp */}
                 <button
                   onClick={(e) => {
                     if (!isWordEditing) {
@@ -184,7 +188,6 @@ export default function WordEditor({
                   {word}
                 </button>
 
-                {/* Save/Cancel buttons during edit - below word */}
                 {isWordEditing && (
                   <div className="flex gap-1 mt-1">
                     <button

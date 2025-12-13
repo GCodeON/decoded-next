@@ -37,11 +37,9 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
   const hasSynced = !!displayLyrics?.synced;
   const hasWordSynced = !!displayLyrics?.wordSynced;
   
-  // Enable high-frequency polling when: in sync editor mode OR viewing synced lyrics
   const isViewMode = hasSynced && !editMode && !syncMode;
   const { isPlaying, currentPosition, currentPositionMs, togglePlayback } = usePlaybackSync(id, !!track, syncMode, isViewMode);
 
-  // Compute synced lyrics configuration
   const syncConfig = useMemo(() => {
     if (!displayLyrics || !hasSynced) return null;
     
@@ -125,7 +123,6 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
                   showRhymes ? 'text-green-600 hover:text-green-700' : 'text-gray-600 hover:text-gray-700'
                 }`}
               >
-                {/* Palette icon optional; using label for clarity */}
                 {showRhymes ? 'Rhymes ON' : 'Rhymes OFF'}
               </button>
               {!hasSynced ? (

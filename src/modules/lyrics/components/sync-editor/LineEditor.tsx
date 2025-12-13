@@ -15,6 +15,7 @@ interface LineEditorProps {
   onStartEdit: (index: number, value: string) => void;
   onSaveEdit: (index: number) => void;
   onCancelEdit: () => void;
+  onDisableAutoScroll?: () => void;
 }
 
 export default function LineEditor({
@@ -29,7 +30,8 @@ export default function LineEditor({
   onEditChange,
   onStartEdit,
   onSaveEdit,
-  onCancelEdit
+  onCancelEdit,
+  onDisableAutoScroll
 }: LineEditorProps) {
   return (
     <div
@@ -47,7 +49,10 @@ export default function LineEditor({
         isEditing={editingIndex !== null}
         editValue={editValue}
         onEditChange={onEditChange}
-        onStartEdit={(index) => onStartEdit(index as number, formatTime(time!))}
+        onStartEdit={(index) => {
+          onDisableAutoScroll?.();
+          onStartEdit(index as number, formatTime(time!));
+        }}
         onSaveEdit={(index) => onSaveEdit(index as number)}
         onCancelEdit={onCancelEdit}
         editIndex={editingIndex}

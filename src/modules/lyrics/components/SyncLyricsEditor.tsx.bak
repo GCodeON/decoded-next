@@ -102,14 +102,6 @@ export default function SyncLyricsEditor({
     }
   }, [activeLine, manualNavigation, editingIndex]);
 
-
-  // Capture current line when playback stops to prevent jumping back to top
-  useEffect(() => {
-    if (!isPlaying && !manualNavigation && activeLine !== null) {
-      setManualLineOverride(activeLine);
-      setManualNavigation(true);
-    }
-  }, [isPlaying, manualNavigation, activeLine]);
   // Navigation callbacks - shared
   const goBack = useCallback(() => {
     setManualLineOverride(prev => Math.max(0, (prev ?? currentLine) - 1));
