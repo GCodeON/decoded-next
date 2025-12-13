@@ -79,6 +79,7 @@ export default function SyncLyricsEditor({
   // Navigation state - shared
   const [manualLineOverride, setManualLineOverride] = useState<number | null>(null);
   const [manualNavigation, setManualNavigation] = useState(false);
+  const lastAutoLineRef = useRef<number | null>(null);
 
   // Current line computation - prioritizes activeLine during playback when auto-scroll is enabled
   const currentLine = useMemo(() => {
@@ -101,15 +102,22 @@ export default function SyncLyricsEditor({
       setManualLineOverride(activeLine);
     }
   }, [activeLine, manualNavigation, editingIndex]);
-
+  // Track last auto-followed line during playback
+  useEffect(() => {
+    if (isPlaying && !manualNavigation && activeLine !== null) {
+      lastAutoLineRef.current = activeLine;
+    }
+  }, [isPlaying, manualNavigation, activeLine]);
 
   // Capture current line when playback stops to prevent jumping back to top
   useEffect(() => {
-    if (!isPlaying && !manualNavigation && activeLine !== null) {
-      setManualLineOverride(activeLine);
+    if (!isPlaying && !manualNavigation) {
+      const holdLine =
+        lastAutoLineRef.current ?? (activeLine ?? manualLineOverride ?? 0);
+      setManualLineOverride(holdLine);
       setManualNavigation(true);
     }
-  }, [isPlaying, manualNavigation, activeLine]);
+  }, [isPlaying, manualNavigation, activeLine, manualLineOverride]);
   // Navigation callbacks - shared
   const goBack = useCallback(() => {
     setManualLineOverride(prev => Math.max(0, (prev ?? currentLine) - 1));
@@ -437,7 +445,10 @@ export default function SyncLyricsEditor({
               onStartEdit={() => startEdit(i, formatTime(time!))}
               onSaveEdit={() => saveEdit(handleSaveTimestamp)}
               onCancelEdit={cancelEdit}
-              onDisableAutoScroll={() => setManualNavigation(true)}
+              onDisableAutoScroll={() => {
+                setManualNavigation(true);
+                setManualLineOverride(i);
+              }}
             />
           ) : (
             <LineEditor
@@ -454,7 +465,10 @@ export default function SyncLyricsEditor({
               onStartEdit={() => startEdit(i, formatTime(time!))}
               onSaveEdit={() => saveEdit(handleSaveTimestamp)}
               onCancelEdit={cancelEdit}
-              onDisableAutoScroll={() => setManualNavigation(true)}
+              onDisableAutoScroll={() => {
+                setManualNavigation(true);
+                setManualLineOverride(i);
+              }}
             />
           );
         })}
