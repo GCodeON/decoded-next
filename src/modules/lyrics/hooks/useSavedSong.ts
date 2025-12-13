@@ -3,6 +3,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSongLyrics, cleanTrackName, mstoSeconds, htmlToLyrics, lyricsToHtml, SavedSong, songService, useLrcLibPublish } from '@/modules/lyrics';
 import { replaceLyricsInLrc, validateLyricsConsistency } from '@/modules/lyrics/utils/lrc-replace';
 import { SpotifyTrack } from '@/modules/spotify';
+import { repairSyncedLyrics, extractPlainLinesFromHtml } from '@/modules/lyrics/utils/repair';
+import { parseLrcForEditing } from '@/modules/lyrics/utils/lrc';
 
 interface UseSavedSongParams {
   track: SpotifyTrack | null;
@@ -160,15 +162,33 @@ export function useSavedSong({ track, trackId }: UseSavedSongParams) {
       const plain = htmlToLyrics(htmlContent);
       const oldPlain = savedSong.lyrics.plain;
 
-      // Detect text changes (word-level differences)
-      const changes = detectTextChanges(oldPlain, plain);
+      // Check if line count changed (e.g., user removed blank lines in editor)
+      const newLineCount = extractPlainLinesFromHtml(htmlContent).length;
+      const oldSyncedLineCount = savedSong.lyrics.synced ? parseLrcForEditing(savedSong.lyrics.synced).length : 0;
+      const lineCountChanged = savedSong.lyrics.synced && newLineCount !== oldSyncedLineCount;
 
       // Prepare synced/wordSynced updates
       let updatedSynced = savedSong.lyrics.synced;
       let updatedWordSynced = savedSong.lyrics.wordSynced;
+      let autoRepaired = false;
 
-      // Apply text replacements to synced/wordSynced versions
-      if (changes.length > 0) {
+      // If line count changed, use auto-repair to realign timestamps
+      if (lineCountChanged) {
+        console.log(`Line count changed: ${oldSyncedLineCount} → ${newLineCount}. Auto-repairing synced/wordSynced...`);
+        const repairResult = await repairSyncedLyrics(
+          htmlContent,
+          savedSong.lyrics.synced || '',
+          savedSong.lyrics.wordSynced || null
+        );
+        updatedSynced = repairResult.repairedSynced;
+        updatedWordSynced = repairResult.repairedWordSynced;
+        autoRepaired = true;
+      } else {
+        // No line count change - use existing word-level replacement logic
+        const changes = detectTextChanges(oldPlain, plain);
+
+        // Apply text replacements to synced/wordSynced versions
+        if (changes.length > 0) {
         for (const change of changes) {
           const { oldWord, newWord } = change;
 
@@ -202,21 +222,24 @@ export function useSavedSong({ track, trackId }: UseSavedSongParams) {
             }
           }
         }
+        }
       }
 
-      // Validate consistency
-      const syncConsistency = validateLyricsConsistency(plain, updatedSynced || null);
-      const wordSyncConsistency = validateLyricsConsistency(plain, updatedWordSynced || null);
+      // Validate consistency (skip if auto-repaired since repair handles this)
+      if (!autoRepaired) {
+        const syncConsistency = validateLyricsConsistency(plain, updatedSynced || null);
+        const wordSyncConsistency = validateLyricsConsistency(plain, updatedWordSynced || null);
 
-      if (!syncConsistency.isConsistent && updatedSynced) {
-        console.warn(
-          `Synced lyrics consistency check: plain has ${syncConsistency.plainWordCount} words, synced has ${syncConsistency.syncedWordCount} words (tolerance: ${syncConsistency.tolerance})`
-        );
-      }
-      if (!wordSyncConsistency.isConsistent && updatedWordSynced) {
-        console.warn(
-          `Word-synced lyrics consistency check: plain has ${wordSyncConsistency.plainWordCount} words, synced has ${wordSyncConsistency.syncedWordCount} words (tolerance: ${wordSyncConsistency.tolerance})`
-        );
+        if (!syncConsistency.isConsistent && updatedSynced) {
+          console.warn(
+            `Synced lyrics consistency check: plain has ${syncConsistency.plainWordCount} words, synced has ${syncConsistency.syncedWordCount} words (tolerance: ${syncConsistency.tolerance})`
+          );
+        }
+        if (!wordSyncConsistency.isConsistent && updatedWordSynced) {
+          console.warn(
+            `Word-synced lyrics consistency check: plain has ${wordSyncConsistency.plainWordCount} words, synced has ${wordSyncConsistency.syncedWordCount} words (tolerance: ${wordSyncConsistency.tolerance})`
+          );
+        }
       }
 
       const updated = {
@@ -235,6 +258,10 @@ export function useSavedSong({ track, trackId }: UseSavedSongParams) {
       try {
         // Update all fields together for consistency
         await songService.updateLyrics(trackId, plain, htmlContent, updatedSynced, updatedWordSynced);
+        
+        if (autoRepaired) {
+          console.log('✅ Synced/wordSynced auto-repaired to match new line count');
+        }
       } catch (err) {
         console.error('Failed to update lyrics:', err);
       }
