@@ -1,67 +1,51 @@
 'use client';
-import { use, useState, useMemo, useEffect } from 'react';
-import { FaEdit, FaClock, FaFont } from 'react-icons/fa';
-import { useSpotifyTrack, usePlaybackSync } from '@/modules/spotify';
-import { useSavedSong, LyricsEditor, SyncedLyrics, lyricsToHtml, mapLrcToRhymeHtml } from '@/modules/lyrics';
-import { repairSyncedLyrics, type RepairPreview } from '@/modules/lyrics/utils/repair';
-import SyncLyricsEditor from '@/modules/lyrics/components/SyncLyricsEditor';
+import { use, useEffect, useMemo, useState } from 'react';
 import SongHeader from '@/components/SongHeader';
+import ActionButtons from '@/modules/lyrics/components/ActionButtons';
+import RepairModal from '@/modules/lyrics/components/RepairModal';
+import SyncLyricsEditor from '@/modules/lyrics/components/SyncLyricsEditor';
+import { useDisplayLyrics } from '@/modules/lyrics/hooks/useDisplayLyrics';
+import { LyricsEditor, SyncedLyrics, useSavedSong } from '@/modules/lyrics';
+import { usePlaybackSync, useSpotifyTrack } from '@/modules/spotify';
 
 export default function Song({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { track,  loading: trackLoading, error: trackError } = useSpotifyTrack(id);
-  const { savedSong, isSaving, lyricsLoading, lyricsError, updateLyrics, updateSynced, updateWordSynced } = useSavedSong({track, trackId: id});
-  
+  const { track, loading: trackLoading, error: trackError } = useSpotifyTrack(id);
+  const { savedSong, isSaving, lyricsLoading, lyricsError, updateLyrics, updateSynced, updateWordSynced } = useSavedSong({ track, trackId: id });
+
   const [editMode, setEditMode] = useState(false);
   const [syncMode, setSyncMode] = useState(false);
   const [wordSyncEnabled, setWordSyncEnabled] = useState(false);
   const [showRhymes, setShowRhymes] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
-  const [repairPreview, setRepairPreview] = useState<RepairPreview | null>(null);
   const [repairing, setRepairing] = useState(false);
-  const [previewShowRhymes, setPreviewShowRhymes] = useState(false);
+  const [repairModalOpen, setRepairModalOpen] = useState(false);
 
-  const displayLyrics = useMemo(() => {
-    if (savedSong?.lyrics) {
-        const lyrics = { ...savedSong.lyrics };
-
-        if (lyrics.synced && lyrics.rhymeEncoded && !lyrics.rhymeEncodedLines) {
-          lyrics.rhymeEncodedLines = mapLrcToRhymeHtml(lyrics.synced, lyrics.rhymeEncoded);
-        }
-
-        if (!lyrics.rhymeEncoded) {
-          lyrics.rhymeEncoded = savedSong.lyrics.rhymeEncoded || lyricsToHtml(savedSong.lyrics.plain);
-        }
-
-        return lyrics;
-      }
-    return null;
-  }, [savedSong]);
+  const displayLyrics = useDisplayLyrics(savedSong);
 
   const hasSynced = !!displayLyrics?.synced;
   const hasWordSynced = !!displayLyrics?.wordSynced;
-  
+
   const isViewMode = hasSynced && !editMode && !syncMode;
   const { isPlaying, currentPosition, currentPositionMs, togglePlayback } = usePlaybackSync(id, !!track, syncMode, isViewMode);
 
   const syncConfig = useMemo(() => {
     if (!displayLyrics || !hasSynced) return null;
-    
+
     const useWordSync = wordSyncEnabled && hasWordSynced;
-    
+
     return {
-      lyrics: useWordSync 
-        ? displayLyrics.wordSynced! 
+      lyrics: useWordSync
+        ? displayLyrics.wordSynced!
         : displayLyrics.wordSynced || displayLyrics.synced!,
       mode: (useWordSync ? 'word' : 'line') as 'word' | 'line',
       rhymeEncodedLines: displayLyrics.rhymeEncodedLines || undefined,
     };
   }, [displayLyrics, hasSynced, wordSyncEnabled, hasWordSynced]);
 
-  // Listen for LrcLib publish event to show toast
   useEffect(() => {
     const onPublished = (e: Event) => {
-      console.log("published synced lyrics", e);
+      console.log('published synced lyrics', e);
       setToast('Synced Lyrics Published');
       setTimeout(() => setToast(null), 3000);
     };
@@ -72,50 +56,9 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
   const displayHtml = displayLyrics?.rhymeEncoded || '';
   const plainLyrics = displayLyrics?.plain || '';
 
-  const runRepairPreview = async () => {
-    if (!displayLyrics) return;
-    try {
-      setRepairing(true);
-      const preview = await repairSyncedLyrics(
-        displayHtml || plainLyrics,
-        displayLyrics.synced || null,
-        displayLyrics.wordSynced || null
-      );
-      setRepairPreview(preview);
-    } catch (e) {
-      console.error('Repair preview failed:', e);
-      setToast('Repair preview failed');
-      setTimeout(() => setToast(null), 3000);
-    } finally {
-      setRepairing(false);
-    }
-  };
+  const handleToggleWordSync = () => setWordSyncEnabled(prev => !prev);
+  const handleToggleRhymes = () => setShowRhymes(prev => !prev);
 
-  const applyRepair = async () => {
-    if (!repairPreview) return;
-    try {
-      setRepairing(true);
-      if (repairPreview.repairedSynced) {
-        await updateSynced(repairPreview.repairedSynced);
-      }
-      if (repairPreview.repairedWordSynced) {
-        await updateWordSynced(repairPreview.repairedWordSynced);
-      }
-      setRepairPreview(null);
-      setToast('✓ Sync repaired successfully');
-      setTimeout(() => setToast(null), 2500);
-      // Reload page to show updated records
-      window.location.reload();
-    } catch (e) {
-      console.error('Apply repair failed:', e);
-      setToast('✗ Apply repair failed');
-      setTimeout(() => setToast(null), 3000);
-    } finally {
-      setRepairing(false);
-    }
-  };
-
-  // Loading & Error States
   if (trackLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -141,72 +84,27 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
           {toast}
         </div>
       )}
-      <SongHeader 
-        track={track} 
-        isPlaying={isPlaying} 
-        togglePlayback={togglePlayback}
-      />
+      <SongHeader track={track} isPlaying={isPlaying} togglePlayback={togglePlayback} />
 
       <div className="bg-white rounded-xl shadow-lg p-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-black text-2xl font-bold">Lyrics</h2>
           {displayLyrics && !editMode && !syncMode && (
-            <div className="flex gap-4">
-              {hasSynced && (
-                <button
-                  onClick={() => setWordSyncEnabled(!wordSyncEnabled)}
-                  className={`flex items-center gap-2 font-semibold ${
-                    wordSyncEnabled
-                      ? 'text-purple-600 hover:text-purple-700'
-                      : 'text-gray-600 hover:text-gray-700'
-                  }`}
-                >
-                  <FaFont /> {wordSyncEnabled ? 'Word Sync ON' : 'Word Sync'}
-                </button>
-              )}
-              <button
-                onClick={() => setShowRhymes(!showRhymes)}
-                className={`flex items-center gap-2 font-semibold ${
-                  showRhymes ? 'text-green-600 hover:text-green-700' : 'text-gray-600 hover:text-gray-700'
-                }`}
-              >
-                {showRhymes ? 'Rhymes ON' : 'Rhymes OFF'}
-              </button>
-              {!hasSynced ? (
-                <button
-                  onClick={() => setSyncMode(true)}
-                  className="flex items-center gap-2 text-green-600 hover:text-green-700 font-semibold"
-                >
-                  <FaClock /> Sync Lyrics
-                </button>
-              ) : (
-                <button
-                  onClick={() => setSyncMode(true)}
-                  className="flex items-center gap-2 text-orange-600 hover:text-orange-700 font-semibold"
-                >
-                  <FaClock /> Edit Sync
-                </button>
-              )}
-              <button
-                onClick={() => setEditMode(true)}
-                className="flex items-center gap-2 text-blue-600 hover:text-blue-700"
-              >
-                <FaEdit /> Edit
-              </button>
-              {(hasSynced || hasWordSynced) && (
-                <button
-                  onClick={runRepairPreview}
-                  className={`flex items-center gap-2 ${repairing ? 'text-gray-400' : 'text-red-600 hover:text-red-700'} font-semibold`}
-                  disabled={repairing}
-                >
-                  <FaClock /> {repairing ? 'Repairing…' : 'Repair Sync'}
-                </button>
-              )}
-            </div>
+            <ActionButtons
+              hasSynced={hasSynced}
+              hasWordSynced={hasWordSynced}
+              wordSyncEnabled={wordSyncEnabled}
+              showRhymes={showRhymes}
+              repairing={repairing}
+              onToggleWordSync={handleToggleWordSync}
+              onToggleRhymes={handleToggleRhymes}
+              onEditSync={() => setSyncMode(true)}
+              onEditLyrics={() => setEditMode(true)}
+              onRunRepair={() => setRepairModalOpen(true)}
+            />
           )}
         </div>
 
-        {/* Status Messages */}
         {isSaving && <p className="text-sm text-gray-500">Saving...</p>}
         {lyricsLoading && !savedSong && <p className="text-gray-600 animate-pulse">Searching lyrics...</p>}
         {lyricsError && !savedSong && (
@@ -216,7 +114,6 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
         )}
         {!lyricsLoading && !displayLyrics && <p className="text-gray-500 italic">No lyrics found.</p>}
 
-        {/* Sync Mode */}
         {syncMode && displayLyrics && (
           <SyncLyricsEditor
             plainLyrics={plainLyrics}
@@ -238,11 +135,10 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
           />
         )}
 
-        {/* Synced lyrics view */}
         {syncConfig && !editMode && !syncMode && (
           <SyncedLyrics
             syncedLyrics={syncConfig.lyrics}
-            currentPositionMs={currentPositionMs}
+            currentPositionMs={currentPositionMs ?? 0}
             isPlaying={isPlaying}
             rhymeEncodedLines={syncConfig.rhymeEncodedLines}
             showRhymes={showRhymes}
@@ -250,7 +146,6 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
           />
         )}
 
-        {/* Plain HTML View */}
         {displayLyrics && !editMode && !syncMode && !hasSynced && (
           <div className="prose prose-lg max-w-none">
             <div
@@ -260,7 +155,6 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
           </div>
         )}
 
-        {/* Editor */}
         {editMode && (
           <LyricsEditor
             initialHtml={displayHtml}
@@ -272,7 +166,6 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
           />
         )}
 
-        {/* LRC Format */}
         {hasSynced && !syncMode && !editMode && (
           <details className="mt-6 border-t pt-4">
             <summary className="cursor-pointer text-sm font-medium text-gray-600 hover:text-gray-800">
@@ -284,105 +177,18 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
           </details>
         )}
 
-        {/* Repair Preview Modal */}
-        {repairPreview && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-            <div className="bg-white w-full max-w-6xl max-h-[90vh] overflow-y-auto rounded-xl shadow-xl p-6 space-y-4">
-              <div className="flex justify-between items-center">
-                <h3 className="text-xl font-bold">Repair Sync Preview</h3>
-                <button className="text-gray-600 hover:text-gray-900" onClick={() => setRepairPreview(null)}>Close</button>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <h4 className="text-sm font-semibold text-gray-700">Before (Synced)</h4>
-                  <pre className="mt-2 text-xs font-mono text-gray-700 whitespace-pre-wrap bg-gray-50 p-3 rounded max-h-[40vh] overflow-auto">
-                    {displayLyrics?.synced || '—'}
-                  </pre>
-                </div>
-                <div>
-                  <h4 className="text-sm font-semibold text-gray-700">After (Synced)</h4>
-                  <pre className="mt-2 text-xs font-mono text-gray-700 whitespace-pre-wrap bg-gray-50 p-3 rounded max-h-[40vh] overflow-auto">
-                    {repairPreview.repairedSynced}
-                  </pre>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <h4 className="text-sm font-semibold text-gray-700">Before (Word Synced)</h4>
-                  <pre className="mt-2 text-xs font-mono text-gray-700 whitespace-pre-wrap bg-gray-50 p-3 rounded max-h-[40vh] overflow-auto">
-                    {displayLyrics?.wordSynced || '—'}
-                  </pre>
-                </div>
-                <div>
-                  <h4 className="text-sm font-semibold text-gray-700">After (Word Synced)</h4>
-                  <pre className="mt-2 text-xs font-mono text-gray-700 whitespace-pre-wrap bg-gray-50 p-3 rounded max-h-[40vh] overflow-auto">
-                    {repairPreview.repairedWordSynced || '—'}
-                  </pre>
-                </div>
-              </div>
-
-              {/* Live visual preview using SyncedLyrics */}
-              <div className="mt-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-sm font-semibold text-gray-700">Visual Preview</h4>
-                  <label className="flex items-center gap-2 text-sm text-gray-700">
-                    <input
-                      type="checkbox"
-                      className="rounded"
-                      checked={previewShowRhymes}
-                      onChange={(e) => setPreviewShowRhymes(e.target.checked)}
-                    />
-                    Show Rhymes
-                  </label>
-                </div>
-                <div className="border rounded-lg p-3 bg-gray-50 max-h-[40vh] overflow-y-auto">
-                  {(() => {
-                    // Recompute rhyme mapping against repaired synced to ensure correct alignment
-                    const previewRhymeLines = previewShowRhymes
-                      ? mapLrcToRhymeHtml(repairPreview.repairedSynced, displayLyrics?.rhymeEncoded || '')
-                      : undefined;
-                    return (
-                      <SyncedLyrics
-                        syncedLyrics={repairPreview.repairedWordSynced || repairPreview.repairedSynced}
-                        currentPositionMs={currentPositionMs}
-                        isPlaying={isPlaying}
-                        rhymeEncodedLines={previewRhymeLines}
-                        showRhymes={previewShowRhymes}
-                        // Force line mode when showing rhymes to use HTML with background styles
-                        mode={previewShowRhymes ? 'line' : (repairPreview.repairedWordSynced ? 'word' : 'line')}
-                      />
-                    );
-                  })()}
-                </div>
-                <div>
-                  <h5 className="text-xs font-semibold text-gray-600">Repaired Lyrics (Timestamps Removed)</h5>
-                  <pre className="mt-2 text-xs font-mono text-gray-700 whitespace-pre-wrap bg-gray-50 p-3 rounded max-h-[30vh] overflow-auto">
-                    {(repairPreview.repairedWordSynced || repairPreview.repairedSynced).replace(/\[(\d{2}):(\d{2}(?:\.\d{2})?)\]\s?/g, '').replace(/<\d{2}:\d{2}(?:\.\d{2})?>/g, '')}
-                  </pre>
-                </div>
-              </div>
-
-              {/* Diff summary bullets */}
-              <div className="text-sm text-gray-700 space-y-1">
-                <div>Lines modified: {repairPreview.diffSummary.linesModified.length}</div>
-                <div>Lines added: {repairPreview.diffSummary.linesAdded}</div>
-                <div>Lines removed: {repairPreview.diffSummary.linesRemoved}</div>
-              </div>
-
-              <div className="flex justify-end gap-3 pt-2">
-                <button className="px-4 py-2 rounded border" onClick={() => setRepairPreview(null)} disabled={repairing}>Cancel</button>
-                <button 
-                  className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed" 
-                  onClick={applyRepair}
-                  disabled={repairing}
-                >
-                  {repairing ? 'Applying...' : 'Apply Repair'}
-                </button>
-              </div>
-            </div>
-          </div>
+        {repairModalOpen && displayLyrics && (
+          <RepairModal
+            displayLyrics={displayLyrics}
+            displayHtml={displayHtml}
+            plainLyrics={plainLyrics}
+            currentPositionMs={currentPositionMs}
+            isPlaying={isPlaying}
+            setToast={setToast}
+            onClose={() => setRepairModalOpen(false)}
+            updateSynced={updateSynced}
+            updateWordSynced={updateWordSynced}
+          />
         )}
       </div>
     </div>
