@@ -118,7 +118,7 @@ export default function SyncLyricsEditor({
       setManualNavigation(true);
     }
   }, [isPlaying, manualNavigation, activeLine, manualLineOverride]);
-  // Navigation callbacks - shared
+
   const goBack = useCallback(() => {
     setManualLineOverride(prev => Math.max(0, (prev ?? currentLine) - 1));
   }, [currentLine]);
@@ -130,7 +130,7 @@ export default function SyncLyricsEditor({
   const goToLine = useCallback((index: number) => {
     setManualLineOverride(index);
     setManualNavigation(true);
-    setCurrentWordIndex(0); // Reset word index when manually navigating to a line
+    setCurrentWordIndex(0);
   }, []);
 
   const enableAutoScroll = useCallback(() => {
@@ -169,7 +169,7 @@ export default function SyncLyricsEditor({
     setCurrentWordIndex(activeWord ?? -1);
   }, [isPlaying, wordTimingMode, currentPosition, currentPositionMs, currentLine, wordTimestamps]);
 
-  // Line stamping handler - shared
+
   const handleStampLine = useCallback((index: number) => {
     const ms = typeof currentPositionMs === 'number' ? currentPositionMs : currentPosition * 1000;
     const sec = Math.floor(ms / 1000);
@@ -182,7 +182,6 @@ export default function SyncLyricsEditor({
     });
 
     // Auto-sync: Assign line timestamp to first word if it doesn't already have one
-    // This prevents discrepancies where a word has a timestamp before its line
     setWordTimestamps(prev => {
       const newMap = new Map(prev);
       const existingWords = newMap.get(index) || [];
@@ -204,14 +203,13 @@ export default function SyncLyricsEditor({
           newMap.set(index, [firstWord]);
         }
       } else if (existingWords.length > 0) {
-        // If words already exist, check if first word is missing a timestamp
+
         const lineText = lines[index]?.trim() || '';
         const firstWordMatch = lineText.match(/\S+/);
         
         if (firstWordMatch) {
           const firstWordInTimestamps = existingWords[0];
           
-          // Only update if first word doesn't have a time (preserve manual edits)
           if (firstWordInTimestamps && !firstWordInTimestamps.time) {
             const updatedWords = [...existingWords];
             updatedWords[0] = { ...firstWordInTimestamps, time: lineTime };
@@ -226,7 +224,7 @@ export default function SyncLyricsEditor({
     if (index === currentLine) {
       setManualLineOverride(Math.min(lines.length - 1, index + 1));
     }
-    // Disable auto-scroll when user manually stamps during playback
+    
     if (isPlaying) {
       setManualNavigation(true);
     }
@@ -265,13 +263,49 @@ export default function SyncLyricsEditor({
         newMap.set(lineIndex, updatedWords);
       } else {
         const updatedWords = [...lineWords, newWord];
-        updatedWords.sort((a, b) => (a?.time || 0) - (b?.time || 0));
+        // Keep words in natural line order to preserve index alignment
         newMap.set(lineIndex, updatedWords);
       }
       
       return newMap;
     });
-  }, [currentPositionMs, currentPosition]);
+  }, [currentPositionMs, currentPosition, lines]);
+
+  // Save edited word time from WordEditor (keeps array in line order)
+  const handleSaveWordTime = useCallback((lineIndex: number, wordIndex: number, newTime: number) => {
+    const lineText = lines[lineIndex]?.trim() || '';
+    const tokens = lineText ? lineText.split(/\s+/) : [];
+    const targetText = tokens[wordIndex];
+    if (!targetText) return;
+
+    setWordTimestamps(prev => {
+      const map = new Map(prev);
+      const existing = map.get(lineIndex) || [];
+
+      // Rebuild in line order, updating the target word’s time
+      const rebuilt: Word[] = [];
+      let cursor = 0;
+      for (let i = 0; i < tokens.length; i++) {
+        const token = tokens[i];
+        const slice = lineText.slice(cursor);
+        const rel = slice.indexOf(token);
+        const start = rel >= 0 ? cursor + rel : cursor;
+        const end = start + token.length;
+
+        const match = existing.find(w => w && w.text === token);
+        const time = i === wordIndex ? newTime : match?.time;
+        if (time != null) {
+          rebuilt.push({ text: token, time, start, end });
+        }
+
+        cursor = end;
+        if (lineText[cursor] === ' ') cursor += 1;
+      }
+
+      map.set(lineIndex, rebuilt);
+      return map;
+    });
+  }, [lines, setWordTimestamps]);
 
   // Keyboard shortcuts - different behavior for line vs word mode
   useEffect(() => {
@@ -445,6 +479,7 @@ export default function SyncLyricsEditor({
               onStartEdit={() => startEdit(i, formatTime(time!))}
               onSaveEdit={() => saveEdit(handleSaveTimestamp)}
               onCancelEdit={cancelEdit}
+              onSaveWordTime={handleSaveWordTime}
               onDisableAutoScroll={() => {
                 setManualNavigation(true);
                 setManualLineOverride(i);

@@ -165,6 +165,7 @@ export default function WordEditor({
                       editIndex={wordTimestampState?.wordIndex}
                       currentIndex={wi}
                       compact={true}
+                      cancelOnBlur={false}
                     />
                   </div>
                 )}

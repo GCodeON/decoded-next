@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic';
 import { FaSave, FaTimes } from 'react-icons/fa';
 import { Legend, customColors } from '@/modules/lyrics';
 import 'suneditor/dist/css/suneditor.min.css';
+import { buttonList } from 'suneditor-react';
 
 const SunEditor = dynamic(() => import('suneditor-react'), {
   ssr: false
@@ -27,9 +28,16 @@ export default function LyricsEditor({
             setContents={content}
             onChange={setContent}
             setOptions={{
-              height: '100%',
-              // buttonList: [['undo', 'redo'], ['fontColor', 'hiliteColor']],
-              colorList: customColors
+              maxHeight: '700px',
+              buttonList:   [
+                ['undo', 'redo'],
+                ['bold', 'underline', 'italic', 'strike'],
+                ['fontColor', 'hiliteColor', 'removeFormat'],
+                ['fullScreen', 'codeView'],
+                ['preview', 'print']
+              ],
+              colorList: customColors,
+              stickyToolbar: 0
             }}
             setDefaultStyle="font-size: 20px;"
           />

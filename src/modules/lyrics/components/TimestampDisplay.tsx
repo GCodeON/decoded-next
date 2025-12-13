@@ -11,6 +11,7 @@ export interface TimestampDisplayProps {
   editIndex?: any;
   currentIndex?: any;
   compact?: boolean;
+  cancelOnBlur?: boolean;
 }
 
 export function TimestampDisplay({
@@ -23,7 +24,8 @@ export function TimestampDisplay({
   onCancelEdit,
   editIndex,
   currentIndex,
-  compact = false
+  compact = false,
+  cancelOnBlur = true
 }: TimestampDisplayProps) {
   // Only show editing mode if this specific item is being edited
   const isThisItemEditing = isEditing && editIndex === currentIndex;
@@ -55,7 +57,7 @@ export function TimestampDisplay({
               onCancelEdit();
             }
           }}
-          onBlur={onCancelEdit}
+          onBlur={cancelOnBlur ? onCancelEdit : undefined}
           className={`w-full px-1 text-right font-mono text-sm border-2 border-yellow-500 rounded bg-white focus:outline-none text-black`}
           autoFocus
           onFocus={(e) => e.target.select()}
