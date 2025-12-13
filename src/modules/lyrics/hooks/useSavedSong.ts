@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react';
 import { useSongLyrics, cleanTrackName, mstoSeconds, htmlToLyrics, lyricsToHtml, SavedSong, songService, useLrcLibPublish } from '@/modules/lyrics';
-import { replaceLyricsInLrc, validateLyricsConsistency } from '@/modules/lyrics/utils/lrc-replace';
+import { replaceLyricsInLrc, validateLyricsConsistency, detectTextChanges, countWordOccurrences, findLinesWithWord } from '@/modules/lyrics/utils/lrc-replace';
 import { SpotifyTrack } from '@/modules/spotify';
 import { repairSyncedLyrics, extractPlainLinesFromHtml } from '@/modules/lyrics/utils/repair';
 import { parseLrcForEditing } from '@/modules/lyrics/utils/lrc';
@@ -9,72 +9,6 @@ import { parseLrcForEditing } from '@/modules/lyrics/utils/lrc';
 interface UseSavedSongParams {
   track: SpotifyTrack | null;
   trackId: string;
-}
-
-/**
- * Detects word-level differences between two texts
- * Returns array of {oldWord, newWord, lineNumber} for changed words
- */
-function detectTextChanges(oldPlain: string, newPlain: string): Array<{ oldWord: string; newWord: string; lineNumber: number }> {
-  const oldLines = oldPlain.split('\n');
-  const newLines = newPlain.split('\n');
-  const changes: Array<{ oldWord: string; newWord: string; lineNumber: number }> = [];
-
-  for (let i = 0; i < Math.max(oldLines.length, newLines.length); i++) {
-    const oldLine = oldLines[i] || '';
-    const newLine = newLines[i] || '';
-
-    if (oldLine === newLine) continue;
-
-    // Split into words and find differences
-    const oldWords = oldLine.split(/\s+/).filter(w => w.length > 0);
-    const newWords = newLine.split(/\s+/).filter(w => w.length > 0);
-
-    for (let j = 0; j < Math.max(oldWords.length, newWords.length); j++) {
-      const oldWord = oldWords[j] || '';
-      const newWord = newWords[j] || '';
-
-      if (oldWord !== newWord && oldWord && newWord) {
-        changes.push({ oldWord, newWord, lineNumber: i });
-      }
-    }
-  }
-
-  return changes;
-}
-
-/**
- * Counts occurrences of a word in text with exact case and word boundaries
- */
-function countWordOccurrences(text: string, word: string): number {
-  const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const regex = new RegExp(`\\b${escapedWord}\\b`, 'g');
-  return (text.match(regex) || []).length;
-}
-
-/**
- * Finds which lines contain a specific word (case-sensitive, whole word match)
- */
-function findLinesWithWord(lrcContent: string, word: string): number[] {
-  const lines = lrcContent.split('\n');
-  const lineNumbers: number[] = [];
-
-  const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const regex = new RegExp(`\\b${escapedWord}\\b`);
-
-  lines.forEach((line, idx) => {
-    // Remove timestamps to get clean text
-    const cleanText = line
-      .replace(/\[\d+:\d+(?:\.\d+)?\]/g, '')
-      .replace(/<\d+:\d+(?:\.\d+)?>/g, '')
-      .trim();
-
-    if (regex.test(cleanText)) {
-      lineNumbers.push(idx);
-    }
-  });
-
-  return lineNumbers;
 }
 
 export function useSavedSong({ track, trackId }: UseSavedSongParams) {

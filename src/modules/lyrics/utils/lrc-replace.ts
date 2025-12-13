@@ -24,6 +24,15 @@ export interface ConsistencyCheckResult {
 }
 
 /**
+ * Represents a word-level change between two text versions
+ */
+export interface TextChange {
+  oldWord: string;
+  newWord: string;
+  lineNumber: number;
+}
+
+/**
  * Detects case variations of a word in text (exact word boundaries)
  * Examples: "intergrated" -> ["INTERGRATED", "Intergrated", "intergrated"]
  */
@@ -78,6 +87,67 @@ export function extractLineText(lrcLine: string): string {
     .replace(/\[\d+:\d+(?:\.\d+)?\]/g, '') // Remove line-level timestamps
     .replace(/<\d+:\d+(?:\.\d+)?>/g, '')   // Remove word-level timestamps
     .trim();
+}
+
+/**
+ * Detects word-level differences between two plain text strings
+ * Compares line-by-line and word-by-word to identify changes
+ */
+export function detectTextChanges(oldPlain: string, newPlain: string): TextChange[] {
+  const oldLines = oldPlain.split('\n');
+  const newLines = newPlain.split('\n');
+  const changes: TextChange[] = [];
+
+  for (let i = 0; i < Math.max(oldLines.length, newLines.length); i++) {
+    const oldLine = oldLines[i] || '';
+    const newLine = newLines[i] || '';
+
+    if (oldLine === newLine) continue;
+
+    const oldWords = oldLine.split(/\s+/).filter(w => w.length > 0);
+    const newWords = newLine.split(/\s+/).filter(w => w.length > 0);
+
+    for (let j = 0; j < Math.max(oldWords.length, newWords.length); j++) {
+      const oldWord = oldWords[j] || '';
+      const newWord = newWords[j] || '';
+
+      if (oldWord !== newWord && oldWord && newWord) {
+        changes.push({ oldWord, newWord, lineNumber: i });
+      }
+    }
+  }
+
+  return changes;
+}
+
+/**
+ * Counts occurrences of a specific word in text with exact case and word boundaries
+ */
+export function countWordOccurrences(text: string, word: string): number {
+  const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`\\b${escapedWord}\\b`, 'g');
+  return (text.match(regex) || []).length;
+}
+
+/**
+ * Finds all line numbers (0-based) that contain a specific word
+ * Strips LRC timestamps before searching for cleaner text matching
+ */
+export function findLinesWithWord(lrcContent: string, word: string): number[] {
+  const lines = lrcContent.split('\n');
+  const lineNumbers: number[] = [];
+
+  const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`\\b${escapedWord}\\b`);
+
+  lines.forEach((line, idx) => {
+    const cleanText = extractLineText(line);
+    if (regex.test(cleanText)) {
+      lineNumbers.push(idx);
+    }
+  });
+
+  return lineNumbers;
 }
 
 /**
