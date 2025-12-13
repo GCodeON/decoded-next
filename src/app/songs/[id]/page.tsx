@@ -3,6 +3,7 @@ import { use, useState, useMemo, useEffect } from 'react';
 import { FaEdit, FaClock, FaFont } from 'react-icons/fa';
 import { useSpotifyTrack, usePlaybackSync } from '@/modules/spotify';
 import { useSavedSong, LyricsEditor, SyncedLyrics, lyricsToHtml, mapLrcToRhymeHtml } from '@/modules/lyrics';
+import { repairSyncedLyrics, type RepairPreview } from '@/modules/lyrics/utils/repair';
 import SyncLyricsEditor from '@/modules/lyrics/components/SyncLyricsEditor';
 import SongHeader from '@/components/SongHeader';
 
@@ -16,6 +17,9 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
   const [wordSyncEnabled, setWordSyncEnabled] = useState(false);
   const [showRhymes, setShowRhymes] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
+  const [repairPreview, setRepairPreview] = useState<RepairPreview | null>(null);
+  const [repairing, setRepairing] = useState(false);
+  const [previewShowRhymes, setPreviewShowRhymes] = useState(false);
 
   const displayLyrics = useMemo(() => {
     if (savedSong?.lyrics) {
@@ -67,6 +71,49 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
 
   const displayHtml = displayLyrics?.rhymeEncoded || '';
   const plainLyrics = displayLyrics?.plain || '';
+
+  const runRepairPreview = async () => {
+    if (!displayLyrics) return;
+    try {
+      setRepairing(true);
+      const preview = await repairSyncedLyrics(
+        displayHtml || plainLyrics,
+        displayLyrics.synced || null,
+        displayLyrics.wordSynced || null
+      );
+      setRepairPreview(preview);
+    } catch (e) {
+      console.error('Repair preview failed:', e);
+      setToast('Repair preview failed');
+      setTimeout(() => setToast(null), 3000);
+    } finally {
+      setRepairing(false);
+    }
+  };
+
+  const applyRepair = async () => {
+    if (!repairPreview) return;
+    try {
+      setRepairing(true);
+      if (repairPreview.repairedSynced) {
+        await updateSynced(repairPreview.repairedSynced);
+      }
+      if (repairPreview.repairedWordSynced) {
+        await updateWordSynced(repairPreview.repairedWordSynced);
+      }
+      setRepairPreview(null);
+      setToast('✓ Sync repaired successfully');
+      setTimeout(() => setToast(null), 2500);
+      // Reload page to show updated records
+      window.location.reload();
+    } catch (e) {
+      console.error('Apply repair failed:', e);
+      setToast('✗ Apply repair failed');
+      setTimeout(() => setToast(null), 3000);
+    } finally {
+      setRepairing(false);
+    }
+  };
 
   // Loading & Error States
   if (trackLoading) {
@@ -146,6 +193,15 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
               >
                 <FaEdit /> Edit
               </button>
+              {(hasSynced || hasWordSynced) && (
+                <button
+                  onClick={runRepairPreview}
+                  className={`flex items-center gap-2 ${repairing ? 'text-gray-400' : 'text-red-600 hover:text-red-700'} font-semibold`}
+                  disabled={repairing}
+                >
+                  <FaClock /> {repairing ? 'Repairing…' : 'Repair Sync'}
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -226,6 +282,107 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
               {displayLyrics.synced}
             </pre>
           </details>
+        )}
+
+        {/* Repair Preview Modal */}
+        {repairPreview && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+            <div className="bg-white w-full max-w-6xl max-h-[90vh] overflow-y-auto rounded-xl shadow-xl p-6 space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-xl font-bold">Repair Sync Preview</h3>
+                <button className="text-gray-600 hover:text-gray-900" onClick={() => setRepairPreview(null)}>Close</button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700">Before (Synced)</h4>
+                  <pre className="mt-2 text-xs font-mono text-gray-700 whitespace-pre-wrap bg-gray-50 p-3 rounded max-h-[40vh] overflow-auto">
+                    {displayLyrics?.synced || '—'}
+                  </pre>
+                </div>
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700">After (Synced)</h4>
+                  <pre className="mt-2 text-xs font-mono text-gray-700 whitespace-pre-wrap bg-gray-50 p-3 rounded max-h-[40vh] overflow-auto">
+                    {repairPreview.repairedSynced}
+                  </pre>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700">Before (Word Synced)</h4>
+                  <pre className="mt-2 text-xs font-mono text-gray-700 whitespace-pre-wrap bg-gray-50 p-3 rounded max-h-[40vh] overflow-auto">
+                    {displayLyrics?.wordSynced || '—'}
+                  </pre>
+                </div>
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700">After (Word Synced)</h4>
+                  <pre className="mt-2 text-xs font-mono text-gray-700 whitespace-pre-wrap bg-gray-50 p-3 rounded max-h-[40vh] overflow-auto">
+                    {repairPreview.repairedWordSynced || '—'}
+                  </pre>
+                </div>
+              </div>
+
+              {/* Live visual preview using SyncedLyrics */}
+              <div className="mt-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-semibold text-gray-700">Visual Preview</h4>
+                  <label className="flex items-center gap-2 text-sm text-gray-700">
+                    <input
+                      type="checkbox"
+                      className="rounded"
+                      checked={previewShowRhymes}
+                      onChange={(e) => setPreviewShowRhymes(e.target.checked)}
+                    />
+                    Show Rhymes
+                  </label>
+                </div>
+                <div className="border rounded-lg p-3 bg-gray-50 max-h-[40vh] overflow-y-auto">
+                  {(() => {
+                    // Recompute rhyme mapping against repaired synced to ensure correct alignment
+                    const previewRhymeLines = previewShowRhymes
+                      ? mapLrcToRhymeHtml(repairPreview.repairedSynced, displayLyrics?.rhymeEncoded || '')
+                      : undefined;
+                    return (
+                      <SyncedLyrics
+                        syncedLyrics={repairPreview.repairedWordSynced || repairPreview.repairedSynced}
+                        currentPositionMs={currentPositionMs}
+                        isPlaying={isPlaying}
+                        rhymeEncodedLines={previewRhymeLines}
+                        showRhymes={previewShowRhymes}
+                        // Force line mode when showing rhymes to use HTML with background styles
+                        mode={previewShowRhymes ? 'line' : (repairPreview.repairedWordSynced ? 'word' : 'line')}
+                      />
+                    );
+                  })()}
+                </div>
+                <div>
+                  <h5 className="text-xs font-semibold text-gray-600">Repaired Lyrics (Timestamps Removed)</h5>
+                  <pre className="mt-2 text-xs font-mono text-gray-700 whitespace-pre-wrap bg-gray-50 p-3 rounded max-h-[30vh] overflow-auto">
+                    {(repairPreview.repairedWordSynced || repairPreview.repairedSynced).replace(/\[(\d{2}):(\d{2}(?:\.\d{2})?)\]\s?/g, '').replace(/<\d{2}:\d{2}(?:\.\d{2})?>/g, '')}
+                  </pre>
+                </div>
+              </div>
+
+              {/* Diff summary bullets */}
+              <div className="text-sm text-gray-700 space-y-1">
+                <div>Lines modified: {repairPreview.diffSummary.linesModified.length}</div>
+                <div>Lines added: {repairPreview.diffSummary.linesAdded}</div>
+                <div>Lines removed: {repairPreview.diffSummary.linesRemoved}</div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button className="px-4 py-2 rounded border" onClick={() => setRepairPreview(null)} disabled={repairing}>Cancel</button>
+                <button 
+                  className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed" 
+                  onClick={applyRepair}
+                  disabled={repairing}
+                >
+                  {repairing ? 'Applying...' : 'Apply Repair'}
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>

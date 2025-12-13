@@ -9,14 +9,12 @@ export const htmlToLyrics = (html: string): string => {
 
 export const lyricsToHtml = (text: string): string => {
   if (!text) return '<p><br></p>';
-  return (
-    '<p>' +
-    text
-      .replace(/\n\n/g, '</p><p><br></p><p>')
-      .replace(/\n/g, '<br>')
-      .replace(/<p><\/p>/g, '<p><br></p>')
-    + '</p>'
-  );
+  
+  // Split into lines, filter empty lines to prevent misalignment with synced records
+  const lines = text.split('\n').filter(line => line.trim().length > 0);
+  
+  // Join non-empty lines with <br> and wrap in single <p>
+  return '<p>' + lines.join('<br>') + '</p>';
 };
 
 export function mapLrcToRhymeHtml(lrc: string, rhymeEncoded: string): string[] {
