@@ -31,8 +31,6 @@ export const RhymeWordHighlight = memo(function RhymeWordHighlight({
     <>
       <div ref={containerRef} className="relative inline-block leading-relaxed">
         {words.map((word, index) => {
-          const clean = word.text.toLowerCase().replace(/[^\w']/g, '');
-          const fallbackColor = rhymeColorMap.get(clean) || undefined;
           const progress = getWordProgress(index);
 
           const segments =
@@ -41,7 +39,7 @@ export const RhymeWordHighlight = memo(function RhymeWordHighlight({
               : [
                   {
                     text: word.text,
-                    color: fallbackColor || null,
+                    color: null,
                     start: 0,
                     end: word.text.length,
                   },
@@ -67,7 +65,7 @@ export const RhymeWordHighlight = memo(function RhymeWordHighlight({
 
                 const visibleText = seg.text.slice(0, visibleCount);
                 const hiddenText = seg.text.slice(visibleCount);
-                const segColor = seg.color || fallbackColor;
+                const segColor = seg.color;
 
                 return (
                   <span key={`${index}-${segIdx}`} className="inline-block">
