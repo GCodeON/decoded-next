@@ -29,7 +29,10 @@ export function mapLrcToRhymeHtml(lrc: string, rhymeEncoded: string): string[] {
   div.innerHTML = rhymeEncoded
     .replace(/<br\s*\/?>/gi, '\n')
     .replace(/<\/p>\s*<p>/gi, '\n\n')
-    .replace(/<[^>]*>/g, (match) => match.includes('span') ? match : '');
+    .replace(/<[^>]*>/g, (match) => {
+      const lower = match.toLowerCase();
+      return lower.includes('span') || lower.startsWith('<u') || lower.startsWith('</u') ? match : '';
+    });
 
   const htmlLines = div.innerHTML
     .split('\n')

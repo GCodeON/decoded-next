@@ -1,15 +1,29 @@
 import type { ParsedRhymeLine, RhymeSegment, WordRhymeParts } from '../types/rhyme';
 import type { Word } from './lrcAdvanced';
 
+type StyleState = {
+  bgColor: string | null;
+  textColor: string | null;
+  underline: boolean;
+};
+
 /**
- * Extract background-color or color from inline style string
+ * Extract background/text color and underline flag from inline style string
  */
-export const extractColor = (style: string): string | null => {
-  if (!style) return null;
+export const extractStyles = (style: string): Partial<StyleState> => {
+  if (!style) return {};
+
   const bgMatch = style.match(/background-color:\s*([^;]+)/i);
-  if (bgMatch?.[1]) return bgMatch[1].trim();
-  const colorMatch = style.match(/color:\s*([^;]+)/i);
-  return colorMatch?.[1]?.trim() || null;
+  const colorMatch = style.match(/(?:^|;)\s*color:\s*([^;]+)/i);
+  const textDecoration = style.match(/text-decoration\s*:\s*([^;]+)/i);
+
+  const underline = textDecoration ? /underline/i.test(textDecoration[1]) : undefined;
+
+  return {
+    bgColor: bgMatch?.[1]?.trim() || null,
+    textColor: colorMatch?.[1]?.trim() || null,
+    underline,
+  };
 };
 
 /**
@@ -25,13 +39,15 @@ export const parseRhymeLine = (html?: string): ParsedRhymeLine | null => {
   const segments: RhymeSegment[] = [];
   let cursor = 0;
 
-  const walk = (node: ChildNode, activeColor: string | null): void => {
+  const walk = (node: ChildNode, activeStyle: StyleState): void => {
     if (node.nodeType === Node.TEXT_NODE) {
       const text = node.textContent || '';
       if (!text) return;
       segments.push({
         text,
-        color: activeColor,
+        bgColor: activeStyle.bgColor,
+        textColor: activeStyle.textColor,
+        underline: activeStyle.underline,
         start: cursor,
         end: cursor + text.length,
       });
@@ -41,16 +57,25 @@ export const parseRhymeLine = (html?: string): ParsedRhymeLine | null => {
 
     if (node.nodeType === Node.ELEMENT_NODE) {
       const el = node as HTMLElement;
-      const nextColor =
-        el.tagName.toLowerCase() === 'span'
-          ? extractColor(el.getAttribute('style') || '') || activeColor
-          : activeColor;
+      const inlineStyles = extractStyles(el.getAttribute('style') || '');
 
-      Array.from(el.childNodes).forEach((child) => walk(child, nextColor));
+      const nextStyle: StyleState = {
+        bgColor: inlineStyles.bgColor ?? activeStyle.bgColor,
+        textColor: inlineStyles.textColor ?? activeStyle.textColor,
+        underline:
+          inlineStyles.underline !== undefined
+            ? inlineStyles.underline
+            : el.tagName.toLowerCase() === 'u'
+            ? true
+            : activeStyle.underline,
+      };
+
+      Array.from(el.childNodes).forEach((child) => walk(child, nextStyle));
     }
   };
 
-  Array.from(wrapper.childNodes).forEach((child) => walk(child, null));
+  const baseStyle: StyleState = { bgColor: null, textColor: null, underline: false };
+  Array.from(wrapper.childNodes).forEach((child) => walk(child, baseStyle));
 
   return {
     text: segments.map((s) => s.text).join(''),
@@ -148,7 +173,9 @@ export const sliceSegmentsToWords = (
       if (text) {
         parts.push({
           text,
-          color: seg.color,
+          bgColor: seg.bgColor,
+          textColor: seg.textColor,
+          underline: seg.underline,
           start: overlapStart,
           end: overlapEnd,
         });
@@ -157,11 +184,13 @@ export const sliceSegmentsToWords = (
 
     // Fallback: if no segments found, create one with no color (transparent/uncolored)
     if (parts.length === 0) {
-      parts.push({ 
-        text: range.text, 
-        color: null, 
-        start: range.start, 
-        end: range.end 
+      parts.push({
+        text: range.text,
+        bgColor: null,
+        textColor: null,
+        underline: false,
+        start: range.start,
+        end: range.end,
       });
     }
 
@@ -179,10 +208,11 @@ export const buildColorMap = (parsedLines: (ParsedRhymeLine | null)[]): Map<stri
   for (const parsed of parsedLines) {
     if (!parsed) continue;
     for (const seg of parsed.segments) {
-      if (!seg.color) continue;
+      const color = seg.bgColor || seg.textColor;
+      if (!color) continue;
       const clean = seg.text.toLowerCase().replace(/[^\w']/g, '');
       if (clean && !colorMap.has(clean)) {
-        colorMap.set(clean, seg.color);
+        colorMap.set(clean, color);
       }
     }
   }

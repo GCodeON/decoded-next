@@ -39,7 +39,9 @@ export const RhymeWordHighlight = memo(function RhymeWordHighlight({
               : [
                   {
                     text: word.text,
-                    color: null,
+                    bgColor: null,
+                    textColor: null,
+                    underline: false,
                     start: 0,
                     end: word.text.length,
                   },
@@ -48,7 +50,7 @@ export const RhymeWordHighlight = memo(function RhymeWordHighlight({
           // Always add space between words (except last word) for proper spacing
           const segmentsWithSpace =
             index < words.length - 1
-              ? [...segments, { text: ' ', color: null, start: -1, end: -1 }]
+              ? [...segments, { text: ' ', bgColor: null, textColor: null, underline: false, start: -1, end: -1 }]
               : segments;
 
           const totalChars = segmentsWithSpace.reduce((sum, seg) => sum + (seg.end - seg.start > 0 ? seg.end - seg.start : seg.text.length), 0) || 1;
@@ -65,14 +67,16 @@ export const RhymeWordHighlight = memo(function RhymeWordHighlight({
 
                 const visibleText = seg.text.slice(0, visibleCount);
                 const hiddenText = seg.text.slice(visibleCount);
-                const segColor = seg.color;
+                const segBgColor = seg.bgColor;
 
                 return (
                   <span key={`${index}-${segIdx}`} className="inline-block">
                     {visibleText && (
                       <span
                         style={{
-                          backgroundColor: segColor || 'transparent',
+                          backgroundColor: segBgColor || 'transparent',
+                          color: seg.textColor || undefined,
+                          textDecoration: seg.underline ? 'underline' : undefined,
                           ...SEGMENT_STYLE,
                         }}
                       >

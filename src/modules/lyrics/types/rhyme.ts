@@ -1,6 +1,8 @@
 export type RhymeSegment = {
   text: string;
-  color: string | null;
+  bgColor: string | null;
+  textColor: string | null;
+  underline: boolean;
   start: number;
   end: number;
 };
