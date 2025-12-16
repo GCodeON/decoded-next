@@ -62,26 +62,22 @@ export const RhymeWordHighlight = memo(function RhymeWordHighlight({
     });
   }, [words, wordParts]);
 
-  // Memoized style factory to reduce inline style allocations
-  const makeSegmentStyle = useMemo(() => {
-    return (
-      segBgColor: string | null,
-      segTextColor: string | null,
-      underline: boolean,
-      progress: number,
-      index: number
-    ) => {
-      const isActiveProgress = progress > 0;
-      return {
-        ...SEGMENT_STYLE,
-        backgroundColor: segBgColor || 'transparent',
-        color: segTextColor || undefined,
-        textDecoration: underline ? 'underline' : undefined,
-        opacity: isActiveProgress ? 1 : 0.6,
-        transform: isActiveProgress ? 'translateY(0px)' : 'translateY(2px)',
-        transition: 'opacity 160ms ease-out, transform 200ms ease-out',
-        transitionDelay: `${index * 12}ms`,
-      } as React.CSSProperties;
+  // Style cache to return stable objects and reduce allocations
+  const styleCache = useMemo(() => {
+    const cache = new Map<string, React.CSSProperties>();
+    return (bgColor: string | null, textColor: string | null, underline: boolean, delayMs: number) => {
+      const key = `${bgColor}|${textColor}|${underline}|${delayMs}`;
+      if (!cache.has(key)) {
+        cache.set(key, {
+          ...SEGMENT_STYLE,
+          backgroundColor: bgColor || 'transparent',
+          color: textColor || undefined,
+          textDecoration: underline ? 'underline' : undefined,
+          transition: 'opacity 160ms ease-out, transform 200ms ease-out',
+          transitionDelay: `${delayMs}ms`,
+        });
+      }
+      return cache.get(key)!;
     };
   }, []);
 
@@ -104,6 +100,7 @@ export const RhymeWordHighlight = memo(function RhymeWordHighlight({
     const progress = getWordProgress(index);
     const easedProgress = Math.pow(progress, 0.82);
     const revealChars = Math.round(totalChars * easedProgress);
+    const wordDelay = index * 12;
     let remaining = revealChars;
 
     return (
@@ -121,7 +118,11 @@ export const RhymeWordHighlight = memo(function RhymeWordHighlight({
             <span key={`${index}-${segIdx}`} className="inline-block">
               {visibleText && (
                 <span
-                  style={makeSegmentStyle(segBgColor, seg.textColor, seg.underline, progress, index)}
+                  style={{
+                    ...styleCache(segBgColor, seg.textColor, seg.underline, wordDelay),
+                    opacity: progress > 0 ? 1 : 0.6,
+                    transform: progress > 0 ? 'translateY(0px)' : 'translateY(2px)',
+                  }}
                 >
                   {visibleText}
                 </span>
