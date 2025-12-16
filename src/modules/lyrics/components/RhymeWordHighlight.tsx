@@ -32,6 +32,7 @@ export const RhymeWordHighlight = memo(function RhymeWordHighlight({
       <div ref={containerRef} className="relative inline-block leading-relaxed">
         {words.map((word, index) => {
           const progress = getWordProgress(index);
+          const easedProgress = Math.pow(progress, 0.82);
 
           const segments =
             wordParts && wordParts[index] && wordParts[index].length > 0
@@ -54,7 +55,7 @@ export const RhymeWordHighlight = memo(function RhymeWordHighlight({
               : segments;
 
           const totalChars = segmentsWithSpace.reduce((sum, seg) => sum + (seg.end - seg.start > 0 ? seg.end - seg.start : seg.text.length), 0) || 1;
-          const revealChars = Math.round(totalChars * progress);
+          const revealChars = Math.round(totalChars * easedProgress);
 
           let remaining = revealChars;
 
@@ -74,10 +75,14 @@ export const RhymeWordHighlight = memo(function RhymeWordHighlight({
                     {visibleText && (
                       <span
                         style={{
+                          ...SEGMENT_STYLE,
                           backgroundColor: segBgColor || 'transparent',
                           color: seg.textColor || undefined,
                           textDecoration: seg.underline ? 'underline' : undefined,
-                          ...SEGMENT_STYLE,
+                          opacity: progress > 0 ? 1 : 0.6,
+                          transform: progress > 0 ? 'translateY(0px)' : 'translateY(2px)',
+                          transition: 'opacity 160ms ease-out, transform 200ms ease-out',
+                          transitionDelay: `${index * 12}ms`,
                         }}
                       >
                         {visibleText}

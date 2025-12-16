@@ -51,11 +51,11 @@ export function useLyricSync({
   const wasPausedRef = useRef<boolean>(!isPlaying);
 
   // Threshold constants (tunable)
-  const FORWARD_MARGIN_MS = 120;
+  const FORWARD_MARGIN_MS = 20;
   const BACKWARD_MARGIN_MS = 150;
   const MIN_DWELL_MS = 120;
   const SEEK_JUMP_THRESHOLD_MS = 800; // treat as seek
-  const SMALL_REVERSE_IGNORE_MS = 350; // ignore jitter backwards
+  const SMALL_REVERSE_IGNORE_MS = 550; // ignore jitter backwards
 
   // Precompute timestamp starts (ms)
   const lineStartsMs = useMemo(() => timestamps.map(t => t == null ? null : Math.floor(t * 1000)), [timestamps]);
