@@ -51,8 +51,8 @@ export function useLyricSync({
   const wasPausedRef = useRef<boolean>(!isPlaying);
 
   // Threshold constants (tunable)
-  const FORWARD_MARGIN_MS = 20;
-  const BACKWARD_MARGIN_MS = 150;
+  const FORWARD_MARGIN_MS = -2000;
+  const BACKWARD_MARGIN_MS = 1000;
   const MIN_DWELL_MS = 120;
   const SEEK_JUMP_THRESHOLD_MS = 800; // treat as seek
   const SMALL_REVERSE_IGNORE_MS = 550; // ignore jitter backwards
