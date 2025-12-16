@@ -47,7 +47,7 @@ const SyncedLyrics = ({
   );
 
   // Lead time applied only when both word sync and rhymes are enabled (keeps bg + line in sync)
-  const leadAdjustedTime = shouldUseWordSync && showRhymes ? currentPositionSec + 2 : currentPositionSec;
+  const leadAdjustedTime = shouldUseWordSync && showRhymes ? currentPositionSec + 1 : currentPositionSec;
 
   // Helper to calculate filled words for any line based on current time
   const getFilledWordsForLine = (lineWords: typeof wordsByLine[number]) => {
