@@ -8,14 +8,19 @@ import { PlainWordHighlight } from './PlainWordHighlight';
 import { SCROLL_OPTIONS } from '@/modules/lyrics/config/sync-constants';
 import type { SyncedLyricsProps } from '@/modules/lyrics/types/rhyme';
 
+interface SyncedLyricsWithActiveLine extends SyncedLyricsProps {
+  onActiveLineChange?: (line: number) => void;
+}
+
 const SyncedLyrics = ({
   syncedLyrics,
   currentPositionMs,
   isPlaying,
   rhymeEncodedLines,
   showRhymes = true,
-  mode = 'auto'
-}: SyncedLyricsProps) => {
+  mode = 'auto',
+  onActiveLineChange
+}: SyncedLyricsWithActiveLine) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const currentPositionSec = currentPositionMs / 1000;
 
@@ -47,7 +52,7 @@ const SyncedLyrics = ({
   );
 
   // Lead time applied only when both word sync and rhymes are enabled (keeps bg + line in sync)
-  const leadAdjustedTime = shouldUseWordSync && showRhymes ? currentPositionSec + 2 : currentPositionSec;
+  const leadAdjustedTime = shouldUseWordSync && showRhymes ? currentPositionSec + 0.5 : currentPositionSec;
 
   // Helper to calculate filled words for any line based on current time
   const getFilledWordsForLine = (lineWords: typeof wordsByLine[number]) => {
@@ -80,6 +85,14 @@ const SyncedLyrics = ({
   }, [wordsByLine, leadAdjustedTime, hasWordTiming, activeLineIndex]);
 
   const effectiveActiveLineIndex = hasWordTiming ? predictedActiveLineIndex : activeLineIndex;
+
+  // Call onActiveLineChange when the active line changes
+  useEffect(() => {
+    if (typeof effectiveActiveLineIndex === 'number' && onActiveLineChange) {
+      onActiveLineChange(effectiveActiveLineIndex);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectiveActiveLineIndex]);
 
   // Auto-scroll to active line
   useEffect(() => {

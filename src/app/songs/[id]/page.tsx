@@ -20,6 +20,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
   const [toast, setToast] = useState<string | null>(null);
   const [repairing, setRepairing] = useState(false);
   const [repairModalOpen, setRepairModalOpen] = useState(false);
+  const [lastActiveLine, setLastActiveLine] = useState<number | null>(null);
 
   const displayLyrics = useDisplayLyrics(savedSong);
 
@@ -123,6 +124,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
             currentPositionMs={currentPositionMs}
             isPlaying={isPlaying}
             togglePlayback={togglePlayback}
+            initialActiveLine={lastActiveLine}
             onSave={(lrc: string) => {
               updateSynced(lrc);
               setSyncMode(false);
@@ -143,6 +145,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
             rhymeEncodedLines={syncConfig.rhymeEncodedLines}
             showRhymes={showRhymes}
             mode={syncConfig.mode}
+            onActiveLineChange={setLastActiveLine}
           />
         )}
 

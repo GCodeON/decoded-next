@@ -16,6 +16,7 @@ interface Props {
   onSave: (lrc: string) => void;
   onSaveWordSync?: (wordLrc: string) => void;
   onCancel: () => void;
+  initialActiveLine?: number | null;
 }
 
 export default function SyncLyricsEditor({
@@ -28,7 +29,8 @@ export default function SyncLyricsEditor({
   togglePlayback,
   onSave,
   onSaveWordSync,
-  onCancel
+  onCancel,
+  initialActiveLine
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [wordTimingMode, setWordTimingMode] = useState(false);
@@ -79,6 +81,27 @@ export default function SyncLyricsEditor({
   // Navigation state - shared
   const [manualLineOverride, setManualLineOverride] = useState<number | null>(null);
   const [manualNavigation, setManualNavigation] = useState(false);
+
+  // Always force navigation to initialActiveLine when it changes (e.g., editor opened repeatedly)
+  useEffect(() => {
+    if (typeof initialActiveLine === 'number' && initialActiveLine >= 0) {
+      setManualLineOverride(initialActiveLine);
+      setManualNavigation(true);
+      setCurrentWordIndex(0);
+      didMount.current = false; // Reset didMount so that the next effect doesn't run as if it's a remount
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialActiveLine]);
+
+  // When toggling wordTimingMode, also reset navigation to initialActiveLine if provided
+  useEffect(() => {
+    if (typeof initialActiveLine === 'number' && initialActiveLine >= 0) {
+      setManualLineOverride(initialActiveLine);
+      setManualNavigation(true);
+      setCurrentWordIndex(0);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wordTimingMode]);
   const lastAutoLineRef = useRef<number | null>(null);
 
   // Current line computation - prioritizes activeLine during playback when auto-scroll is enabled
@@ -96,6 +119,9 @@ export default function SyncLyricsEditor({
     return 0;
   }, [manualNavigation, isPlaying, activeLine, manualLineOverride]);
 
+  // Remove effect that disables auto-scroll on mount or mode switch.
+  // Auto-scroll is enabled by default; manualNavigation is only set to true on explicit user action.
+
   // Update manual override to sync with activeLine when auto-scroll is enabled
   useEffect(() => {
     if (!manualNavigation && activeLine !== null && editingIndex === null) {
@@ -109,14 +135,14 @@ export default function SyncLyricsEditor({
     }
   }, [isPlaying, manualNavigation, activeLine]);
 
-  // Capture current line when playback stops to prevent jumping back to top
+  // Only set manualNavigation to true after initial mount, not on first load
+  const didMount = useRef(false);
   useEffect(() => {
-    if (!isPlaying && !manualNavigation) {
-      const holdLine =
-        lastAutoLineRef.current ?? (activeLine ?? manualLineOverride ?? 0);
-      setManualLineOverride(holdLine);
-      setManualNavigation(true);
+    if (!didMount.current) {
+      didMount.current = true;
+      return;
     }
+    // Remove logic that disables auto-scroll after mount, since we now always want to use initialActiveLine
   }, [isPlaying, manualNavigation, activeLine, manualLineOverride]);
 
   const goBack = useCallback(() => {
@@ -151,6 +177,17 @@ export default function SyncLyricsEditor({
       });
     }
   }, [currentLine]);
+
+  // Force scroll to currentLine when toggling wordTimingMode
+  useEffect(() => {
+    const element = containerRef.current?.children[currentLine] as HTMLElement | undefined;
+    if (element) {
+      requestAnimationFrame(() => {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wordTimingMode]);
 
   // Active word highlighting during playback in word timing mode
   useEffect(() => {
