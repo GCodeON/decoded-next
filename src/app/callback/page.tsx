@@ -15,13 +15,6 @@ function CallbackHandler() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    // If we're on 127.0.0.1, redirect to localhost first
-    if (typeof window !== 'undefined' && window.location.hostname === '127.0.0.1') {
-      const newUrl = window.location.href.replace('127.0.0.1', 'localhost');
-      window.location.href = newUrl;
-      return;
-    }
-
     const code = searchParams.get('code');
     const state = searchParams.get('state');
     const error = searchParams.get('error');

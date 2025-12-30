@@ -5,8 +5,8 @@ export async function proxy(req: NextRequest) {
   const url = req.nextUrl;
   const path = url.pathname;
 
-  // Redirect 127.0.0.1 to localhost for callback route
-  if (url.hostname === '127.0.0.1' && path === '/callback') {
+  // Redirect all 127.0.0.1 traffic to localhost so cookies stay on a single host
+  if (url.hostname === '127.0.0.1') {
     const newUrl = new URL(url.toString());
     newUrl.hostname = 'localhost';
     return NextResponse.redirect(newUrl, { status: 307 });
@@ -70,10 +70,5 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    '/api/spotify/:path*',
-    '/api/auth/token',
-    '/player/:path*',
-    '/callback',
-  ],
+  matcher: ['/(.*)'],
 };
