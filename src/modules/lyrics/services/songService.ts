@@ -27,7 +27,6 @@ export class SongService {
       'lyrics.rhymeEncoded': rhymeEncoded,
     };
 
-    // Only include synced/wordSynced if explicitly provided
     if (synced !== undefined) {
       updates['lyrics.synced'] = synced;
     }

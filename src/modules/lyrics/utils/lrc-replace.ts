@@ -3,18 +3,13 @@
  * Supports both line-level [MM:SS.xx] and word-level <MM:SS.xx> timing tags
  */
 
-/**
- * Result from text replacement operation
- */
+
 export interface ReplaceResult {
   updated: string;
   replacedCount: number;
   caseMatches: Array<{ line: number; variant: string }>;
 }
 
-/**
- * Result from lyrics consistency validation
- */
 export interface ConsistencyCheckResult {
   isConsistent: boolean;
   plainWordCount: number;
@@ -23,9 +18,6 @@ export interface ConsistencyCheckResult {
   tolerance: number;
 }
 
-/**
- * Represents a word-level change between two text versions
- */
 export interface TextChange {
   oldWord: string;
   newWord: string;
@@ -54,13 +46,6 @@ export function detectCaseVariants(text: string, searchText: string): Array<{ va
     .sort((a, b) => b.count - a.count);
 }
 
-/**
- * Applies case transformation from source to target word
- * Examples:
- *   applyCaseTransformation("intergrated", "integrated") -> "integrated"
- *   applyCaseTransformation("INTERGRATED", "integrated") -> "INTEGRATED"
- *   applyCaseTransformation("Intergrated", "integrated") -> "Integrated"
- */
 export function applyCaseTransformation(sourceWord: string, targetWord: string): string {
   if (sourceWord.length === 0) return targetWord;
   

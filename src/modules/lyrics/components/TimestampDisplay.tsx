@@ -27,7 +27,7 @@ export function TimestampDisplay({
   compact = false,
   cancelOnBlur = true
 }: TimestampDisplayProps) {
-  // Only show editing mode if this specific item is being edited
+
   const isThisItemEditing = isEditing && editIndex === currentIndex;
   const width = compact ? 'w-20' : 'w-28';
   const inputWidth = compact ? 'w-16' : 'w-24';

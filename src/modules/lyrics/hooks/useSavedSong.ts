@@ -21,7 +21,6 @@ export function useSavedSong({ track, trackId }: UseSavedSongParams) {
 
   const { publishIfReady } = useLrcLibPublish({ trackId, track });
 
-  // Only call useSongLyrics if we need to fetch new lyrics
   const { data: lyricsData, loading: lyricsLoading, error: lyricsError } = useSongLyrics(
     shouldFetchLyrics ? artistName : '',
     shouldFetchLyrics ? cleanTrackName(trackName) : '',
@@ -96,17 +95,15 @@ export function useSavedSong({ track, trackId }: UseSavedSongParams) {
       const plain = htmlToLyrics(htmlContent);
       const oldPlain = savedSong.lyrics.plain;
 
-      // Check if line count changed (e.g., user removed blank lines in editor)
       const newLineCount = extractPlainLinesFromHtml(htmlContent).length;
       const oldSyncedLineCount = savedSong.lyrics.synced ? parseLrcForEditing(savedSong.lyrics.synced).length : 0;
       const lineCountChanged = savedSong.lyrics.synced && newLineCount !== oldSyncedLineCount;
 
-      // Prepare synced/wordSynced updates
       let updatedSynced = savedSong.lyrics.synced;
       let updatedWordSynced = savedSong.lyrics.wordSynced;
       let autoRepaired = false;
 
-      // If line count changed, use auto-repair to realign timestamps
+
       if (lineCountChanged) {
         console.log(`Line count changed: ${oldSyncedLineCount} → ${newLineCount}. Auto-repairing synced/wordSynced...`);
         const repairResult = await repairSyncedLyrics(
@@ -118,21 +115,20 @@ export function useSavedSong({ track, trackId }: UseSavedSongParams) {
         updatedWordSynced = repairResult.repairedWordSynced;
         autoRepaired = true;
       } else {
-        // No line count change - use existing word-level replacement logic
+       
         const changes = detectTextChanges(oldPlain, plain);
 
-        // Apply text replacements to synced/wordSynced versions
         if (changes.length > 0) {
         for (const change of changes) {
           const { oldWord, newWord } = change;
 
-          // Find all lines containing the old word
+
           const oldWordCount = countWordOccurrences(oldPlain, oldWord);
           const newWordCount = countWordOccurrences(plain, newWord);
 
-          // Only proceed with replacement if counts match (word was edited, not added/removed)
+
           if (oldWordCount === newWordCount && oldWordCount === 1) {
-            // Single occurrence - replace everywhere
+
             if (updatedSynced) {
               const syncedResult = replaceLyricsInLrc(updatedSynced, oldWord, newWord);
               updatedSynced = syncedResult.updated;
@@ -142,7 +138,7 @@ export function useSavedSong({ track, trackId }: UseSavedSongParams) {
               updatedWordSynced = wordSyncedResult.updated;
             }
           } else if (oldWordCount > 1 && oldWordCount === newWordCount) {
-            // Multiple occurrences - replace only on the changed line
+
             const changedLineNumbers = findLinesWithWord(oldPlain, oldWord);
             if (changedLineNumbers.length > 0) {
               if (updatedSynced) {
@@ -159,7 +155,6 @@ export function useSavedSong({ track, trackId }: UseSavedSongParams) {
         }
       }
 
-      // Validate consistency (skip if auto-repaired since repair handles this)
       if (!autoRepaired) {
         const syncConsistency = validateLyricsConsistency(plain, updatedSynced || null);
         const wordSyncConsistency = validateLyricsConsistency(plain, updatedWordSynced || null);
@@ -190,7 +185,7 @@ export function useSavedSong({ track, trackId }: UseSavedSongParams) {
       setSavedSong(updated);
 
       try {
-        // Update all fields together for consistency
+
         await songService.updateLyrics(trackId, plain, htmlContent, updatedSynced, updatedWordSynced);
         
         if (autoRepaired) {

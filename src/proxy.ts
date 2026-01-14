@@ -5,7 +5,6 @@ export async function proxy(req: NextRequest) {
   const url = req.nextUrl;
   const path = url.pathname;
 
-  // Redirect all 127.0.0.1 traffic to localhost so cookies stay on a single host
   if (url.hostname === '127.0.0.1') {
     const newUrl = new URL(url.toString());
     newUrl.hostname = 'localhost';
@@ -26,7 +25,7 @@ export async function proxy(req: NextRequest) {
   const refreshToken = req.cookies.get('spotify_refresh_token')?.value;
   const now = Date.now();
   
-  // If no refresh token exists, user is not authenticated
+
   if (!refreshToken) {
     if (path.startsWith('/api')) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
@@ -41,12 +40,9 @@ export async function proxy(req: NextRequest) {
     });
 
     if (!refresh.ok) {
-      // For programmatic API calls, return JSON 401 so clients don't get HTML login pages.
       if (path.startsWith('/api')) {
         return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
       }
-
-      // For browser page navigation, redirect to login as before.
       return NextResponse.redirect(new URL('/login', req.url));
     }
 

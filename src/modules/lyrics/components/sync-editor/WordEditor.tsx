@@ -124,7 +124,7 @@ export default function WordEditor({
       {line?.trim() && (
         <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-200">
           {lineWords.map((word, wi) => {
-            // Find the matching word in wordTimes by text content
+            
             const wordTime = wordTimestamps.find((wt, idx) => {
               return idx === wi || (wt && wt.text === word);
             });

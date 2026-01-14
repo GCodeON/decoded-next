@@ -23,7 +23,7 @@ export function useSyncPolling(
     try {
       await pollFn();
     } catch (err) {
-      // Silently ignore errors; global polling handles auth/network issues
+
     } finally {
       isPollingRef.current = false;
     }

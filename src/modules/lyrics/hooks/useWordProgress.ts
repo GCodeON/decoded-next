@@ -2,10 +2,6 @@ import { useCallback } from 'react';
 import type { Word } from '../utils/lrcAdvanced';
 import { DEFAULT_WORD_DURATION } from '../config/sync-constants';
 
-/**
- * Calculate progress (0-1) for a word based on current playback time
- * Returns 1 for past words, 0 for future words, and fractional for current word
- */
 export const useWordProgress = (
   words: Word[],
   currentTimeSec: number,

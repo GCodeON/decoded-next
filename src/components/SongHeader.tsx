@@ -15,16 +15,12 @@ export default function SongHeader({
 }) {
   const [optimisticIsPlaying, setOptimisticIsPlaying] = useState(isPlaying);
 
-  // Sync optimistic state when actual state changes
   if (optimisticIsPlaying !== isPlaying) {
     setOptimisticIsPlaying(isPlaying);
   }
 
   const handleToggle = async () => {
-    // Immediate UI update
     setOptimisticIsPlaying(!optimisticIsPlaying);
-    
-    // Then trigger actual API call
     await togglePlayback();
   };
 

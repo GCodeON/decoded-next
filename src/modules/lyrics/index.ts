@@ -4,7 +4,6 @@ export { default as SyncLyricsEditor } from './components/SyncLyricsEditor';
 export { default as SyncedLyrics } from './components/SyncedLyrics';
 export { RhymeWordHighlight } from './components/RhymeWordHighlight';
 export { PlainWordHighlight } from './components/PlainWordHighlight';
-// export { default as AnimatedSyncedLyrics } from './components/AnimatedSyncedLyrics';
 export { default as Legend } from './components/VowelLegend';
 export { SyncControls } from './components/SyncControls';
 export { TimestampDisplay, type TimestampDisplayProps } from './components/TimestampDisplay';

@@ -35,7 +35,6 @@ export function useLrcLibPublish({ trackId, track }: UseLrcLibPublishParams) {
         syncedLyrics: syncedLrc,
       };
 
-      // Fire-and-forget: do not await publish; keep UI responsive
       void (async () => {
         try {
           const res = await fetch('/api/lyrics/publish', {

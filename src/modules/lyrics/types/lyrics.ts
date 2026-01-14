@@ -3,7 +3,7 @@ export interface LyricsResult {
   lyrics: {
     plain: string;
     synced: string | null;
-    wordSynced?: string | null; // Enhanced LRC with word-level timing
+    wordSynced?: string | null;
     rhymeEncoded: string;
   };
 }
@@ -32,7 +32,7 @@ export type PublishPayload = {
   trackName: string;
   artistName: string;
   albumName: string;
-  duration: number; // in seconds
+  duration: number;
   plainLyrics?: string;
   syncedLyrics?: string;
 };

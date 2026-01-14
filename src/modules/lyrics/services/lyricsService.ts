@@ -44,7 +44,6 @@ export class LyricsService {
 
   /**
    * Publish lyrics to LrcLib with proof-of-work
-   * This is a blocking operation that can take up to ~15 seconds
    */
   async publishWithPow(
     payload: PublishPayload,
@@ -193,5 +192,4 @@ export class LyricsService {
   }
 }
 
-// Export singleton instance
 export const lyricsService = new LyricsService();

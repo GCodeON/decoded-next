@@ -37,7 +37,6 @@ export default function SyncLyricsEditor({
   const [wordTimestamps, setWordTimestamps] = useState<Map<number, Word[]>>(new Map());
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
 
-  // Load existing word timestamps from existingWordLrc
   useEffect(() => {
     if (existingWordLrc) {
       try {
@@ -57,18 +56,15 @@ export default function SyncLyricsEditor({
     }
   }, [existingWordLrc]);
 
-  // Sync state - shared between line and word modes
   const { lines, timestamps, setTimestamps, allStamped, activeLine } = useLyricSync({
     plainLyrics,
     existingLrc,
     currentPosition,
     currentPositionMs,
     isPlaying,
-    autoScroll: true, // Enables activeLine tracking during playback
-    debug: false
+    autoScroll: true
   });
 
-  // Timestamp editing - shared
   const {
     editingIndex,
     editValue,
@@ -78,22 +74,19 @@ export default function SyncLyricsEditor({
     saveEdit
   } = useTimestampEditor();
 
-  // Navigation state - shared
   const [manualLineOverride, setManualLineOverride] = useState<number | null>(null);
   const [manualNavigation, setManualNavigation] = useState(false);
 
-  // Always force navigation to initialActiveLine when it changes (e.g., editor opened repeatedly)
   useEffect(() => {
     if (typeof initialActiveLine === 'number' && initialActiveLine >= 0) {
       setManualLineOverride(initialActiveLine);
       setManualNavigation(true);
       setCurrentWordIndex(0);
-      didMount.current = false; // Reset didMount so that the next effect doesn't run as if it's a remount
+      didMount.current = false;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialActiveLine]);
 
-  // When toggling wordTimingMode, also reset navigation to initialActiveLine if provided
   useEffect(() => {
     if (typeof initialActiveLine === 'number' && initialActiveLine >= 0) {
       setManualLineOverride(initialActiveLine);
@@ -104,45 +97,38 @@ export default function SyncLyricsEditor({
   }, [wordTimingMode]);
   const lastAutoLineRef = useRef<number | null>(null);
 
-  // Current line computation - prioritizes activeLine during playback when auto-scroll is enabled
+
   const currentLine = useMemo(() => {
-    // If auto-scroll is enabled (manualNavigation false), follow activeLine during playback
     if (!manualNavigation && isPlaying && activeLine !== null) {
       return activeLine;
     }
-    // If in manual navigation mode, use manual override
     if (manualNavigation && manualLineOverride !== null) {
       return manualLineOverride;
     }
-    // Default fallback
     if (activeLine !== null) return activeLine;
     return 0;
   }, [manualNavigation, isPlaying, activeLine, manualLineOverride]);
 
-  // Remove effect that disables auto-scroll on mount or mode switch.
-  // Auto-scroll is enabled by default; manualNavigation is only set to true on explicit user action.
-
-  // Update manual override to sync with activeLine when auto-scroll is enabled
   useEffect(() => {
     if (!manualNavigation && activeLine !== null && editingIndex === null) {
       setManualLineOverride(activeLine);
     }
   }, [activeLine, manualNavigation, editingIndex]);
-  // Track last auto-followed line during playback
+
   useEffect(() => {
     if (isPlaying && !manualNavigation && activeLine !== null) {
       lastAutoLineRef.current = activeLine;
     }
   }, [isPlaying, manualNavigation, activeLine]);
 
-  // Only set manualNavigation to true after initial mount, not on first load
+
   const didMount = useRef(false);
   useEffect(() => {
     if (!didMount.current) {
       didMount.current = true;
       return;
     }
-    // Remove logic that disables auto-scroll after mount, since we now always want to use initialActiveLine
+
   }, [isPlaying, manualNavigation, activeLine, manualLineOverride]);
 
   const goBack = useCallback(() => {
@@ -168,7 +154,6 @@ export default function SyncLyricsEditor({
 
   const allStampedStatus = useMemo(() => timestamps.every(t => t !== null), [timestamps]);
 
-  // Auto-scroll - scrolls to current line (works in both auto and manual navigation)
   useEffect(() => {
     const element = containerRef.current?.children[currentLine] as HTMLElement | undefined;
     if (element) {
@@ -178,7 +163,6 @@ export default function SyncLyricsEditor({
     }
   }, [currentLine]);
 
-  // Force scroll to currentLine when toggling wordTimingMode
   useEffect(() => {
     const element = containerRef.current?.children[currentLine] as HTMLElement | undefined;
     if (element) {
@@ -189,7 +173,7 @@ export default function SyncLyricsEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wordTimingMode]);
 
-  // Active word highlighting during playback in word timing mode
+
   useEffect(() => {
     if (!isPlaying || !wordTimingMode) return;
 
@@ -218,14 +202,10 @@ export default function SyncLyricsEditor({
       return next;
     });
 
-    // Auto-sync: Assign line timestamp to first word if it doesn't already have one
     setWordTimestamps(prev => {
       const newMap = new Map(prev);
       const existingWords = newMap.get(index) || [];
       
-      // Only auto-assign if:
-      // 1. Line has words in the map (or will create one)
-      // 2. First word doesn't already have a timestamp (preserve manual edits)
       if (existingWords.length === 0 && lines[index]?.trim()) {
         const lineText = lines[index].trim();
         const firstWordMatch = lineText.match(/\S+/);
@@ -267,7 +247,6 @@ export default function SyncLyricsEditor({
     }
   }, [currentPositionMs, currentPosition, currentLine, lines.length, setTimestamps, isPlaying, lines]);
 
-  // Word stamping handler - word mode only (must be before keyboard shortcuts)
   const handleStampWord = useCallback((lineIndex: number, wordIndex: number, wordText: string) => {
     if (!wordText || wordText.trim().length === 0) {
       console.warn('Attempted to stamp empty word');
@@ -282,7 +261,6 @@ export default function SyncLyricsEditor({
       const lineWords = newMap.get(lineIndex) || [];
       const lineText = lines[lineIndex]?.trim() || '';
       
-      // Calculate character positions for the word in the line
       const wordStart = lineText.indexOf(wordText.trim());
       const wordEnd = wordStart >= 0 ? wordStart + wordText.trim().length : -1;
       
@@ -300,7 +278,6 @@ export default function SyncLyricsEditor({
         newMap.set(lineIndex, updatedWords);
       } else {
         const updatedWords = [...lineWords, newWord];
-        // Keep words in natural line order to preserve index alignment
         newMap.set(lineIndex, updatedWords);
       }
       
@@ -308,7 +285,6 @@ export default function SyncLyricsEditor({
     });
   }, [currentPositionMs, currentPosition, lines]);
 
-  // Save edited word time from WordEditor (keeps array in line order)
   const handleSaveWordTime = useCallback((lineIndex: number, wordIndex: number, newTime: number) => {
     const lineText = lines[lineIndex]?.trim() || '';
     const tokens = lineText ? lineText.split(/\s+/) : [];
@@ -319,7 +295,6 @@ export default function SyncLyricsEditor({
       const map = new Map(prev);
       const existing = map.get(lineIndex) || [];
 
-      // Rebuild in line order, updating the target word’s time
       const rebuilt: Word[] = [];
       let cursor = 0;
       for (let i = 0; i < tokens.length; i++) {
@@ -344,7 +319,6 @@ export default function SyncLyricsEditor({
     });
   }, [lines, setWordTimestamps]);
 
-  // Keyboard shortcuts - different behavior for line vs word mode
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
@@ -354,37 +328,35 @@ export default function SyncLyricsEditor({
       switch (e.key) {
         case ' ':
           e.preventDefault();
-          // Space only stamps lines in line mode, not in word mode
           if (!wordTimingMode) {
             handleStampLine(currentLine);
           }
           break;
         case 'Enter':
           e.preventDefault();
-          // Enter stamps words in word mode, lines in line mode
+
           if (wordTimingMode) {
             const currentLineText = lines[currentLine];
             const lineWords = currentLineText?.trim() ? currentLineText.trim().split(/\s+/) : [];
             if (lineWords.length > 0 && currentWordIndex < lineWords.length) {
               const wordText = lineWords[currentWordIndex];
               handleStampWord(currentLine, currentWordIndex, wordText);
-              // Move to next word, or next line if at end of words
+
               if (currentWordIndex < lineWords.length - 1) {
                 setCurrentWordIndex(currentWordIndex + 1);
               } else {
-                // Move to next line and reset word index
+
                 if (currentLine < lines.length - 1) {
                   setManualLineOverride(currentLine + 1);
                   setCurrentWordIndex(0);
                 }
               }
             }
-            // Disable auto-scroll when manually stamping during playback
+
             if (isPlaying) {
               setManualNavigation(true);
             }
           } else {
-            // In line mode, Enter stamps the line
             handleStampLine(currentLine);
           }
           break;
@@ -434,11 +406,9 @@ export default function SyncLyricsEditor({
   }, [setTimestamps]);
 
   const handleSave = useCallback(() => {
-    // Always save line-level LRC
     const lineLrc = generateLrc(lines, timestamps);
     onSave(lineLrc);
     
-    // Additionally save word-level if in word mode and callback provided
     if (wordTimingMode && wordTimestamps.size > 0 && onSaveWordSync) {
       const wordLrc = generateEnhancedLrc(lines, timestamps, wordTimestamps);
       onSaveWordSync(wordLrc);
@@ -460,7 +430,7 @@ export default function SyncLyricsEditor({
         onEnableAutoScroll={enableAutoScroll}
       />
 
-      {/* Word Timing Mode Toggle - only show if onSaveWordSync provided */}
+      {/* Word Timing Mode Toggle */}
       {onSaveWordSync && (
         <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
           <div className="flex items-center gap-3">

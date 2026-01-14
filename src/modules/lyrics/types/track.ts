@@ -5,7 +5,7 @@ export interface SavedSong {
   lyrics: {
     plain: string;
     synced: string | null;
-    wordSynced?: string | null; // Enhanced LRC with word-level timing
+    wordSynced?: string | null;
     rhymeEncoded: string;
     rhymeEncodedLines?: string[] | null; 
   };
@@ -20,7 +20,7 @@ export interface SyncedLine {
 export interface SyncedTrack {
   syncedLyrics: string;
   currentPosition: number;
-  currentPositionMs?: number; // optional ms precision
+  currentPositionMs?: number;
   isPlaying: boolean;
   rhymeEncodedLines: string[] | null | undefined;
 }

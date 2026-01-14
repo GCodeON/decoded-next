@@ -3,15 +3,11 @@ import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { useSpotifyApi, useSyncPolling } from '@/modules/spotify';
 import { useSpotifyPlayer } from '@/modules/player';
 
-// Enable logs via param or env var NEXT_PUBLIC_DEBUG_SYNC=1
-const ENV_DEBUG_SYNC = typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_DEBUG_SYNC === true.toString();
-
 export function usePlaybackSync(
   trackId: string,
   enabled: boolean = true,
   syncMode: boolean = false,
-  viewMode: boolean = false,
-  debug: boolean = ENV_DEBUG_SYNC
+  viewMode: boolean = false
 ) {
 
   const spotify = useSpotifyApi();
@@ -26,29 +22,27 @@ export function usePlaybackSync(
     globalIsPlaying,
   } = useSpotifyPlayer();
 
-  // Latest play state observed from poll
+
   const lastPollIsPlayingRef = useRef<boolean | null>(null);
-  // Short-lived optimistic play window to reflect UI immediately after toggle
   const optimisticPlayUntilRef = useRef<number>(0);
 
-  // Baseline sample from last poll
   const lastSampleMsRef = useRef<number | null>(null);
   const lastSampleAtRef = useRef<number>(performance.now());
   const lastLoggedSecondRef = useRef<number | null>(null);
-  // Interpolated ms state updated each frame
+ 
   const [currentInterpolatedMs, setCurrentInterpolatedMs] = useState<number | null>(null);
   const rafRef = useRef<number | null>(null);
-  // Ref to avoid triggering re-renders in tick
+
   const currentInterpolatedMsRef = useRef<number | null>(null);
   useEffect(() => {
     currentInterpolatedMsRef.current = currentInterpolatedMs;
   }, [currentInterpolatedMs]);
   const isInterpolatingRef = useRef(false);
 
-  // Derive playing state from global context
+
   const isPlaying = useMemo(() => {
     if (!enabled) return false;
-    // Prefer latest poll-observed play state when in sync/view modes
+
     const pollPlay = lastPollIsPlayingRef.current;
 
     if ((syncMode || viewMode) && performance.now() < optimisticPlayUntilRef.current) {
@@ -66,7 +60,6 @@ export function usePlaybackSync(
 
   const needsInterpolation = (syncMode || viewMode) && isPlayingThisTrack;
 
-  // Track global position for seek detection
   const lastGlobalPositionRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -81,12 +74,6 @@ export function usePlaybackSync(
         
         // Detect seek: global jumped significantly AND is far from our baseline
         if (Math.abs(globalDelta) > 2000 && driftFromBaseline > 1000) {
-          if (debug) console.log('[PlaybackSync] seek detected from global', { 
-            trackId, 
-            from: currentBaseline, 
-            to: globalMs, 
-            drift: driftFromBaseline 
-          });
           lastSampleMsRef.current = globalMs;
           lastSampleAtRef.current = performance.now();
         }
@@ -94,7 +81,7 @@ export function usePlaybackSync(
       
       lastGlobalPositionRef.current = globalMs;
     }
-  }, [needsInterpolation, globalTrackId, trackId, globalPosition, debug]);
+  }, [needsInterpolation, globalTrackId, trackId, globalPosition]);
 
   useEffect(() => {
     if (needsInterpolation && lastSampleMsRef.current == null) {
@@ -103,12 +90,11 @@ export function usePlaybackSync(
         lastSampleMsRef.current = globalPosition * 1000;
         lastSampleAtRef.current = performance.now();
         lastGlobalPositionRef.current = globalPosition * 1000;
-        if (debug) console.log('[PlaybackSync] initialized from global', { trackId, posMs: lastSampleMsRef.current });
+
       }
     }
-  }, [needsInterpolation, globalTrackId, trackId, globalPosition, debug]);
+  }, [needsInterpolation, globalTrackId, trackId, globalPosition]);
 
-  // rAF loop: compute interpolated ms from baseline + elapsed each frame
   useEffect(() => {
     if (!needsInterpolation) {
       isInterpolatingRef.current = false;
@@ -148,34 +134,17 @@ export function usePlaybackSync(
   const currentPosition = useMemo(() => {
     if (currentInterpolatedMs != null) {
       const sec = Math.floor(currentInterpolatedMs / 1000);
-      if (debug && lastLoggedSecondRef.current !== sec) {
-        lastLoggedSecondRef.current = sec;
-        const elapsed = performance.now() - lastSampleAtRef.current;
-        console.log('[PlaybackSync] using interpolated', { trackId, sec, ms: Math.floor(currentInterpolatedMs), ageMs: Math.floor(elapsed) });
-      }
       return sec;
     }
     // Fallback chain
     if (globalTrackId === trackId && globalPosition !== null) {
-      if (debug && lastLoggedSecondRef.current !== globalPosition) {
-        lastLoggedSecondRef.current = globalPosition;
-        console.log('[PlaybackSync] using global', { trackId, pos: globalPosition });
-      }
       return globalPosition;
     }
     if (webLastTrack === trackId && webLastPosition !== null) {
-      if (debug && lastLoggedSecondRef.current !== webLastPosition) {
-        lastLoggedSecondRef.current = webLastPosition;
-        console.log('[PlaybackSync] using web', { trackId, pos: webLastPosition });
-      }
       return webLastPosition;
     }
-    if (debug && lastLoggedSecondRef.current !== 0) {
-      lastLoggedSecondRef.current = 0;
-      console.log('[PlaybackSync] using default', { trackId, pos: 0 });
-    }
     return 0;
-  }, [needsInterpolation, currentInterpolatedMs, debug, trackId, globalTrackId, globalPosition, webLastTrack, webLastPosition]);
+  }, [needsInterpolation, currentInterpolatedMs, trackId, globalTrackId, globalPosition, webLastTrack, webLastPosition]);
 
   // High-frequency sync polling when in sync/view modes; faster cadence for responsiveness
   const pollSync = useCallback(async () => {
@@ -200,35 +169,26 @@ export function usePlaybackSync(
           
           // Large backward jump -> seek/restart; accept immediately
           if (diff < -2000) {
-            if (debug) console.log('[PlaybackSync] seek detected', { trackId, from: prev, to: newMs, diff });
+            
             lastSampleMsRef.current = newMs;
             lastSampleAtRef.current = now;
           } else if (newMs <= currentInterpolatedValue) {
             // Poll sample is at or behind interpolation - reject to prevent any backwards movement
-            if (debug && newMs < currentInterpolatedValue - 50) {
-              console.log('[PlaybackSync] stale poll ignored', { trackId, interpolated: Math.floor(currentInterpolatedValue), poll: newMs, diff: newMs - currentInterpolatedValue });
-            }
             return;
           } else {
             // Sample is ahead of interpolation - use it
             lastSampleMsRef.current = newMs;
             lastSampleAtRef.current = now;
-            if (diff > 5000 && debug) {
-              console.log('[PlaybackSync] large forward jump', { trackId, from: prev, to: newMs, diff });
-            }
           }
         } else {
           if (prev != null) {
             const diff = newMs - prev;
             if (diff < -2000) {
-              if (debug) console.log('[PlaybackSync] seek detected', { trackId, from: prev, to: newMs, diff });
+             
             } else if (diff < -150) {
 
-              if (debug) console.log('[PlaybackSync] stale sample ignored', { trackId, prev, sample: newMs, diff });
+ 
               return;
-            }
-            if (diff > 5000 && debug) {
-              console.log('[PlaybackSync] large forward jump', { trackId, from: prev, to: newMs, diff });
             }
           }
           lastSampleMsRef.current = newMs;
@@ -238,7 +198,6 @@ export function usePlaybackSync(
         if (shouldInterpolate && !isInterpolatingRef.current) {
           isInterpolatingRef.current = true;
           rafRef.current = requestAnimationFrame(tickStable);
-          if (debug) console.log('[PlaybackSync] interpolation started from poll', { trackId, posMs: newMs, isPlaying: isPlayingNow, optimistic: inOptimisticWindow });
         }
         
         // Stop interpolation immediately if paused
@@ -248,15 +207,13 @@ export function usePlaybackSync(
             cancelAnimationFrame(rafRef.current);
             rafRef.current = null;
           }
-          if (debug) console.log('[PlaybackSync] interpolation stopped - paused', { trackId });
         }
-        
-        if (debug) console.log('[PlaybackSync] poll update', { trackId, sec: Math.floor(newMs / 1000), progressMs: newMs, isPlaying: isPlayingNow, effectiveIsPlaying, optimistic: inOptimisticWindow });
       }
     } catch (err) {
-      // Silent ignore; global polling handles auth
+      
     }
-  }, [spotify, trackId, debug, syncMode, viewMode]);
+  }, [spotify, trackId, syncMode, viewMode]);
+
   // Stable tick function outside pollSync to avoid recreation on every render
   const tickStable = () => {
     const baselineMs = lastSampleMsRef.current;
@@ -362,7 +319,7 @@ export function usePlaybackSync(
                 }
               };
               rafRef.current = requestAnimationFrame(tick);
-              if (debug) console.log('[PlaybackSync] interpolation started optimistically BEFORE API call', { trackId, posMs: positionMs });
+             
             }
           }
           
@@ -374,18 +331,15 @@ export function usePlaybackSync(
               const s = await spotify.getPlaybackState();
               if (s) {
                 lastPollIsPlayingRef.current = !!s.is_playing;
-                // Clear optimistic window only if service reports playing
+
                 if (s.is_playing) {
                   optimisticPlayUntilRef.current = 0;
-                } else if (debug) {
-                  console.log('[PlaybackSync] keeping optimistic window (poll says paused right after play)', { trackId });
                 }
                 if (typeof s.progress_ms === 'number') {
                   lastSampleMsRef.current = s.progress_ms;
                   lastSampleAtRef.current = performance.now();
                   // Immediately update interpolated value so UI jumps to correct position on resume
                   setCurrentInterpolatedMs(s.progress_ms);
-                  if (debug) console.log('[PlaybackSync] fresh position after play', { trackId, posMs: s.progress_ms });
                 }
               }
             } catch {}
@@ -426,7 +380,6 @@ export function usePlaybackSync(
                   }
                 };
                 rafRef.current = requestAnimationFrame(tick);
-                if (debug) console.log('[PlaybackSync] interpolation started optimistically BEFORE transfer+play', { trackId, posMs: positionMs });
               }
             }
             
@@ -440,14 +393,12 @@ export function usePlaybackSync(
                   lastPollIsPlayingRef.current = !!s.is_playing;
                   if (s.is_playing) {
                     optimisticPlayUntilRef.current = 0;
-                  } else if (debug) {
-                    console.log('[PlaybackSync] keeping optimistic window after transfer (poll says paused)', { trackId });
                   }
+
                   if (typeof s.progress_ms === 'number') {
                     lastSampleMsRef.current = s.progress_ms;
                     lastSampleAtRef.current = performance.now();
                     setCurrentInterpolatedMs(s.progress_ms);
-                    if (debug) console.log('[PlaybackSync] fresh position after transfer', { trackId, posMs: s.progress_ms });
                   }
                 }
               } catch {}
@@ -456,7 +407,7 @@ export function usePlaybackSync(
         }
       }
     } catch (err: any) {
-      // Silent in production
+
     }
   }, [
     isPlayingThisTrack,

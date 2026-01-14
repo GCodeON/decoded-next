@@ -57,7 +57,8 @@ export default function ActionButtons({
       >
         <FaEdit /> Edit
       </button>
-      {(hasSynced || hasWordSynced) && (
+
+      {/* {(hasSynced || hasWordSynced) && (
         <button
           onClick={onRunRepair}
           className={`flex items-center gap-2 ${repairing ? 'text-gray-400' : 'text-red-600 hover:text-red-700'} font-semibold`}
@@ -65,7 +66,7 @@ export default function ActionButtons({
         >
           <FaClock /> {repairing ? 'Repairing…' : 'Repair Sync'}
         </button>
-      )}
+      )} */}
     </div>
   );
 }

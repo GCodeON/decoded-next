@@ -17,12 +17,10 @@ export default function AuthGuard({ children }: Props) {
   const publicPaths = PUBLIC_PATHS;
 
   useEffect(() => {
-    // don't check public paths
     if (PUBLIC_PATHS.some((p) => pathname?.startsWith(p))) return;
     checkAuth();
   }, [pathname, checkAuth]);
 
-  // If route is public, render children without guarding
   if (PUBLIC_PATHS.some((p) => pathname?.startsWith(p))) {
     return <>{children}</>;
   }

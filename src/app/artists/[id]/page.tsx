@@ -1,5 +1,5 @@
 'use client'
-import { use, useState, useEffect, Key } from 'react';
+import { use, useState, useEffect } from 'react';
 import Link from 'next/link';
 
 import { useSpotifyApi, SpotifyArtist, SpotifyAlbum } from '@/modules/spotify';

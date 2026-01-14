@@ -39,7 +39,7 @@ export function usePlaybackState(enabled: boolean = true) {
   }, []);
 
   const pollOnce = useCallback(async () => {
-    if (isPollingRef.current) return; // concurrency guard
+    if (isPollingRef.current) return;
     isPollingRef.current = true;
     try {
       const data = await spotify.getPlaybackState();
@@ -61,7 +61,7 @@ export function usePlaybackState(enabled: boolean = true) {
 
       const sig = `${newTrackId}:${newPosition}:${newIsPlaying}:${currentDeviceId || ''}:${isWebPlayer}`;
       if (sig === lastStateRef.current?.sig) {
-        // State unchanged; still update interval adaptively below
+
       } else {
         if (lastStateRef.current?.trackId !== newTrackId) setGlobalTrackId(newTrackId);
         if (newPosition !== null && lastStateRef.current?.position !== newPosition) setGlobalPosition(newPosition);
@@ -100,7 +100,7 @@ export function usePlaybackState(enabled: boolean = true) {
   }, [spotify, deviceId, setGlobalIsPlaying, setGlobalTrackId, setGlobalPosition, setWebLastTrack, setWebLastPosition, setWebIsPlaying, setLastExternalDevice]);
 
   useEffect(() => {
-    if (!enabled) return; // Don't start polling if disabled
+    if (!enabled) return;
     
     let active = true;
     const schedule = () => {

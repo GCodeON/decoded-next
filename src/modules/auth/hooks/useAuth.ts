@@ -11,9 +11,7 @@ export const useAuth = () => {
   const redirectToLogin = useCallback(() => {
     try {
       router.replace('/login');
-    } catch (e) {
-      // noop
-    }
+    } catch (e) {}
   }, [router]);
 
   const checkAuth = useCallback(async () => {
@@ -79,7 +77,7 @@ export const useAuth = () => {
   }, []);
 
   const logout = useCallback(async () => {
-    // Clear spotify-related cookies
+
     document.cookie.split(';').forEach((c) => {
       const [name] = c.trim().split('=');
       if (name.startsWith('spotify_')) {
@@ -90,9 +88,7 @@ export const useAuth = () => {
     try {
       router.replace('/');
       router.refresh();
-    } catch (e) {
-      // noop
-    }
+    } catch (e) {}
   }, [router]);
 
   return { login, logout, isChecking, isAuthenticated, checkAuth, redirectToLogin };
