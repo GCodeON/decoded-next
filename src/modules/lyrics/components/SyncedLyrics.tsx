@@ -24,7 +24,6 @@ const SyncedLyrics = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const currentPositionSec = currentPositionMs / 1000;
 
-  // Parse enhanced LRC to extract word timings
   const { lines, wordsByLine } = useMemo(() => {
     const parsed = parseEnhancedLrc(syncedLyrics);
     const extractedLines = parsed.lines.map((l) => l.text);
@@ -32,7 +31,6 @@ const SyncedLyrics = ({
     return { lines: extractedLines, wordsByLine: extractedWords };
   }, [syncedLyrics]);
 
-  // Use useLyricSync for line-level sync with smart hysteresis
   const { activeLine: activeLineIndex } = useLyricSync({
     plainLyrics: lines.join('\n'),
     existingLrc: syncedLyrics,
@@ -51,19 +49,14 @@ const SyncedLyrics = ({
     wordsByLine
   );
 
-  // Lead time applied only when both word sync and rhymes are enabled (keeps bg + line in sync)
   const leadAdjustedTime = shouldUseWordSync && showRhymes ? currentPositionSec + 0.5 : currentPositionSec;
 
-  // Helper to calculate filled words for any line based on current time
   const getFilledWordsForLine = (lineWords: typeof wordsByLine[number]) => {
     if (lineWords.length === 0) return 0;
-    // Apply lead time when both word sync and rhymes are enabled for snappier animations
     const idx = lineWords.findIndex((w) => w.time > leadAdjustedTime);
     return idx === -1 ? lineWords.length : idx;
   };
 
-  // Predict active line based on word timing for instant visual feedback
-  // Use this whenever word timing is available (word sync or rhyme display with word data)
   const hasWordTiming = wordsByLine.length > 0 && wordsByLine.some((line) => line.length > 0);
   
   const predictedActiveLineIndex = useMemo(() => {
@@ -80,13 +73,11 @@ const SyncedLyrics = ({
       }
     }
     
-    // We're past all lines
     return wordsByLine.length > 0 ? wordsByLine.length - 1 : activeLineIndex;
   }, [wordsByLine, leadAdjustedTime, hasWordTiming, activeLineIndex]);
 
   const effectiveActiveLineIndex = hasWordTiming ? predictedActiveLineIndex : activeLineIndex;
 
-  // Call onActiveLineChange when the active line changes
   useEffect(() => {
     if (typeof effectiveActiveLineIndex === 'number' && onActiveLineChange) {
       onActiveLineChange(effectiveActiveLineIndex);
