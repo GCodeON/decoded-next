@@ -24,10 +24,10 @@ body {
     rgb(var(--background-start-rgb));
 }
 
-span[style*="background-color: rgb(232, 217, 255)"], span[style*="background-color: rgb(255, 228, 0)"] {
+span[style*="background-color: rgb(232, 217, 255)"], span[style*="background-color: rgb(255, 228, 0)"], span[style*="background-color: rgb(255, 228, 0)"], span[style*="background-color: rgb(255, 167, 167)"], span[style*="background-color: rgb(241, 241, 241)"]{
   color: black;
 }
 
-.sun-editor span[style*="background-color: rgb(255, 0, 221)"], .sun-editor span[style*="background-color: rgb(255, 0, 0)"] {
+.sun-editor span[style*="background-color: rgb(255, 0, 221)"], .sun-editor span[style*="background-color: rgb(255, 0, 0)"], .sun-editor span[style*="background-color: rgb(102, 0, 255)"], .sun-editor span[style*="background-color: rgb(189, 45, 103)"] {
   color:  white;
 }
