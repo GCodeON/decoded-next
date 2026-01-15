@@ -173,22 +173,23 @@ export default function SyncLyricsEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wordTimingMode]);
 
-
   useEffect(() => {
-    if (!isPlaying || !wordTimingMode) return;
+    if (!isPlaying || !wordTimingMode || manualNavigation) return;
+
+    const lineWords = wordTimestamps.get(currentLine) || [];
+    
+    // Only auto-highlight if all words in the current line are stamped
+    const allWordsStamped = lineWords.length > 0 && lineWords.every(w => w && w.time != null);
+    if (!allWordsStamped) {
+      return;
+    }
 
     const currentTimeSec =
       typeof currentPositionMs === 'number' ? currentPositionMs / 1000 : currentPosition;
 
-    const lineWords = wordTimestamps.get(currentLine) || [];
-    if (lineWords.length === 0) {
-      setCurrentWordIndex(-1);
-      return;
-    }
-
     const activeWord = getActiveWordIndex(lineWords, currentTimeSec);
     setCurrentWordIndex(activeWord ?? -1);
-  }, [isPlaying, wordTimingMode, currentPosition, currentPositionMs, currentLine, wordTimestamps]);
+  }, [isPlaying, wordTimingMode, manualNavigation, currentPosition, currentPositionMs, currentLine, wordTimestamps]);
 
 
   const handleStampLine = useCallback((index: number) => {
