@@ -173,22 +173,23 @@ export default function SyncLyricsEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wordTimingMode]);
 
-
   useEffect(() => {
-    if (!isPlaying || !wordTimingMode) return;
+    if (!isPlaying || !wordTimingMode || manualNavigation) return;
+
+    const lineWords = wordTimestamps.get(currentLine) || [];
+    
+    // Only auto-highlight if all words in the current line are stamped
+    const allWordsStamped = lineWords.length > 0 && lineWords.every(w => w && w.time != null);
+    if (!allWordsStamped) {
+      return;
+    }
 
     const currentTimeSec =
       typeof currentPositionMs === 'number' ? currentPositionMs / 1000 : currentPosition;
 
-    const lineWords = wordTimestamps.get(currentLine) || [];
-    if (lineWords.length === 0) {
-      setCurrentWordIndex(-1);
-      return;
-    }
-
     const activeWord = getActiveWordIndex(lineWords, currentTimeSec);
     setCurrentWordIndex(activeWord ?? -1);
-  }, [isPlaying, wordTimingMode, currentPosition, currentPositionMs, currentLine, wordTimestamps]);
+  }, [isPlaying, wordTimingMode, manualNavigation, currentPosition, currentPositionMs, currentLine, wordTimestamps]);
 
 
   const handleStampLine = useCallback((index: number) => {
@@ -260,17 +261,35 @@ export default function SyncLyricsEditor({
       const newMap = new Map(prev);
       const lineWords = newMap.get(lineIndex) || [];
       const lineText = lines[lineIndex]?.trim() || '';
+      const tokens = lineText ? lineText.split(/\s+/) : [];
       
-      const wordStart = lineText.indexOf(wordText.trim());
-      const wordEnd = wordStart >= 0 ? wordStart + wordText.trim().length : -1;
+      // Calculate start/end positions based on wordIndex, not text matching
+      let cursor = 0;
+      let wordStart = 0;
+      let wordEnd = 0;
+      
+      for (let i = 0; i < tokens.length; i++) {
+        const token = tokens[i];
+        const slice = lineText.slice(cursor);
+        const rel = slice.indexOf(token);
+        wordStart = rel >= 0 ? cursor + rel : cursor;
+        wordEnd = wordStart + token.length;
+        
+        if (i === wordIndex) {
+          break;
+        }
+        cursor = wordEnd + 1; // +1 for space
+      }
       
       const newWord: Word = { 
         text: wordText.trim(), 
         time: timeSec,
-        start: wordStart >= 0 ? wordStart : 0,
-        end: wordEnd >= 0 ? wordEnd : wordText.trim().length,
+        start: wordStart,
+        end: wordEnd,
       };
-      const existingIndex = lineWords.findIndex(w => w && w.text === wordText.trim());
+      
+      // Find existing word at this specific position (not by text match)
+      const existingIndex = lineWords.findIndex(w => w && w.start === wordStart && w.end === wordEnd);
       
       if (existingIndex !== -1) {
         const updatedWords = [...lineWords];
@@ -318,6 +337,22 @@ export default function SyncLyricsEditor({
       return map;
     });
   }, [lines, setWordTimestamps]);
+
+  const handleClearAllWordTimestamps = useCallback(() => {
+    if (window.confirm('Are you sure you want to clear all word timestamps?')) {
+      setWordTimestamps(new Map());
+    }
+  }, []);
+
+  const handleClearLineWordTimestamps = useCallback(() => {
+    if (window.confirm(`Are you sure you want to clear word timestamps for this line?`)) {
+      setWordTimestamps(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(currentLine);
+        return newMap;
+      });
+    }
+  }, [currentLine]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -432,31 +467,51 @@ export default function SyncLyricsEditor({
 
       {/* Word Timing Mode Toggle */}
       {onSaveWordSync && (
-        <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
-          <div className="flex items-center gap-3">
-            <FaFont className="text-blue-600" />
-            <div>
-              <h3 className="font-semibold text-gray-800">Word Timing Mode</h3>
-              <p className="text-sm text-gray-600">
-                {wordTimingMode 
-                  ? 'Press Enter to stamp each word, ← → to navigate words, ↑ ↓ for lines' 
-                  : 'Enable to sync individual words (karaoke-style)'}
-              </p>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="flex items-center gap-3">
+              <FaFont className="text-blue-600" />
+              <div>
+                <h3 className="font-semibold text-gray-800">Word Timing Mode</h3>
+                <p className="text-sm text-gray-600">
+                  {wordTimingMode 
+                    ? 'Press Enter to stamp each word, ← → to navigate words, ↑ ↓ for lines' 
+                    : 'Enable to sync individual words (karaoke-style)'}
+                </p>
+              </div>
             </div>
+            <button
+              onClick={() => {
+                setWordTimingMode(!wordTimingMode);
+                setCurrentWordIndex(0);
+              }}
+              className={`px-6 py-2 rounded-lg font-semibold transition-all ${
+                wordTimingMode
+                  ? 'bg-blue-600 text-white hover:bg-blue-700'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              {wordTimingMode ? 'ON' : 'OFF'}
+            </button>
           </div>
-          <button
-            onClick={() => {
-              setWordTimingMode(!wordTimingMode);
-              setCurrentWordIndex(0);
-            }}
-            className={`px-6 py-2 rounded-lg font-semibold transition-all ${
-              wordTimingMode
-                ? 'bg-blue-600 text-white hover:bg-blue-700'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
-            {wordTimingMode ? 'ON' : 'OFF'}
-          </button>
+
+          {/* Clear Word Timestamps Buttons */}
+          {wordTimingMode && wordTimestamps.size > 0 && (
+            <div className="flex gap-3 p-4 bg-red-50 rounded-lg border border-red-200">
+              <button
+                onClick={handleClearLineWordTimestamps}
+                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all text-sm font-semibold"
+              >
+                Clear Current Line
+              </button>
+              <button
+                onClick={handleClearAllWordTimestamps}
+                className="px-4 py-2 bg-red-700 text-white rounded-lg hover:bg-red-800 transition-all text-sm font-semibold"
+              >
+                Clear All Timestamps
+              </button>
+            </div>
+          )}
         </div>
       )}
 

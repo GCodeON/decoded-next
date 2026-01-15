@@ -4,7 +4,6 @@
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 214, 219, 220;
   --background-end-rgb: 255, 255, 255;
-  --lyric-cursor-accent: 39, 119, 239; /* #2777EF - Liricle blue accent */
 }
 
 @media (prefers-color-scheme: dark) {
@@ -12,7 +11,6 @@
     --foreground-rgb: 255, 255, 255;
     --background-start-rgb: 0, 0, 0;
     --background-end-rgb: 0, 0, 0;
-    --lyric-cursor-accent: 0, 242, 198; /* #00F2C6 - Liricle teal accent for dark mode */
   }
 }
 
@@ -26,10 +24,10 @@ body {
     rgb(var(--background-start-rgb));
 }
 
-span[style*="background-color: rgb(232, 217, 255)"], span[style*="background-color: rgb(255, 228, 0)"] {
+span[style*="background-color: rgb(232, 217, 255)"], span[style*="background-color: rgb(255, 228, 0)"], span[style*="background-color: rgb(255, 228, 0)"], span[style*="background-color: rgb(255, 167, 167)"], span[style*="background-color: rgb(241, 241, 241)"]{
   color: black;
 }
 
-.sun-editor span[style*="background-color: rgb(255, 0, 221)"], .sun-editor span[style*="background-color: rgb(255, 0, 0)"] {
+.sun-editor span[style*="background-color: rgb(255, 0, 221)"], .sun-editor span[style*="background-color: rgb(255, 0, 0)"], .sun-editor span[style*="background-color: rgb(102, 0, 255)"], .sun-editor span[style*="background-color: rgb(189, 45, 103)"] {
   color:  white;
 }

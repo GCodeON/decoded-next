@@ -124,9 +124,28 @@ export default function WordEditor({
       {line?.trim() && (
         <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-200">
           {lineWords.map((word, wi) => {
+            // Calculate the position of this specific word instance
+            const lineText = line.trim();
+            let cursor = 0;
+            let wordStart = 0;
+            let wordEnd = 0;
             
-            const wordTime = wordTimestamps.find((wt, idx) => {
-              return idx === wi || (wt && wt.text === word);
+            for (let i = 0; i < lineWords.length; i++) {
+              const token = lineWords[i];
+              const slice = lineText.slice(cursor);
+              const rel = slice.indexOf(token);
+              wordStart = rel >= 0 ? cursor + rel : cursor;
+              wordEnd = wordStart + token.length;
+              
+              if (i === wi) {
+                break;
+              }
+              cursor = wordEnd + 1;
+            }
+            
+            // Find word timestamp by position, not by text match
+            const wordTime = wordTimestamps.find((wt) => {
+              return wt && wt.start === wordStart && wt.end === wordEnd;
             });
             const hasTime = wordTime !== undefined && wordTime.time !== undefined;
             const isCurrent = isActive && wi === currentWordIndex;
