@@ -28,6 +28,6 @@ span[style*="background-color: rgb(232, 217, 255)"], span[style*="background-col
   color: black;
 }
 
-.sun-editor span[style*="background-color: rgb(255, 0, 221)"], .sun-editor span[style*="background-color: rgb(255, 0, 0)"], .sun-editor span[style*="background-color: rgb(102, 0, 255)"], .sun-editor span[style*="background-color: rgb(189, 45, 103)"] {
+.sun-editor span[style*="background-color: rgb(255, 0, 221)"], .sun-editor span[style*="background-color: rgb(255, 0, 0)"], .sun-editor span[style*="background-color: rgb(102, 0, 255)"], .sun-editor span[style*="background-color: rgb(189, 45, 103)"], .sun-editor span[style*="background-color: rgb(0, 85, 255)"] {
   color:  white;
 }

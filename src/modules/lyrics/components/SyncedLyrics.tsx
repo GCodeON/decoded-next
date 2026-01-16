@@ -49,7 +49,7 @@ const SyncedLyrics = ({
     wordsByLine
   );
 
-  const leadAdjustedTime = shouldUseWordSync && showRhymes ? currentPositionSec + 0.5 : currentPositionSec;
+  const leadAdjustedTime = shouldUseWordSync && showRhymes ? currentPositionSec + 0 : currentPositionSec;
 
   const getFilledWordsForLine = (lineWords: typeof wordsByLine[number]) => {
     if (lineWords.length === 0) return 0;
