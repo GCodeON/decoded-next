@@ -1,7 +1,7 @@
 "use client";
 import { useState, useRef, useCallback } from 'react';
 import { useSpotifyApi, useSafePolling } from '@/modules/spotify';
-import Track from '@/components/TrackCard';
+import SongHeader from '@/components/SongHeader';
 
 export default function Home() {
   const [currentTrack, setCurrentTrack] = useState<any>(null);
@@ -36,7 +36,7 @@ export default function Home() {
       {isInitialLoading ? (
         <p className="text-sm text-gray-500">Loading…</p>
       ) : currentTrack ? (
-        <Track key={currentTrack.id} active={currentTrack} />
+        <SongHeader track={currentTrack} isPlaying={true} />
       ) : (
         <p className="text-sm text-gray-400">No track playing right now.</p>
       )}
