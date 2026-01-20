@@ -25,7 +25,7 @@ export default function SongHeader({
   };
 
   return (
-    <div className="flex items-center space-x-6 bg-white rounded-xl shadow-lg p-6">
+    <div className="flex flex-col md:flex-row items-center space-x-6 bg-white rounded-xl shadow-lg p-6">
       <div className="relative w-48 h-48 flex-shrink-0">
         <Image
           src={track.album.images[0]?.url || '/placeholder.png'}
