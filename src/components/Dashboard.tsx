@@ -1,12 +1,47 @@
 'use client'
 import Link from 'next/link';
-import { useState } from 'react'
+import { createContext, useContext, useState, useEffect, Dispatch, SetStateAction } from 'react'
+import { usePathname } from 'next/navigation';
 import { Divide as Hamburger } from 'hamburger-react';
 import Navigation from '@/components/Navigation';
 import { SpotifyWebPlayer } from '@/modules/player';
 
-export default function Dashboard({ children }: { children: React.ReactNode }) {
-  const [isOpen, setOpen] = useState(false)
+interface SidebarContextType {
+  isOpen: boolean;
+  setOpen: Dispatch<SetStateAction<boolean>>;
+  closeSidebar: () => void;
+}
+
+const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
+
+export function useSidebar() {
+  const context = useContext(SidebarContext);
+  if (!context) {
+    throw new Error('useSidebar must be used within SidebarProvider');
+  }
+  return context;
+}
+
+function SidebarProvider({ children }: { children: React.ReactNode }) {
+  const [isOpen, setOpen] = useState(false);
+  const pathname = usePathname();
+
+  // Automatically close sidebar when route changes
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  const closeSidebar = () => setOpen(false);
+
+  return (
+    <SidebarContext.Provider value={{ isOpen, setOpen, closeSidebar }}>
+      {children}
+    </SidebarContext.Provider>
+  );
+}
+
+function DashboardUI({ children }: { children: React.ReactNode }) {
+  const { isOpen, setOpen } = useSidebar();
 
   return (
     <div className="flex h-screen w-screen overflow-hidden">
@@ -51,4 +86,12 @@ export default function Dashboard({ children }: { children: React.ReactNode }) {
       
     </div>
   )
+}
+
+export default function Dashboard({ children }: { children: React.ReactNode }) {
+  return (
+    <SidebarProvider>
+      <DashboardUI>{children}</DashboardUI>
+    </SidebarProvider>
+  );
 }
