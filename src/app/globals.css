@@ -24,7 +24,7 @@ body {
     rgb(var(--background-start-rgb));
 }
 
-span[style*="background-color: rgb(232, 217, 255)"], span[style*="background-color: rgb(255, 228, 0)"], span[style*="background-color: rgb(255, 228, 0)"], span[style*="background-color: rgb(255, 167, 167)"], span[style*="background-color: rgb(241, 241, 241)"]{
+span[style*="background-color: rgb(232, 217, 255)"], span[style*="background-color: rgb(255, 228, 0)"], span[style*="background-color: rgb(255, 228, 0)"], span[style*="background-color: rgb(255, 167, 167)"], span[style*="background-color: rgb(241, 241, 241)"], [style*="background-color: rgb(171, 242, 0)"] {
   color: black;
 }
 

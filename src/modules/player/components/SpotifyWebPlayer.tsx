@@ -81,7 +81,7 @@ export default function SpotifyWebPlayer() {
               });
           }
         }}
-        syncExternalDeviceInterval={2}
+        syncExternalDeviceInterval={1}
         persistDeviceSelection={true}
         syncExternalDevice={true}
         showSaveIcon={true}
