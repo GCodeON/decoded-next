@@ -1,5 +1,5 @@
 import './globals.css'
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import Dashboard from '@/components/Dashboard';
 import { SpotifyPlayerProvider, PlaybackStateProvider } from '@/modules/player';
@@ -12,12 +12,13 @@ export const metadata: Metadata = {
   description: 'Rap Genius 2.0',
 }
 
+export const viewport: Viewport = {
+  colorScheme: 'dark',
+}
+
 export default function RootLayout({children}: {children: React.ReactNode}) {
   return (
     <html lang="en">
-      <head>
-        <meta name="color-scheme" content="dark" />
-      </head>
       <body className={`${inter.className}`}>
         <SpotifyPlayerProvider>
           <Dashboard>
