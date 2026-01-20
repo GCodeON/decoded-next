@@ -85,7 +85,9 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
           {toast}
         </div>
       )}
-      <SongHeader track={track} isPlaying={isPlaying} togglePlayback={togglePlayback} />
+      <div className="hidden md:block">
+        <SongHeader track={track} isPlaying={isPlaying} togglePlayback={togglePlayback}/>
+      </div>
 
       <div className="bg-white rounded-xl shadow-lg p-6">
         <div className="flex justify-between items-center mb-4">
