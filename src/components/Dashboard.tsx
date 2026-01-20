@@ -63,7 +63,7 @@ function DashboardUI({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      <main className="relative flex flex-1 flex-col">
+      <main className="relative flex flex-1 flex-col w-full">
         <div className="flex items-center justify-between p-4 shadow-md lg:hidden">
           <Link href="/">
             <h1 className="title text-lg font-bold">DECODED</h1>
