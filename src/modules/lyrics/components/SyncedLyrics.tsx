@@ -122,7 +122,7 @@ const SyncedLyrics = ({
             key={i}
             className={`px-6 py-3 rounded-lg transition-all ${
               isActive
-                ? 'bg-blue-100/70 dark:bg-blue-900/40'
+                ? 'bg-blue-900/40'
                 : isPast
                 ? 'opacity-80'
                 : 'opacity-50'
