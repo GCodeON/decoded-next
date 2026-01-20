@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-:root {
+/* :root {
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 214, 219, 220;
   --background-end-rgb: 255, 255, 255;
@@ -12,9 +12,9 @@
     --background-start-rgb: 0, 0, 0;
     --background-end-rgb: 0, 0, 0;
   }
-}
+} */
 
-body {
+/* body {
   color: rgb(var(--foreground-rgb));
   background: linear-gradient(
       to bottom,
@@ -22,6 +22,11 @@ body {
       rgb(var(--background-end-rgb))
     )
     rgb(var(--background-start-rgb));
+} */
+
+body {
+  color: white;
+  background: black;
 }
 
 span[style*="background-color: rgb(232, 217, 255)"], span[style*="background-color: rgb(255, 228, 0)"], span[style*="background-color: rgb(255, 228, 0)"], span[style*="background-color: rgb(255, 167, 167)"], span[style*="background-color: rgb(241, 241, 241)"], [style*="background-color: rgb(171, 242, 0)"] {
