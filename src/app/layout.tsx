@@ -15,6 +15,9 @@ export const metadata: Metadata = {
 export default function RootLayout({children}: {children: React.ReactNode}) {
   return (
     <html lang="en">
+      <head>
+        <meta name="color-scheme" content="dark" />
+      </head>
       <body className={`${inter.className}`}>
         <SpotifyPlayerProvider>
           <Dashboard>
