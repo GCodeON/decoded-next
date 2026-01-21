@@ -92,13 +92,15 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
       <div className="bg-white rounded-xl shadow-lg p-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-black text-2xl font-bold">Lyrics</h2>
-          {displayLyrics && !editMode && !syncMode && (
+          {!editMode && !syncMode && (
             <ActionButtons
               hasSynced={hasSynced}
               hasWordSynced={hasWordSynced}
               wordSyncEnabled={wordSyncEnabled}
               showRhymes={showRhymes}
               repairing={repairing}
+              hasLyrics={!!displayLyrics}
+              lyricsLoading={lyricsLoading}
               onToggleWordSync={handleToggleWordSync}
               onToggleRhymes={handleToggleRhymes}
               onEditSync={() => setSyncMode(true)}
@@ -110,12 +112,12 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
 
         {isSaving && <p className="text-sm text-gray-500">Saving...</p>}
         {lyricsLoading && !savedSong && <p className="text-gray-600 animate-pulse">Searching lyrics...</p>}
-        {lyricsError && !savedSong && (
+        {lyricsError && !savedSong && !editMode && (
           <p className="text-red-500">
             {lyricsError.includes('not found') ? 'Lyrics not available.' : `Error: ${lyricsError}`}
           </p>
         )}
-        {!lyricsLoading && !displayLyrics && <p className="text-gray-500 italic">No lyrics found.</p>}
+        {/* {!lyricsLoading && !displayLyrics && <p className="text-gray-500 italic">No lyrics found.</p>} */}
 
         {syncMode && displayLyrics && (
           <SyncLyricsEditor
@@ -162,7 +164,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
 
         {editMode && (
           <LyricsEditor
-            initialHtml={displayHtml}
+            initialHtml={displayHtml || ''}
             onSave={async (html) => {
               await updateLyrics(html);
               setEditMode(false);

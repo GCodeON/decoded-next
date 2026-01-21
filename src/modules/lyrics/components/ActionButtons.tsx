@@ -6,6 +6,8 @@ export type ActionButtonsProps = {
   wordSyncEnabled: boolean;
   showRhymes: boolean;
   repairing: boolean;
+  hasLyrics: boolean;
+  lyricsLoading: boolean;
   onToggleWordSync: () => void;
   onToggleRhymes: () => void;
   onEditSync: () => void;
@@ -19,12 +21,32 @@ export default function ActionButtons({
   wordSyncEnabled,
   showRhymes,
   repairing,
+  hasLyrics,
+  lyricsLoading,
   onToggleWordSync,
   onToggleRhymes,
   onEditSync,
   onEditLyrics,
   onRunRepair,
 }: ActionButtonsProps) {
+  
+  if (lyricsLoading) {
+    return null;
+  }
+
+  if (!hasLyrics) {
+    return (
+      <div className="flex gap-4">
+        <button
+          onClick={onEditLyrics}
+          className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-semibold"
+        >
+          <FaEdit /> Add Lyrics
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="flex gap-4">
       {hasSynced && (

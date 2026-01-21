@@ -28,6 +28,32 @@ export function useSavedSong({ track, trackId }: UseSavedSongParams) {
     shouldFetchLyrics ? mstoSeconds(track?.duration_ms || 0) : 0
   );
 
+  const createAndSaveSong = useCallback(
+    async (plain: string, rhymeEncoded: string, synced: string | null = null) => {
+      if (!track) return null;
+
+      setIsSaving(true);
+      const newSong: SavedSong = {
+        title: cleanTrackName(track.name),
+        artist: artistName,
+        spotify: trackId,
+        lyrics: { plain, synced, wordSynced: null, rhymeEncoded },
+      };
+
+      try {
+        await songService.saveSong(trackId, newSong);
+        setSavedSong(newSong);
+        setShouldFetchLyrics(false);
+        return newSong;
+      } catch (err) {
+        console.error('Failed to save new song:', err);
+        return null;
+      } finally {
+        setIsSaving(false);
+      }
+    }, [track, trackId, artistName]
+  );
+
   // Load from Firestore
   useEffect(() => {
     if (!track || !trackId) return;
@@ -61,38 +87,23 @@ export function useSavedSong({ track, trackId }: UseSavedSongParams) {
   useEffect(() => {
     if (!lyricsData || savedSong || !track) return;
 
-    const saveNew = async () => {
-      setIsSaving(true);
-      const plain = lyricsData.lyrics.plain?.trim() || '';
-      const synced = lyricsData.lyrics.synced?.trim() || null;
-      const rhymeEncoded = lyricsToHtml(plain);
+    const plain = lyricsData.lyrics.plain?.trim() || '';
+    const synced = lyricsData.lyrics.synced?.trim() || null;
+    const rhymeEncoded = lyricsToHtml(plain);
 
-      const newSong: SavedSong = {
-        title: cleanTrackName(track.name),
-        artist: artistName,
-        spotify: trackId,
-        lyrics: { plain, synced, wordSynced: null, rhymeEncoded },
-      };
-
-      try {
-        await songService.saveSong(trackId, newSong);
-        setSavedSong(newSong);
-        setShouldFetchLyrics(false);
-      } catch (err) {
-        console.error('Failed to save new song:', err);
-      } finally {
-        setIsSaving(false);
-      }
-    };
-
-    saveNew();
-  }, [lyricsData, savedSong, track, trackId, artistName]);
+    createAndSaveSong(plain, rhymeEncoded, synced);
+  }, [lyricsData, savedSong, track, createAndSaveSong]);
 
   const updateLyrics = useCallback(
     async (htmlContent: string) => {
-      if (!savedSong) return;
 
       const plain = htmlToLyrics(htmlContent);
+
+      // If no savedSong exists, create a new one
+      if (!savedSong) {
+        await createAndSaveSong(plain, htmlContent, null);
+        return;
+      } 
       const oldPlain = savedSong.lyrics.plain;
 
       const newLineCount = extractPlainLinesFromHtml(htmlContent).length;
