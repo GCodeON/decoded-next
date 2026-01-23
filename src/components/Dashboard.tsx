@@ -26,7 +26,6 @@ function SidebarProvider({ children }: { children: React.ReactNode }) {
   const [isOpen, setOpen] = useState(false);
   const pathname = usePathname();
 
-  // Automatically close sidebar when route changes
   useEffect(() => {
     setOpen(false);
   }, [pathname]);
@@ -63,7 +62,7 @@ function DashboardUI({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      <main className="relative flex flex-1 flex-col w-full">
+      <main className="relative flex flex-1 flex-col w-full h-screen">
         <div className="flex items-center justify-between p-4 shadow-md lg:hidden">
           <Link href="/">
             <h1 className="title text-lg font-bold">DECODED</h1>
@@ -71,16 +70,16 @@ function DashboardUI({ children }: { children: React.ReactNode }) {
           <Hamburger toggled={isOpen} toggle={setOpen} rounded />
         </div>
 
-        <div className="flex-1 overflow-auto md:p-4 pb-24">
-          <div className="mx-auto w-full min-h-full flex flex-col items-center">
-            <div className="my-auto">
+        <div className="flex-1 grid grid-rows-[1fr_auto] lg:grid-rows-[90%_10%] overflow-hidden">
+          <div className="overflow-y-auto">
+            <div className="mx-auto w-full flex flex-col">
               {children}
             </div>
           </div>
-        </div>
 
-        <div className="fixed bottom-0 left-0 w-full lg:left-64 lg:w-[calc(100%-16rem)] z-30">
-          <SpotifyWebPlayer />
+          <div className="w-full">
+            <SpotifyWebPlayer />
+          </div>
         </div>
       </main>
       

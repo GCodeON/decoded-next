@@ -18,7 +18,6 @@ export function usePageScroll({
   const scrollAnimationRef = useRef<number | null>(null);
   const [isMobile, setIsMobile] = useState(false);
 
-  // Determine offset based on screen size
   const getViewportOffset = () => {
     if (typeof viewportOffset === 'number') {
       return viewportOffset;
@@ -28,10 +27,9 @@ export function usePageScroll({
       : viewportOffset.desktop ?? 66;
   };
 
-  // Detect mobile on mount and on resize
   useEffect(() => {
     const handleResize = () => {
-      setIsMobile(window.innerWidth < 768); // 768px = Tailwind's md breakpoint
+      setIsMobile(window.innerWidth < 768);
     };
     handleResize();
     window.addEventListener('resize', handleResize);
@@ -60,14 +58,13 @@ export function usePageScroll({
     const currentScroll = window.scrollY;
     const distance = targetPosition;
 
-    const duration = 300; // milliseconds
+    const duration = 300;
     const startTime = Date.now();
 
     const animateScroll = () => {
       const elapsed = Date.now() - startTime;
       const progress = Math.min(elapsed / duration, 1);
 
-      // Easing function (ease-in-out)
       const easeProgress = progress < 0.5
         ? 2 * progress * progress
         : -1 + (4 - 2 * progress) * progress;

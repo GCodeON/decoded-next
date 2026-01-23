@@ -101,7 +101,6 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
 
       <div className="sticky top-0 z-10 bg-white shadow-lg p-2 md:p-6 mb-0">
         <div className="flex justify-around items-center">
-          {/* <h2 className="text-black text-2xl font-bold">Lyrics</h2> */}
           {!editMode && !syncMode && (
             <ActionButtons
               hasSynced={hasSynced}
