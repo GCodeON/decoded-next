@@ -95,7 +95,7 @@ const SyncedLyrics = ({
   return (
     <div
       ref={containerRef}
-      className="max-h-96 overflow-y-auto bg-zinc-900 rounded-xl py-5 md:space-y-2 scrollbar-thin scrollbar-thumb-gray-400"
+      className="max-h-full md:max-h-96 overflow-y-auto bg-zinc-900 rounded-xl py-5 md:space-y-2 scrollbar-thin scrollbar-thumb-gray-400"
     >
       {lines.map((line, i) => {
         const text = line.trim();
