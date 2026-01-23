@@ -5,11 +5,11 @@ import { useRhymeColorMap } from '@/modules/lyrics/hooks/useRhymeColorMap';
 import { parseEnhancedLrc } from '@/modules/lyrics/utils/lrcAdvanced';
 import { RhymeWordHighlight } from './RhymeWordHighlight';
 import { PlainWordHighlight } from './PlainWordHighlight';
-import { SCROLL_OPTIONS } from '@/modules/lyrics/config/sync-constants';
 import type { SyncedLyricsProps } from '@/modules/lyrics/types/rhyme';
 
 interface SyncedLyricsWithActiveLine extends SyncedLyricsProps {
   onActiveLineChange?: (line: number) => void;
+  containerId?: string;
 }
 
 const SyncedLyrics = ({
@@ -19,7 +19,8 @@ const SyncedLyrics = ({
   rhymeEncodedLines,
   showRhymes = true,
   mode = 'auto',
-  onActiveLineChange
+  onActiveLineChange,
+  containerId = 'synced-lyrics-container',
 }: SyncedLyricsWithActiveLine) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const currentPositionSec = currentPositionMs / 1000;
@@ -37,7 +38,7 @@ const SyncedLyrics = ({
     currentPosition: currentPositionSec,
     currentPositionMs,
     isPlaying,
-    autoScroll: true,
+    autoScroll: false,
   });
 
   const isWordSynced = wordsByLine.some((line) => line.length > 0);
@@ -85,17 +86,11 @@ const SyncedLyrics = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [effectiveActiveLineIndex]);
 
-  // Auto-scroll to active line
-  useEffect(() => {
-    if (effectiveActiveLineIndex === null || !containerRef.current) return;
-    const el = containerRef.current.children[effectiveActiveLineIndex] as HTMLElement;
-    el?.scrollIntoView(SCROLL_OPTIONS);
-  }, [effectiveActiveLineIndex]);
-
   return (
     <div
       ref={containerRef}
-      className="max-h-96 overflow-y-auto bg-zinc-900 rounded-xl py-5 md:space-y-2 scrollbar-thin scrollbar-thumb-gray-400"
+      id={containerId}
+      className="bg-zinc-900 rounded-xl py-5 md:space-y-2"
     >
       {lines.map((line, i) => {
         const text = line.trim();
@@ -125,7 +120,7 @@ const SyncedLyrics = ({
                 ? 'bg-blue-900/40'
                 : isPast
                 ? 'opacity-80'
-                : 'opacity-50'
+                : 'opacity-20'
             }`}
           >
             {shouldUseWordSync && words.length > 0 && showRhymes ? (

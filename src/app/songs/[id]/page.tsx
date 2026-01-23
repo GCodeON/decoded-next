@@ -5,6 +5,7 @@ import ActionButtons from '@/modules/lyrics/components/ActionButtons';
 import RepairModal from '@/modules/lyrics/components/RepairModal';
 import SyncLyricsEditor from '@/modules/lyrics/components/SyncLyricsEditor';
 import { useDisplayLyrics } from '@/modules/lyrics/hooks/useDisplayLyrics';
+import { usePageScroll } from '@/modules/lyrics/hooks/usePageScroll';
 import { LyricsEditor, SyncedLyrics, useSavedSong } from '@/modules/lyrics';
 import { usePlaybackSync, useSpotifyTrack } from '@/modules/spotify';
 
@@ -60,6 +61,12 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
   const handleToggleWordSync = () => setWordSyncEnabled(prev => !prev);
   const handleToggleRhymes = () => setShowRhymes(prev => !prev);
 
+  usePageScroll({
+    activeLineIndex: lastActiveLine,
+    lyricsContainerId: 'synced-lyrics-container',
+    viewportOffset: 66,
+  });
+
   if (trackLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -79,7 +86,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
   if (!track) return null;
 
   return (
-    <div className="w-full mx-auto p-6 space-y-8">
+    <div className="w-full mx-auto p-6 space-y-8 relative">
       {toast && (
         <div className="fixed top-6 right-6 z-50 bg-black text-white px-4 py-2 rounded shadow-lg">
           {toast}
@@ -89,9 +96,9 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
         <SongHeader track={track} isPlaying={isPlaying} togglePlayback={togglePlayback}/>
       </div>
 
-      <div className="bg-white rounded-xl shadow-lg p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-black text-2xl font-bold">Lyrics</h2>
+      <div className="sticky top-0 z-10 bg-white rounded-xl shadow-lg p-6">
+        <div className="flex justify-between items-center">
+          {/* <h2 className="text-black text-2xl font-bold">Lyrics</h2> */}
           {!editMode && !syncMode && (
             <ActionButtons
               hasSynced={hasSynced}
@@ -110,14 +117,16 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
           )}
         </div>
 
-        {isSaving && <p className="text-sm text-gray-500">Saving...</p>}
-        {lyricsLoading && !savedSong && <p className="text-gray-600 animate-pulse">Searching lyrics...</p>}
+        {isSaving && <p className="text-sm text-gray-500 mt-2">Saving...</p>}
+        {lyricsLoading && !savedSong && <p className="text-gray-600 animate-pulse mt-2">Searching lyrics...</p>}
         {lyricsError && !savedSong && !editMode && (
-          <p className="text-red-500">
+          <p className="text-red-500 mt-2">
             {lyricsError.includes('not found') ? 'Lyrics not available.' : `Error: ${lyricsError}`}
           </p>
         )}
-        {/* {!lyricsLoading && !displayLyrics && <p className="text-gray-500 italic">No lyrics found.</p>} */}
+      </div>
+
+      <div className="space-y-8">
 
         {syncMode && displayLyrics && (
           <SyncLyricsEditor
@@ -150,6 +159,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
             showRhymes={showRhymes}
             mode={syncConfig.mode}
             onActiveLineChange={setLastActiveLine}
+            containerId="synced-lyrics-container"
           />
         )}
 
