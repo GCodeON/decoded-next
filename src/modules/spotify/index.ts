@@ -2,6 +2,7 @@
 export { useSpotifyApi } from './hooks/useSpotifyApi';
 export { useSpotifyTrack } from './hooks/useSpotifyTrack';
 export { usePlaybackSync } from './hooks/usePlaybackSync';
+export { usePlaybackToggle } from './hooks/usePlaybackToggle';
 export { useSafePolling } from './hooks/useSafePolling';
 export { useSyncPolling } from './hooks/useSyncPolling';
 export { usePlaybackState } from './hooks/usePlaybackState';
@@ -13,6 +14,9 @@ export { createSpotifyService } from './services/spotifyService';
 export type { SpotifyTransport } from './transport/SpotifyTransport';
 export { clientTransport } from './transport/clientTransport';
 export { serverTransport } from './transport/serverTransport';
+
+// Utils
+export { selectTargetDevice } from './utils/deviceSelection';
 
 // Types
 export type {

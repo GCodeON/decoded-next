@@ -2,6 +2,7 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { useSpotifyApi, useSyncPolling } from '@/modules/spotify';
 import { useSpotifyPlayer } from '@/modules/player';
+import { usePlaybackToggle } from './usePlaybackToggle';
 
 export function usePlaybackSync(
   trackId: string,
@@ -236,187 +237,83 @@ export function usePlaybackSync(
     intervalMs: (syncMode || viewMode) ? 150 : 200
   });
 
+  // Calculate current playback position for usePlaybackToggle
+  const getPositionMs = useCallback(() => {
+    if (typeof currentInterpolatedMs === 'number') return Math.floor(currentInterpolatedMs);
+    if (typeof lastSampleMsRef.current === 'number') return Math.floor(lastSampleMsRef.current!);
+    if (globalTrackId === trackId && globalPosition !== null) return Math.floor(globalPosition * 1000);
+    return Math.floor(currentPosition * 1000);
+  }, [currentInterpolatedMs, currentPosition, globalTrackId, trackId, globalPosition]);
+
+  // Use the reusable playback toggle hook with interpolation callbacks
+  const { togglePlayback: coreToggle } = usePlaybackToggle(
+    trackId,
+    isPlayingThisTrack,
+    getPositionMs,
+    {
+      deviceId,
+      lastExternalDevice,
+      onPlayStart: (syncMode || viewMode) ? async () => {
+        // Optimistically start interpolation BEFORE API call
+        lastPollIsPlayingRef.current = true;
+        optimisticPlayUntilRef.current = performance.now() + 2000;
+        const positionMs = getPositionMs();
+        lastSampleMsRef.current = positionMs;
+        lastSampleAtRef.current = performance.now();
+        setCurrentInterpolatedMs(positionMs);
+
+        if (!isInterpolatingRef.current) {
+          isInterpolatingRef.current = true;
+          const tick = () => {
+            const baselineMs = lastSampleMsRef.current;
+            if (baselineMs != null && isInterpolatingRef.current) {
+              const elapsed = performance.now() - lastSampleAtRef.current;
+              const clampedElapsed = Math.min(elapsed, 2000);
+              setCurrentInterpolatedMs(baselineMs + clampedElapsed);
+            }
+            if (isInterpolatingRef.current) {
+              rafRef.current = requestAnimationFrame(tick);
+            }
+          };
+          rafRef.current = requestAnimationFrame(tick);
+        }
+      } : undefined,
+      onPauseStart: (syncMode || viewMode) ? () => {
+        // Immediately stop interpolation on pause
+        if (isInterpolatingRef.current) {
+          isInterpolatingRef.current = false;
+          if (rafRef.current) {
+            cancelAnimationFrame(rafRef.current);
+            rafRef.current = null;
+          }
+        }
+        lastPollIsPlayingRef.current = false;
+      } : undefined,
+      onSuccess: (syncMode || viewMode) ? (state: any) => {
+        // Update state from fresh playback state fetch
+        if (state) {
+          lastPollIsPlayingRef.current = !!state.is_playing;
+          if (state.is_playing) {
+            optimisticPlayUntilRef.current = 0;
+          }
+          if (typeof state.progress_ms === 'number') {
+            lastSampleMsRef.current = state.progress_ms;
+            lastSampleAtRef.current = performance.now();
+            setCurrentInterpolatedMs(state.progress_ms);
+          }
+        }
+      } : undefined,
+    }
+  );
+
+  // Wrap core toggle with interpolation-specific error handling
   const togglePlayback = useCallback(async () => {
     try {
-      const devicesRes: any = await spotify.getDevices();
-      const devices: any[] = devicesRes?.devices || [];
-
-      let targetDeviceId: string | undefined;
-
-      // Priority 1: Last external device (if still available)
-      if (lastExternalDevice) {
-        const extDevice = devices.find((d: any) => d.id === lastExternalDevice);
-        if (extDevice) {
-          targetDeviceId = lastExternalDevice;
-        }
-      }
-
-      // Priority 2: Web player
-      if (!targetDeviceId && deviceId) {
-        const webDevice = devices.find((d: any) => d.id === deviceId);
-        if (webDevice) {
-          targetDeviceId = deviceId;
-        }
-      }
-
-      // Priority 3: Any active device
-      if (!targetDeviceId) {
-        const activeDevice = devices.find((d: any) => d.is_active);
-        if (activeDevice) {
-          targetDeviceId = activeDevice.id;
-        }
-      }
-
-      // Priority 4: Web player from devices list (if SDK hasn't set deviceId yet)
-      if (!targetDeviceId) {
-        const webDevice = devices.find((d: any) => 
-          (d.name || '').includes('Web Player') || (d.name || '').includes('DECODED')
-        );
-        if (webDevice) {
-          targetDeviceId = webDevice.id;
-        }
-      }
-
-      try {
-        if (isPlayingThisTrack) {
-          await spotify.pause(targetDeviceId);
-          // Immediately stop interpolation on pause
-          if (isInterpolatingRef.current) {
-            isInterpolatingRef.current = false;
-            if (rafRef.current) {
-              cancelAnimationFrame(rafRef.current);
-              rafRef.current = null;
-            }
-          }
-          lastPollIsPlayingRef.current = false;
-        } else {
-          const positionMs = (() => {
-            if (typeof (currentInterpolatedMs) === 'number') return Math.floor(currentInterpolatedMs);
-            if (typeof (lastSampleMsRef.current) === 'number') return Math.floor(lastSampleMsRef.current!);
-            if (globalTrackId === trackId && globalPosition !== null) return Math.floor(globalPosition * 1000);
-            return Math.floor(currentPosition * 1000);
-          })();
-          
-          // Optimistically start interpolation BEFORE API call for instant UI response
-          if (syncMode || viewMode) {
-            lastPollIsPlayingRef.current = true;
-            optimisticPlayUntilRef.current = performance.now() + 2000; // 2s optimistic window
-            lastSampleMsRef.current = positionMs;
-            lastSampleAtRef.current = performance.now();
-            setCurrentInterpolatedMs(positionMs);
-
-            if (!isInterpolatingRef.current) {
-              isInterpolatingRef.current = true;
-              const tick = () => {
-                const baselineMs = lastSampleMsRef.current;
-                if (baselineMs != null && isInterpolatingRef.current) {
-                  const elapsed = performance.now() - lastSampleAtRef.current;
-                  const clampedElapsed = Math.min(elapsed, 2000);
-                  setCurrentInterpolatedMs(baselineMs + clampedElapsed);
-                }
-                if (isInterpolatingRef.current) {
-                  rafRef.current = requestAnimationFrame(tick);
-                }
-              };
-              rafRef.current = requestAnimationFrame(tick);
-             
-            }
-          }
-          
-          await spotify.play(targetDeviceId || undefined, [`spotify:track:${trackId}`], positionMs);
-          
-          // Trigger immediate fetch to get fresh position after play
-          if (syncMode || viewMode) {
-            try {
-              const s = await spotify.getPlaybackState();
-              if (s) {
-                lastPollIsPlayingRef.current = !!s.is_playing;
-
-                if (s.is_playing) {
-                  optimisticPlayUntilRef.current = 0;
-                }
-                if (typeof s.progress_ms === 'number') {
-                  lastSampleMsRef.current = s.progress_ms;
-                  lastSampleAtRef.current = performance.now();
-                  // Immediately update interpolated value so UI jumps to correct position on resume
-                  setCurrentInterpolatedMs(s.progress_ms);
-                }
-              }
-            } catch {}
-          }
-        }
-      } catch (err: any) {
-        // If 404 or "no active device", transfer and retry
-        const msg = String(err?.message || '');
-        if (err?.response?.status === 404 || msg.includes('device') || msg.includes('404')) {
-          if (targetDeviceId) {
-            await spotify.transferPlayback(targetDeviceId, true);
-            // Retry play
-            const positionMs = (() => {
-              if (typeof (currentInterpolatedMs) === 'number') return Math.floor(currentInterpolatedMs);
-              if (typeof (lastSampleMsRef.current) === 'number') return Math.floor(lastSampleMsRef.current!);
-              if (globalTrackId === trackId && globalPosition !== null) return Math.floor(globalPosition * 1000);
-              return Math.floor(currentPosition * 1000);
-            })();
-
-            if (syncMode || viewMode) {
-              lastPollIsPlayingRef.current = true;
-              optimisticPlayUntilRef.current = performance.now() + 2000;
-              lastSampleMsRef.current = positionMs;
-              lastSampleAtRef.current = performance.now();
-              setCurrentInterpolatedMs(positionMs);
-
-              if (!isInterpolatingRef.current) {
-                isInterpolatingRef.current = true;
-                const tick = () => {
-                  const baselineMs = lastSampleMsRef.current;
-                  if (baselineMs != null && isInterpolatingRef.current) {
-                    const elapsed = performance.now() - lastSampleAtRef.current;
-                    const clampedElapsed = Math.min(elapsed, 2000);
-                    setCurrentInterpolatedMs(baselineMs + clampedElapsed);
-                  }
-                  if (isInterpolatingRef.current) {
-                    rafRef.current = requestAnimationFrame(tick);
-                  }
-                };
-                rafRef.current = requestAnimationFrame(tick);
-              }
-            }
-            
-            await spotify.play(targetDeviceId, [`spotify:track:${trackId}`], positionMs);
-            
-            // Immediate fetch after transfer
-            if (syncMode || viewMode) {
-              try {
-                const s = await spotify.getPlaybackState();
-                if (s) {
-                  lastPollIsPlayingRef.current = !!s.is_playing;
-                  if (s.is_playing) {
-                    optimisticPlayUntilRef.current = 0;
-                  }
-
-                  if (typeof s.progress_ms === 'number') {
-                    lastSampleMsRef.current = s.progress_ms;
-                    lastSampleAtRef.current = performance.now();
-                    setCurrentInterpolatedMs(s.progress_ms);
-                  }
-                }
-              } catch {}
-            }
-          }
-        }
-      }
+      await coreToggle();
     } catch (err: any) {
 
     }
-  }, [
-    isPlayingThisTrack,
-    currentPosition,
-    trackId,
-    deviceId,
-    lastExternalDevice,
-    spotify,
-  ]);
+  }, [coreToggle]);
 
   return {
     isPlaying,
