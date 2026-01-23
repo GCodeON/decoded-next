@@ -33,7 +33,7 @@ export default function Home() {
   });
 
   return (
-    <div className="flex justify-center py-8">
+    <div className="flex min-h-screen items-center justify-center py-8">
       {isInitialLoading ? (
         <p className="text-sm text-gray-500">Loading…</p>
       ) : currentTrack ? (

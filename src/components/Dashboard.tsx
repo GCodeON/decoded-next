@@ -71,7 +71,7 @@ function DashboardUI({ children }: { children: React.ReactNode }) {
         </div>
 
         <div className="flex-1 grid grid-rows-[1fr_auto] lg:grid-rows-[90%_10%] overflow-hidden">
-          <div className="overflow-y-auto">
+          <div id="content-scroll-container" className="overflow-y-auto">
             <div className="mx-auto w-full flex flex-col">
               {children}
             </div>

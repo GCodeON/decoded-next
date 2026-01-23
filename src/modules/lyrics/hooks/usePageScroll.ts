@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 interface UsePageScrollOptions {
   activeLineIndex: number | null;
   lyricsContainerId: string;
+  scrollContainerId?: string;
   viewportOffset?: {
     mobile?: number;
     desktop?: number;
@@ -13,6 +14,7 @@ interface UsePageScrollOptions {
 export function usePageScroll({
   activeLineIndex,
   lyricsContainerId,
+  scrollContainerId = 'content-scroll-container',
   viewportOffset = 50,
 }: UsePageScrollOptions) {
   const scrollAnimationRef = useRef<number | null>(null);
@@ -39,24 +41,28 @@ export function usePageScroll({
   useEffect(() => {
     if (activeLineIndex === null) return;
 
-    const container = document.getElementById(lyricsContainerId);
-    if (!container) return;
+    const lyricsContainer = document.getElementById(lyricsContainerId);
+    const scrollContainer = document.getElementById(scrollContainerId);
+    
+    if (!lyricsContainer || !scrollContainer) return;
 
-    const activeLineEl = container.children[activeLineIndex] as HTMLElement;
+    const activeLineEl = lyricsContainer.children[activeLineIndex] as HTMLElement;
     if (!activeLineEl) return;
 
-    // Cancel any pending animation
     if (scrollAnimationRef.current) {
       cancelAnimationFrame(scrollAnimationRef.current);
     }
 
-    // Calculate target scroll position
+    // Calculate position relative to scroll container
     const lineRect = activeLineEl.getBoundingClientRect();
-    const viewportHeight = window.innerHeight;
+    const containerRect = scrollContainer.getBoundingClientRect();
+    const relativeTop = lineRect.top - containerRect.top + scrollContainer.scrollTop;
+    
+    const scrollHeight = scrollContainer.clientHeight;
     const currentOffset = getViewportOffset();
-    const targetPosition = lineRect.top - (viewportHeight * currentOffset / 100);
-    const currentScroll = window.scrollY;
-    const distance = targetPosition;
+    const targetScroll = relativeTop - (scrollHeight * currentOffset / 100);
+    const currentScroll = scrollContainer.scrollTop;
+    const distance = targetScroll - currentScroll;
 
     const duration = 300;
     const startTime = Date.now();
@@ -69,10 +75,7 @@ export function usePageScroll({
         ? 2 * progress * progress
         : -1 + (4 - 2 * progress) * progress;
 
-      window.scrollBy({
-        top: distance * easeProgress - (window.scrollY - currentScroll),
-        behavior: 'auto',
-      });
+      scrollContainer.scrollTop = currentScroll + distance * easeProgress;
 
       if (progress < 1) {
         scrollAnimationRef.current = requestAnimationFrame(animateScroll);
@@ -86,5 +89,5 @@ export function usePageScroll({
         cancelAnimationFrame(scrollAnimationRef.current);
       }
     };
-  }, [activeLineIndex, lyricsContainerId, isMobile]);
+  }, [activeLineIndex, lyricsContainerId, scrollContainerId, isMobile]);
 }
