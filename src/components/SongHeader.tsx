@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link'
 import Image from 'next/image';
 import { FaPlayCircle, FaPauseCircle } from 'react-icons/fa';
@@ -16,9 +16,9 @@ export default function SongHeader({
 }) {
   const [optimisticIsPlaying, setOptimisticIsPlaying] = useState(isPlaying);
 
-  if (optimisticIsPlaying !== isPlaying) {
+  useEffect(() => {
     setOptimisticIsPlaying(isPlaying);
-  }
+  }, [isPlaying]);
 
   const handleToggle = async () => {
     setOptimisticIsPlaying(!optimisticIsPlaying);

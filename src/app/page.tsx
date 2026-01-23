@@ -1,6 +1,6 @@
 "use client";
 import { useState, useRef, useCallback } from 'react';
-import { useSpotifyApi, useSafePolling } from '@/modules/spotify';
+import { useSpotifyApi, useSafePolling, useSimplePlayback } from '@/modules/spotify';
 import SongHeader from '@/components/SongHeader';
 
 export default function Home() {
@@ -9,6 +9,7 @@ export default function Home() {
   const currentTrackIdRef = useRef<string | null>(null);
 
   const spotify = useSpotifyApi();
+  const { isPlaying, togglePlayback } = useSimplePlayback(currentTrack?.id);
 
   const fetchCurrentlyPlaying = useCallback(async () => {
     const newTrack = await spotify.getCurrentlyPlaying();
@@ -36,7 +37,11 @@ export default function Home() {
       {isInitialLoading ? (
         <p className="text-sm text-gray-500">Loading…</p>
       ) : currentTrack ? (
-        <SongHeader track={currentTrack} isPlaying={true} />
+        <SongHeader 
+          track={currentTrack} 
+          isPlaying={isPlaying} 
+          togglePlayback={togglePlayback}
+        />
       ) : (
         <p className="text-sm text-gray-400">No track playing right now.</p>
       )}
