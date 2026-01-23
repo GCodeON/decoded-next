@@ -28,7 +28,7 @@ export default function SongHeader({
   };
 
   return (
-    <div className="flex flex-col md:flex-row items-center space-x-6 bg-white rounded-xl shadow-lg p-6">
+    <div className="flex flex-col md:flex-row items-center space-x-6">
       <div className='relative order-2 md:order-1'>
         <div className="relative w-48 h-48 flex-shrink-0">
           <Image

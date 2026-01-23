@@ -64,7 +64,10 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
   usePageScroll({
     activeLineIndex: lastActiveLine,
     lyricsContainerId: 'synced-lyrics-container',
-    viewportOffset: 66,
+    viewportOffset: {
+      mobile: 45,
+      desktop: 66,
+    },
   });
 
   if (trackLoading) {
@@ -86,18 +89,18 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
   if (!track) return null;
 
   return (
-    <div className="w-full mx-auto p-6 space-y-8 relative">
+    <div className="w-full mx-auto p-1 md:p-6 space-y-1 md:space-y-8 relative">
       {toast && (
         <div className="fixed top-6 right-6 z-50 bg-black text-white px-4 py-2 rounded shadow-lg">
           {toast}
         </div>
       )}
-      <div className="hidden md:block">
+      <div className="bg-white rounded-tl-xl rounded-tr-xl shadow-lg p-6 mb-0">
         <SongHeader track={track} isPlaying={isPlaying} togglePlayback={togglePlayback}/>
       </div>
 
-      <div className="sticky top-0 z-10 bg-white rounded-xl shadow-lg p-6">
-        <div className="flex justify-between items-center">
+      <div className="sticky top-0 z-10 bg-white shadow-lg p-2 md:p-6 mb-0">
+        <div className="flex justify-around items-center">
           {/* <h2 className="text-black text-2xl font-bold">Lyrics</h2> */}
           {!editMode && !syncMode && (
             <ActionButtons

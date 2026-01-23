@@ -54,7 +54,7 @@ function DashboardUI({ children }: { children: React.ReactNode }) {
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
       >
-        <div className="flex flex-col flex-grow">
+        <div className="sticky top-0 flex flex-col flex-grow">
           <Link href="/" className="mb-8">
             <h1 className="title text-xl font-bold text-white">DECODED</h1>
           </Link>
@@ -71,7 +71,7 @@ function DashboardUI({ children }: { children: React.ReactNode }) {
           <Hamburger toggled={isOpen} toggle={setOpen} rounded />
         </div>
 
-        <div className="flex-1 overflow-auto p-4 pb-24">
+        <div className="flex-1 overflow-auto md:p-4 pb-24">
           <div className="mx-auto w-full min-h-full flex flex-col items-center">
             <div className="my-auto">
               {children}

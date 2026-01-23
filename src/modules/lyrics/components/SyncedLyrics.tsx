@@ -115,12 +115,12 @@ const SyncedLyrics = ({
         return (
           <div
             key={i}
-            className={`px-6 py-3 rounded-lg transition-all ${
+            className={`px-3 md:px-6 py-3 rounded-lg transition-all ${
               isActive
                 ? 'bg-blue-900/40'
                 : isPast
                 ? 'opacity-80'
-                : 'opacity-20'
+                : 'opacity-40'
             }`}
           >
             {shouldUseWordSync && words.length > 0 && showRhymes ? (

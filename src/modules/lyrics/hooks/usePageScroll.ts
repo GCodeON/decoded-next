@@ -1,10 +1,13 @@
 'use client';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface UsePageScrollOptions {
   activeLineIndex: number | null;
   lyricsContainerId: string;
-  viewportOffset?: number;
+  viewportOffset?: {
+    mobile?: number;
+    desktop?: number;
+  } | number;
 }
 
 export function usePageScroll({
@@ -13,6 +16,27 @@ export function usePageScroll({
   viewportOffset = 50,
 }: UsePageScrollOptions) {
   const scrollAnimationRef = useRef<number | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Determine offset based on screen size
+  const getViewportOffset = () => {
+    if (typeof viewportOffset === 'number') {
+      return viewportOffset;
+    }
+    return isMobile
+      ? viewportOffset.mobile ?? 50
+      : viewportOffset.desktop ?? 66;
+  };
+
+  // Detect mobile on mount and on resize
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768); // 768px = Tailwind's md breakpoint
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     if (activeLineIndex === null) return;
@@ -31,7 +55,8 @@ export function usePageScroll({
     // Calculate target scroll position
     const lineRect = activeLineEl.getBoundingClientRect();
     const viewportHeight = window.innerHeight;
-    const targetPosition = lineRect.top - (viewportHeight * viewportOffset / 100);
+    const currentOffset = getViewportOffset();
+    const targetPosition = lineRect.top - (viewportHeight * currentOffset / 100);
     const currentScroll = window.scrollY;
     const distance = targetPosition;
 
@@ -64,5 +89,5 @@ export function usePageScroll({
         cancelAnimationFrame(scrollAnimationRef.current);
       }
     };
-  }, [activeLineIndex, lyricsContainerId, viewportOffset]);
+  }, [activeLineIndex, lyricsContainerId, isMobile]);
 }
