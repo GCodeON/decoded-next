@@ -26,7 +26,6 @@ function SidebarProvider({ children }: { children: React.ReactNode }) {
   const [isOpen, setOpen] = useState(false);
   const pathname = usePathname();
 
-  // Automatically close sidebar when route changes
   useEffect(() => {
     setOpen(false);
   }, [pathname]);
@@ -44,43 +43,43 @@ function DashboardUI({ children }: { children: React.ReactNode }) {
   const { isOpen, setOpen } = useSidebar();
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden">
+    <div className="flex w-screen">
 
       <aside
         className={`
-          fixed top-0 left-0 z-40 h-full w-64 bg-black shadow-md flex flex-col 
+          fixed top-0 left-0 z-40 h-full w-48 bg-black shadow-md flex flex-col 
           p-5 transition-transform duration-300
           lg:static lg:translate-x-0 
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
       >
-        <div className="flex flex-col flex-grow">
+        <div className="sticky top-0 flex flex-col flex-grow">
           <Link href="/" className="mb-8">
-            <h1 className="title text-xl font-bold text-white">DECODED</h1>
+            <h1 className="title text-md md:text-lg font-bold text-white">DECODED</h1>
           </Link>
 
           <Navigation />
         </div>
       </aside>
 
-      <main className="relative flex flex-1 flex-col w-full">
-        <div className="flex items-center justify-between p-4 shadow-md lg:hidden">
+      <main className="relative flex flex-1 flex-col w-full h-[100dvh] lg:h-screen">
+        <div className="flex items-center justify-between p-2 shadow-md lg:hidden">
           <Link href="/">
-            <h1 className="title text-lg font-bold">DECODED</h1>
+            <h1 className="title text-md md:text-lg font-bold">DECODED</h1>
           </Link>
           <Hamburger toggled={isOpen} toggle={setOpen} rounded />
         </div>
 
-        <div className="flex-1 overflow-auto p-4 pb-24">
-          <div className="mx-auto w-full min-h-full flex flex-col items-center">
-            <div className="my-auto">
+        <div className="flex-1 grid grid-rows-[1fr_auto] lg:grid-rows-[90%_10%] overflow-hidden">
+          <div id="content-scroll-container" className="overflow-y-auto">
+            <div className="mx-auto w-full flex flex-col">
               {children}
             </div>
           </div>
-        </div>
 
-        <div className="fixed bottom-0 left-0 w-full lg:left-64 lg:w-[calc(100%-16rem)] z-30">
-          <SpotifyWebPlayer />
+          <div className="w-full">
+            <SpotifyWebPlayer />
+          </div>
         </div>
       </main>
       

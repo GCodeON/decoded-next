@@ -4,7 +4,11 @@ import SongHeader from '@/components/SongHeader';
 import ActionButtons from '@/modules/lyrics/components/ActionButtons';
 import RepairModal from '@/modules/lyrics/components/RepairModal';
 import SyncLyricsEditor from '@/modules/lyrics/components/SyncLyricsEditor';
+import { Toast } from '@/components/Toast';
+import { useToast } from '@/hooks/useToast';
 import { useDisplayLyrics } from '@/modules/lyrics/hooks/useDisplayLyrics';
+import { useHasRhymeColors } from '@/modules/lyrics/hooks/useHasRhymeColors';
+import { usePageScroll } from '@/modules/lyrics/hooks/usePageScroll';
 import { LyricsEditor, SyncedLyrics, useSavedSong } from '@/modules/lyrics';
 import { usePlaybackSync, useSpotifyTrack } from '@/modules/spotify';
 
@@ -17,12 +21,14 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
   const [syncMode, setSyncMode] = useState(false);
   const [wordSyncEnabled, setWordSyncEnabled] = useState(false);
   const [showRhymes, setShowRhymes] = useState(true);
-  const [toast, setToast] = useState<string | null>(null);
   const [repairing, setRepairing] = useState(false);
   const [repairModalOpen, setRepairModalOpen] = useState(false);
   const [lastActiveLine, setLastActiveLine] = useState<number | null>(null);
 
+  const { toast, show: showToast } = useToast();
+
   const displayLyrics = useDisplayLyrics(savedSong);
+  const hasRhymeColors = useHasRhymeColors(displayLyrics);
 
   const hasSynced = !!displayLyrics?.synced;
   const hasWordSynced = !!displayLyrics?.wordSynced;
@@ -47,18 +53,26 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
   useEffect(() => {
     const onPublished = (e: Event) => {
       console.log('published synced lyrics', e);
-      setToast('Synced Lyrics Published');
-      setTimeout(() => setToast(null), 3000);
+      showToast('Synced Lyrics Published', 3000);
     };
     window.addEventListener('lrclib:published', onPublished as EventListener);
     return () => window.removeEventListener('lrclib:published', onPublished as EventListener);
-  }, []);
+  }, [showToast]);
 
   const displayHtml = displayLyrics?.rhymeEncoded || '';
   const plainLyrics = displayLyrics?.plain || '';
 
   const handleToggleWordSync = () => setWordSyncEnabled(prev => !prev);
   const handleToggleRhymes = () => setShowRhymes(prev => !prev);
+
+  usePageScroll({
+    activeLineIndex: lastActiveLine,
+    lyricsContainerId: 'synced-lyrics-container',
+    viewportOffset: {
+      mobile: 55,
+      desktop: 66,
+    },
+  });
 
   if (trackLoading) {
     return (
@@ -79,24 +93,21 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
   if (!track) return null;
 
   return (
-    <div className="w-full mx-auto p-6 space-y-8">
-      {toast && (
-        <div className="fixed top-6 right-6 z-50 bg-black text-white px-4 py-2 rounded shadow-lg">
-          {toast}
-        </div>
-      )}
-      <div className="hidden md:block">
+    <div className="w-full mx-auto p-1 md:p-6 space-y-1 md:space-y-8 relative">
+      <Toast message={toast?.message || null} />
+      
+      <div className="bg-white rounded-tl-xl rounded-tr-xl shadow-lg p-6 mb-0">
         <SongHeader track={track} isPlaying={isPlaying} togglePlayback={togglePlayback}/>
       </div>
 
-      <div className="bg-white rounded-xl shadow-lg p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-black text-2xl font-bold">Lyrics</h2>
+      <div className="sticky top-0 z-10 bg-white shadow-lg p-1 md:p-6 mb-0">
+        <div className="flex justify-around items-center">
           {!editMode && !syncMode && (
             <ActionButtons
               hasSynced={hasSynced}
               hasWordSynced={hasWordSynced}
               wordSyncEnabled={wordSyncEnabled}
+              hasRhymeColors={hasRhymeColors}
               showRhymes={showRhymes}
               repairing={repairing}
               hasLyrics={!!displayLyrics}
@@ -110,14 +121,16 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
           )}
         </div>
 
-        {isSaving && <p className="text-sm text-gray-500">Saving...</p>}
-        {lyricsLoading && !savedSong && <p className="text-gray-600 animate-pulse">Searching lyrics...</p>}
+        {isSaving && <p className="text-sm text-gray-500 mt-2">Saving...</p>}
+        {lyricsLoading && !savedSong && <p className="text-gray-600 animate-pulse mt-2">Searching lyrics...</p>}
         {lyricsError && !savedSong && !editMode && (
-          <p className="text-red-500">
+          <p className="text-red-500 mt-2">
             {lyricsError.includes('not found') ? 'Lyrics not available.' : `Error: ${lyricsError}`}
           </p>
         )}
-        {/* {!lyricsLoading && !displayLyrics && <p className="text-gray-500 italic">No lyrics found.</p>} */}
+      </div>
+
+      <div className="space-y-8">
 
         {syncMode && displayLyrics && (
           <SyncLyricsEditor
@@ -150,13 +163,14 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
             showRhymes={showRhymes}
             mode={syncConfig.mode}
             onActiveLineChange={setLastActiveLine}
+            containerId="synced-lyrics-container"
           />
         )}
 
         {displayLyrics && !editMode && !syncMode && !hasSynced && (
           <div className="prose prose-lg max-w-none">
             <div
-              className="whitespace-pre-wrap break-words font-sans text-gray-700 leading-relaxed text-lg md:text-xl"
+              className="whitespace-pre-wrap break-words font-sans text-gray-700 leading-relaxed text-lg md:text-xl text-white dark:text-gray-300 bg-white dark:bg-gray-900 p-4 rounded"
               dangerouslySetInnerHTML={{ __html: displayHtml }}
             />
           </div>
@@ -191,7 +205,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
             plainLyrics={plainLyrics}
             currentPositionMs={currentPositionMs}
             isPlaying={isPlaying}
-            setToast={setToast}
+            showToast={showToast}
             onClose={() => setRepairModalOpen(false)}
             updateSynced={updateSynced}
             updateWordSynced={updateWordSynced}

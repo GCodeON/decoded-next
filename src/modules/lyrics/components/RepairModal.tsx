@@ -10,7 +10,7 @@ export type RepairModalProps = {
   plainLyrics: string;
   currentPositionMs: number | null;
   isPlaying: boolean;
-  setToast: (msg: string | null) => void;
+  showToast: (message: string, duration?: number) => void;
   onClose: () => void;
   updateSynced: (lrc: string) => Promise<void>;
   updateWordSynced: (lrc: string) => Promise<void>;
@@ -22,7 +22,7 @@ export default function RepairModal({
   plainLyrics,
   currentPositionMs,
   isPlaying,
-  setToast,
+  showToast,
   onClose,
   updateSynced,
   updateWordSynced,
@@ -44,8 +44,7 @@ export default function RepairModal({
         setPreview(nextPreview);
       } catch (e) {
         console.error('Repair preview failed:', e);
-        setToast('Repair preview failed');
-        setTimeout(() => setToast(null), 3000);
+        showToast('Repair preview failed', 3000);
         onClose();
       } finally {
         setLoading(false);
@@ -53,7 +52,7 @@ export default function RepairModal({
     };
 
     loadPreview();
-  }, [displayHtml, plainLyrics, displayLyrics.synced, displayLyrics.wordSynced, onClose, setToast]);
+  }, [displayHtml, plainLyrics, displayLyrics.synced, displayLyrics.wordSynced, onClose, showToast]);
 
   const applyRepair = async () => {
     if (!preview) return;
@@ -65,14 +64,12 @@ export default function RepairModal({
       if (preview.repairedWordSynced) {
         await updateWordSynced(preview.repairedWordSynced);
       }
-      setToast('✓ Sync repaired successfully');
-      setTimeout(() => setToast(null), 2500);
+      showToast('✓ Sync repaired successfully', 2500);
       onClose();
       window.location.reload();
     } catch (e) {
       console.error('Apply repair failed:', e);
-      setToast('✗ Apply repair failed');
-      setTimeout(() => setToast(null), 3000);
+      showToast('✗ Apply repair failed', 3000);
     } finally {
       setApplying(false);
     }
