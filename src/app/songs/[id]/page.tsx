@@ -65,7 +65,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
     activeLineIndex: lastActiveLine,
     lyricsContainerId: 'synced-lyrics-container',
     viewportOffset: {
-      mobile: 45,
+      mobile: 55,
       desktop: 66,
     },
   });
