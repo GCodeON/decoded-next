@@ -5,6 +5,7 @@ export type ActionButtonsProps = {
   hasWordSynced: boolean;
   wordSyncEnabled: boolean;
   showRhymes: boolean;
+  hasRhymeColors: boolean;
   repairing: boolean;
   hasLyrics: boolean;
   lyricsLoading: boolean;
@@ -20,6 +21,7 @@ export default function ActionButtons({
   hasWordSynced,
   wordSyncEnabled,
   showRhymes,
+  hasRhymeColors,
   repairing,
   hasLyrics,
   lyricsLoading,
@@ -49,7 +51,7 @@ export default function ActionButtons({
 
   return (
     <div className="flex gap-4">
-      {hasSynced && (
+      {hasWordSynced && (
         <button
           onClick={onToggleWordSync}
           className={`flex items-center gap-2 font-semibold ${
@@ -59,14 +61,16 @@ export default function ActionButtons({
           <FaFont /> {wordSyncEnabled ? 'Word Sync ON' : 'Word Sync'}
         </button>
       )}
-      <button
-        onClick={onToggleRhymes}
-        className={`flex items-center gap-2 font-semibold ${
-          showRhymes ? 'text-green-600 hover:text-green-700' : 'text-gray-600 hover:text-gray-700'
-        }`}
-      >
-        {showRhymes ? 'Rhymes ON' : 'Rhymes OFF'}
-      </button>
+      {hasRhymeColors && (
+        <button
+          onClick={onToggleRhymes}
+          className={`flex items-center gap-2 font-semibold ${
+            showRhymes ? 'text-green-600 hover:text-green-700' : 'text-gray-600 hover:text-gray-700'
+          }`}
+        >
+          {showRhymes ? 'Rhymes ON' : 'Rhymes OFF'}
+        </button>
+      )}
       <button
         onClick={onEditSync}
         className={`flex items-center gap-2 ${hasSynced ? 'text-orange-600 hover:text-orange-700' : 'text-green-600 hover:text-green-700'} font-semibold`}
@@ -77,7 +81,7 @@ export default function ActionButtons({
         onClick={onEditLyrics}
         className="flex items-center gap-2 text-blue-600 hover:text-blue-700"
       >
-        <FaEdit /> Edit
+        <FaEdit /> Edit Lyrics
       </button>
 
       {/* {(hasSynced || hasWordSynced) && (

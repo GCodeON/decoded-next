@@ -5,6 +5,7 @@ import ActionButtons from '@/modules/lyrics/components/ActionButtons';
 import RepairModal from '@/modules/lyrics/components/RepairModal';
 import SyncLyricsEditor from '@/modules/lyrics/components/SyncLyricsEditor';
 import { useDisplayLyrics } from '@/modules/lyrics/hooks/useDisplayLyrics';
+import { useHasRhymeColors } from '@/modules/lyrics/hooks/useHasRhymeColors';
 import { usePageScroll } from '@/modules/lyrics/hooks/usePageScroll';
 import { LyricsEditor, SyncedLyrics, useSavedSong } from '@/modules/lyrics';
 import { usePlaybackSync, useSpotifyTrack } from '@/modules/spotify';
@@ -24,6 +25,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
   const [lastActiveLine, setLastActiveLine] = useState<number | null>(null);
 
   const displayLyrics = useDisplayLyrics(savedSong);
+  const hasRhymeColors = useHasRhymeColors(displayLyrics);
 
   const hasSynced = !!displayLyrics?.synced;
   const hasWordSynced = !!displayLyrics?.wordSynced;
@@ -106,6 +108,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
               hasSynced={hasSynced}
               hasWordSynced={hasWordSynced}
               wordSyncEnabled={wordSyncEnabled}
+              hasRhymeColors={hasRhymeColors}
               showRhymes={showRhymes}
               repairing={repairing}
               hasLyrics={!!displayLyrics}
@@ -168,7 +171,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
         {displayLyrics && !editMode && !syncMode && !hasSynced && (
           <div className="prose prose-lg max-w-none">
             <div
-              className="whitespace-pre-wrap break-words font-sans text-gray-700 leading-relaxed text-lg md:text-xl"
+              className="whitespace-pre-wrap break-words font-sans text-gray-700 leading-relaxed text-lg md:text-xl text-white dark:text-gray-300 bg-white dark:bg-gray-900 p-4 rounded"
               dangerouslySetInnerHTML={{ __html: displayHtml }}
             />
           </div>

@@ -47,7 +47,7 @@ function DashboardUI({ children }: { children: React.ReactNode }) {
 
       <aside
         className={`
-          fixed top-0 left-0 z-40 h-full w-64 bg-black shadow-md flex flex-col 
+          fixed top-0 left-0 z-40 h-full w-48 bg-black shadow-md flex flex-col 
           p-5 transition-transform duration-300
           lg:static lg:translate-x-0 
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
