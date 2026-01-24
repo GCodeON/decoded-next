@@ -55,17 +55,17 @@ function DashboardUI({ children }: { children: React.ReactNode }) {
       >
         <div className="sticky top-0 flex flex-col flex-grow">
           <Link href="/" className="mb-8">
-            <h1 className="title text-xl font-bold text-white">DECODED</h1>
+            <h1 className="title text-md md:text-lg font-bold text-white">DECODED</h1>
           </Link>
 
           <Navigation />
         </div>
       </aside>
 
-      <main className="relative flex flex-1 flex-col w-full h-screen">
-        <div className="flex items-center justify-between p-4 shadow-md lg:hidden">
+      <main className="relative flex flex-1 flex-col w-full h-[100dvh] lg:h-screen">
+        <div className="flex items-center justify-between p-2 shadow-md lg:hidden">
           <Link href="/">
-            <h1 className="title text-lg font-bold">DECODED</h1>
+            <h1 className="title text-md md:text-lg font-bold">DECODED</h1>
           </Link>
           <Hamburger toggled={isOpen} toggle={setOpen} rounded />
         </div>

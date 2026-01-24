@@ -99,7 +99,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
         <SongHeader track={track} isPlaying={isPlaying} togglePlayback={togglePlayback}/>
       </div>
 
-      <div className="sticky top-0 z-10 bg-white shadow-lg p-2 md:p-6 mb-0">
+      <div className="sticky top-0 z-10 bg-white shadow-lg p-1 md:p-6 mb-0">
         <div className="flex justify-around items-center">
           {!editMode && !syncMode && (
             <ActionButtons
