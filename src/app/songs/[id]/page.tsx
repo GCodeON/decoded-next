@@ -4,6 +4,8 @@ import SongHeader from '@/components/SongHeader';
 import ActionButtons from '@/modules/lyrics/components/ActionButtons';
 import RepairModal from '@/modules/lyrics/components/RepairModal';
 import SyncLyricsEditor from '@/modules/lyrics/components/SyncLyricsEditor';
+import { Toast } from '@/components/Toast';
+import { useToast } from '@/hooks/useToast';
 import { useDisplayLyrics } from '@/modules/lyrics/hooks/useDisplayLyrics';
 import { useHasRhymeColors } from '@/modules/lyrics/hooks/useHasRhymeColors';
 import { usePageScroll } from '@/modules/lyrics/hooks/usePageScroll';
@@ -19,10 +21,11 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
   const [syncMode, setSyncMode] = useState(false);
   const [wordSyncEnabled, setWordSyncEnabled] = useState(false);
   const [showRhymes, setShowRhymes] = useState(true);
-  const [toast, setToast] = useState<string | null>(null);
   const [repairing, setRepairing] = useState(false);
   const [repairModalOpen, setRepairModalOpen] = useState(false);
   const [lastActiveLine, setLastActiveLine] = useState<number | null>(null);
+
+  const { toast, show: showToast } = useToast();
 
   const displayLyrics = useDisplayLyrics(savedSong);
   const hasRhymeColors = useHasRhymeColors(displayLyrics);
@@ -50,12 +53,11 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
   useEffect(() => {
     const onPublished = (e: Event) => {
       console.log('published synced lyrics', e);
-      setToast('Synced Lyrics Published');
-      setTimeout(() => setToast(null), 3000);
+      showToast('Synced Lyrics Published', 3000);
     };
     window.addEventListener('lrclib:published', onPublished as EventListener);
     return () => window.removeEventListener('lrclib:published', onPublished as EventListener);
-  }, []);
+  }, [showToast]);
 
   const displayHtml = displayLyrics?.rhymeEncoded || '';
   const plainLyrics = displayLyrics?.plain || '';
@@ -92,11 +94,8 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
 
   return (
     <div className="w-full mx-auto p-1 md:p-6 space-y-1 md:space-y-8 relative">
-      {toast && (
-        <div className="fixed top-6 right-6 z-50 bg-black text-white px-4 py-2 rounded shadow-lg">
-          {toast}
-        </div>
-      )}
+      <Toast message={toast?.message || null} />
+      
       <div className="bg-white rounded-tl-xl rounded-tr-xl shadow-lg p-6 mb-0">
         <SongHeader track={track} isPlaying={isPlaying} togglePlayback={togglePlayback}/>
       </div>
@@ -206,7 +205,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
             plainLyrics={plainLyrics}
             currentPositionMs={currentPositionMs}
             isPlaying={isPlaying}
-            setToast={setToast}
+            showToast={showToast}
             onClose={() => setRepairModalOpen(false)}
             updateSynced={updateSynced}
             updateWordSynced={updateWordSynced}
