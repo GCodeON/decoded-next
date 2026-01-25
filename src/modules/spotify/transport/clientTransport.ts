@@ -1,11 +1,39 @@
 import type { SpotifyTransport } from './SpotifyTransport';
 
-/**
- * Client-side transport using fetch to proxy through Next.js API routes.
- * Handles token refresh via server-side interceptors.
- */
+let rateLimitResetAt = 0;
+let backoffMultiplier = 1;
+const MAX_BACKOFF_MS = 30000;
+
+async function handleRateLimit(retryAfterMs?: number) {
+  const now = Date.now();
+  const resetDelay = retryAfterMs || (backoffMultiplier * 1000);
+  const delayMs = Math.min(resetDelay, MAX_BACKOFF_MS);
+
+  rateLimitResetAt = now + delayMs;
+  backoffMultiplier = Math.min(backoffMultiplier * 2, 30);
+
+  console.warn(
+    `[Spotify Client] Rate limited (429). Backoff for ${delayMs}ms. ` +
+    `Next retry after: ${new Date(rateLimitResetAt).toISOString()}`
+  );
+
+  return new Promise((resolve) => setTimeout(resolve, delayMs));
+}
+
+async function waitIfRateLimited() {
+  const now = Date.now();
+  if (rateLimitResetAt > now) {
+    const delay = rateLimitResetAt - now;
+    console.warn(`[Spotify Client] Still in backoff period. Waiting ${delay}ms...`);
+    await new Promise((resolve) => setTimeout(resolve, delay));
+  }
+}
+
 export const clientTransport: SpotifyTransport = {
   async request<T>(method: string, path: string, body?: unknown): Promise<T> {
+
+    await waitIfRateLimited();
+
     const res = await fetch(`/api/spotify${path}`, {
       method,
       credentials: 'include',
@@ -13,12 +41,19 @@ export const clientTransport: SpotifyTransport = {
       ...(body ? { body: JSON.stringify(body) } : {}),
     });
 
-    // Handle 204 No Content
     if (res.status === 204) {
+      backoffMultiplier = 1;
+      rateLimitResetAt = 0;
       return null as T;
     }
 
-    // Guard against HTML error pages
+    if (res.status === 429) {
+      const retryAfterHeader = res.headers.get('retry-after');
+      const retryAfterMs = retryAfterHeader ? parseInt(retryAfterHeader) * 1000 : undefined;
+      await handleRateLimit(retryAfterMs);
+      return this.request<T>(method, path, body);
+    }
+
     const contentType = res.headers.get('content-type') || '';
     if (contentType.includes('text/html')) {
       const text = await res.text().catch(() => '');
@@ -27,13 +62,14 @@ export const clientTransport: SpotifyTransport = {
       );
     }
 
-    // Parse error response
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.error ?? `HTTP ${res.status}`);
     }
 
-    // Parse successful JSON response
+    backoffMultiplier = 1;
+    rateLimitResetAt = 0;
+
     try {
       return await res.json();
     } catch (e: any) {

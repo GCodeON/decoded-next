@@ -7,11 +7,12 @@ interface SyncPollConfig {
 }
 
 /**
- * High-frequency polling every 200-500ms for precise position tracking.
+ * High-frequency polling for precise position tracking.
+ * Defaults to 1-2s intervals for rate-limited multi-tab scenarios.
  */
 export function useSyncPolling(
   pollFn: () => Promise<void>,
-  { enabled, intervalMs = 250 }: SyncPollConfig
+  { enabled, intervalMs = 1000 }: SyncPollConfig
 ) {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const activeRef = useRef(false);
@@ -23,7 +24,15 @@ export function useSyncPolling(
     try {
       await pollFn();
     } catch (err) {
-
+      // Log errors to surface 429s and other rate limit issues
+      if (err instanceof Error) {
+        const isRateLimited = err.message.includes('429') || err.message.includes('Too Many');
+        if (isRateLimited) {
+          console.warn('[useSyncPolling] Rate limited - backing off:', err.message);
+        } else {
+          console.error('[useSyncPolling] Poll error:', err.message);
+        }
+      }
     } finally {
       isPollingRef.current = false;
     }

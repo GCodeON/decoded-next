@@ -234,7 +234,7 @@ export function usePlaybackSync(
 
   useSyncPolling(pollSync, {
     enabled: enabled && (syncMode || viewMode),
-    intervalMs: (syncMode || viewMode) ? 150 : 200
+    intervalMs: (syncMode || viewMode) ? 1000 : 2500
   });
 
   // Calculate current playback position for usePlaybackToggle
