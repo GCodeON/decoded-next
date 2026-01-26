@@ -96,11 +96,11 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
     <div className="w-full mx-auto p-1 md:p-6 space-y-1 md:space-y-8 relative">
       <Toast message={toast?.message || null} />
       
-      <div className="bg-white rounded-tl-xl rounded-tr-xl shadow-lg p-6 mb-0">
+      <div className="bg-black rounded-tl-xl rounded-tr-xl shadow-lg p-6 mb-0">
         <SongHeader track={track} isPlaying={isPlaying} togglePlayback={togglePlayback}/>
       </div>
 
-      <div className="sticky top-0 z-10 bg-white shadow-lg p-1 md:p-6 mb-0">
+      <div className="sticky top-0 z-10 bg-black shadow-lg p-1 md:p-2 mb-0">
         <div className="flex justify-around items-center">
           {!editMode && !syncMode && (
             <ActionButtons

@@ -41,7 +41,7 @@ export default function ActionButtons({
       <div className="flex gap-4">
         <button
           onClick={onEditLyrics}
-          className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-semibold"
+          className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-semibold cursor-pointer"
         >
           <FaEdit /> Add Lyrics
         </button>
@@ -54,7 +54,7 @@ export default function ActionButtons({
       {hasWordSynced && (
         <button
           onClick={onToggleWordSync}
-          className={`flex items-center gap-2 font-semibold ${
+          className={`flex items-center gap-2 font-semibold cursor-pointer ${
             wordSyncEnabled ? 'text-purple-600 hover:text-purple-700' : 'text-gray-600 hover:text-gray-700'
           }`}
         >
@@ -64,7 +64,7 @@ export default function ActionButtons({
       {hasRhymeColors && (
         <button
           onClick={onToggleRhymes}
-          className={`flex items-center gap-2 font-semibold ${
+          className={`flex items-center gap-2 font-semibold cursor-pointer ${
             showRhymes ? 'text-green-600 hover:text-green-700' : 'text-gray-600 hover:text-gray-700'
           }`}
         >
@@ -73,13 +73,13 @@ export default function ActionButtons({
       )}
       <button
         onClick={onEditSync}
-        className={`flex items-center gap-2 ${hasSynced ? 'text-orange-600 hover:text-orange-700' : 'text-green-600 hover:text-green-700'} font-semibold`}
+        className={`flex items-center gap-2 cursor-pointer ${hasSynced ? 'text-orange-600 hover:text-orange-700' : 'text-green-600 hover:text-green-700'} font-semibold`}
       >
         <FaClock /> {hasSynced ? 'Edit Sync' : 'Sync Lyrics'}
       </button>
       <button
         onClick={onEditLyrics}
-        className="flex items-center gap-2 text-blue-600 hover:text-blue-700"
+        className="flex items-center gap-2 text-blue-600 hover:text-blue-700 cursor-pointer"
       >
         <FaEdit /> Edit Lyrics
       </button>

@@ -37,7 +37,7 @@ export default function Home() {
       {isInitialLoading ? (
         <p className="text-sm text-gray-500">Loading…</p>
       ) : currentTrack ? (
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-0">
+        <div className="bg-black rounded-xl shadow-lg p-6 mb-0">
           <SongHeader 
             track={currentTrack} 
             isPlaying={isPlaying} 
