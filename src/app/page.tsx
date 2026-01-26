@@ -2,6 +2,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { useSpotifyApi, useSafePolling, useSimplePlayback } from '@/modules/spotify';
 import SongHeader from '@/components/SongHeader';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 export default function Home() {
   const [currentTrack, setCurrentTrack] = useState<any>(null);
@@ -35,7 +36,7 @@ export default function Home() {
   return (
     <div className="flex h-[75dvh] md:min-h-screen items-center justify-center py-8">
       {isInitialLoading ? (
-        <p className="text-sm text-gray-500">Loading…</p>
+        <LoadingSpinner message="Loading..." size="small" />
       ) : currentTrack ? (
         <div className="bg-black rounded-xl shadow-lg p-6 mb-0">
           <SongHeader 

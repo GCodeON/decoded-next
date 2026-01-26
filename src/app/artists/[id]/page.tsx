@@ -1,5 +1,6 @@
 'use client'
 import { use, useState, useEffect } from 'react';
+import LoadingSpinner from '@/components/LoadingSpinner';
 import Link from 'next/link';
 
 import { useSpotifyApi, SpotifyArtist, SpotifyAlbum } from '@/modules/spotify';
@@ -70,7 +71,7 @@ export default function Artist({ params }: { params: Promise<{ id: string }> }) 
           )}
         </div>
       ) : (
-        <p className="text-sm text-gray-400">Loading ...</p>
+        <LoadingSpinner message="Loading albums..." fullHeight />
       )}
     </div>
   )

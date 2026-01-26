@@ -11,6 +11,7 @@ import { useHasRhymeColors } from '@/modules/lyrics/hooks/useHasRhymeColors';
 import { usePageScroll } from '@/modules/lyrics/hooks/usePageScroll';
 import { LyricsEditor, SyncedLyrics, useSavedSong } from '@/modules/lyrics';
 import { usePlaybackSync, useSpotifyTrack } from '@/modules/spotify';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 export default function Song({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -75,11 +76,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
   });
 
   if (trackLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p className="text-lg">Loading song...</p>
-      </div>
-    );
+    return <LoadingSpinner message="Loading song..." fullHeight />;
   }
 
   if (trackError) {
