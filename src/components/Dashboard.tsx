@@ -62,12 +62,22 @@ function DashboardUI({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
+      {/* Overlay when sidebar is open on mobile */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/75 z-30 lg:hidden"
+          onClick={() => setOpen(false)}
+        />
+      )}
+
       <main className="relative flex flex-1 flex-col w-full h-[100dvh] lg:h-screen">
         <div className="flex items-center justify-between p-2 shadow-md lg:hidden">
           <Link href="/">
             <h1 className="title text-md md:text-lg font-bold">DECODED</h1>
           </Link>
-          <Hamburger toggled={isOpen} toggle={setOpen} rounded />
+          <div className="position relative z-50">
+            <Hamburger toggled={isOpen} toggle={setOpen} rounded />
+          </div>
         </div>
 
         <div className="flex-1 grid grid-rows-[1fr_auto] lg:grid-rows-[90%_10%] overflow-hidden">
