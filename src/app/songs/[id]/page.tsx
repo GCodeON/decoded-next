@@ -91,7 +91,11 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
       <Toast message={toast?.message || null} />
       
       <div className="bg-black rounded-tl-xl rounded-tr-xl shadow-lg p-2 md:p-6 mb-0">
-        <SongHeader track={track} isPlaying={isPlaying} togglePlayback={togglePlayback}/>
+        <SongHeader 
+          track={track} 
+          isPlaying={isPlaying} 
+          togglePlayback={togglePlayback}
+        />
       </div>
 
       <div className="sticky top-0 z-10 bg-black shadow-lg p-1 md:p-2 mb-2">
