@@ -237,18 +237,27 @@ export default function SyncLyricsEditor({
           newMap.set(index, [firstWord]);
         }
       } else if (existingWords.length > 0) {
-
+        // Always update the first word's timestamp to match the line timestamp
         const lineText = lines[index]?.trim() || '';
         const firstWordMatch = lineText.match(/\S+/);
         
         if (firstWordMatch) {
+          const updatedWords = [...existingWords];
           const firstWordInTimestamps = existingWords[0];
           
-          if (firstWordInTimestamps && !firstWordInTimestamps.time) {
-            const updatedWords = [...existingWords];
+          // Update first word timestamp regardless of whether it already has one
+          if (firstWordInTimestamps) {
             updatedWords[0] = { ...firstWordInTimestamps, time: lineTime };
-            newMap.set(index, updatedWords);
+          } else {
+            // If first word doesn't exist, create it
+            updatedWords[0] = {
+              text: firstWordMatch[0],
+              time: lineTime,
+              start: 0,
+              end: firstWordMatch[0].length
+            };
           }
+          newMap.set(index, updatedWords);
         }
       }
       
