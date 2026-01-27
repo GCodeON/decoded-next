@@ -4,6 +4,8 @@ import { FaClock, FaFont } from 'react-icons/fa';
 import { formatTime, generateLrc, useLyricSync, useTimestampEditor, SyncControls, generateEnhancedLrc, parseEnhancedLrc, getActiveWordIndex, type Word } from '@/modules/lyrics';
 import LineEditor from  './sync-editor/LineEditor';
 import WordEditor from './sync-editor/WordEditor';
+import RepairModal from './RepairModal';
+import { LyricsForDisplay } from '@/modules/lyrics/hooks/useDisplayLyrics';
 
 interface Props {
   plainLyrics: string;
@@ -17,6 +19,11 @@ interface Props {
   onSaveWordSync?: (wordLrc: string) => void;
   onCancel: () => void;
   initialActiveLine?: number | null;
+  displayLyrics: LyricsForDisplay;
+  displayHtml: string;
+  updateSynced: (lrc: string) => Promise<void>;
+  updateWordSynced: (lrc: string) => Promise<void>;
+  showToast: (message: string, duration?: number) => void;
 }
 
 export default function SyncLyricsEditor({
@@ -28,10 +35,18 @@ export default function SyncLyricsEditor({
   isPlaying,
   togglePlayback,
   onSave,
+  displayLyrics,
+  displayHtml,
+  updateSynced,
+  updateWordSynced,
+  showToast,
   onSaveWordSync,
   onCancel,
   initialActiveLine
 }: Props) {
+  const [repairModalOpen, setRepairModalOpen] = useState(false);
+  const hasSynced = !!displayLyrics?.synced;
+  
   const containerRef = useRef<HTMLDivElement>(null);
   const [wordTimingMode, setWordTimingMode] = useState(false);
   const [wordTimestamps, setWordTimestamps] = useState<Map<number, Word[]>>(new Map());
@@ -515,6 +530,31 @@ export default function SyncLyricsEditor({
         </div>
       )}
 
+      {/* Advanced Tools Section */}
+      {hasSynced && (
+        <div className="space-y-4">
+          <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <FaClock className="text-red-600" />
+                <div>
+                  <h3 className="font-semibold text-gray-800">Advanced Tools</h3>
+                  <p className="text-sm text-gray-600">
+                    Repair sync issues automatically
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setRepairModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all font-semibold"
+              >
+                <FaClock /> Repair Sync
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div
         ref={containerRef}
         className="max-h-96 overflow-y-auto space-y-3 p-4 bg-gray-50 rounded-lg border"
@@ -593,6 +633,21 @@ export default function SyncLyricsEditor({
             {lrc}
           </pre>
         </details>
+      )}
+
+      {/* Repair Modal */}
+      {repairModalOpen && (
+        <RepairModal
+          displayLyrics={displayLyrics}
+          displayHtml={displayHtml}
+          plainLyrics={plainLyrics}
+          currentPositionMs={currentPositionMs ?? 0}
+          isPlaying={isPlaying}
+          showToast={showToast}
+          onClose={() => setRepairModalOpen(false)}
+          updateSynced={updateSynced}
+          updateWordSynced={updateWordSynced}
+        />
       )}
     </div>
   );

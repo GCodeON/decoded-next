@@ -2,7 +2,6 @@
 import { use, useEffect, useMemo, useState } from 'react';
 import SongHeader from '@/components/SongHeader';
 import ActionButtons from '@/modules/lyrics/components/ActionButtons';
-import RepairModal from '@/modules/lyrics/components/RepairModal';
 import SyncLyricsEditor from '@/modules/lyrics/components/SyncLyricsEditor';
 import { Toast } from '@/components/Toast';
 import { useToast } from '@/hooks/useToast';
@@ -22,8 +21,6 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
   const [syncMode, setSyncMode] = useState(false);
   const [wordSyncEnabled, setWordSyncEnabled] = useState(false);
   const [showRhymes, setShowRhymes] = useState(true);
-  const [repairing, setRepairing] = useState(false);
-  const [repairModalOpen, setRepairModalOpen] = useState(false);
   const [lastActiveLine, setLastActiveLine] = useState<number | null>(null);
 
   const { toast, show: showToast } = useToast();
@@ -106,14 +103,12 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
               wordSyncEnabled={wordSyncEnabled}
               hasRhymeColors={hasRhymeColors}
               showRhymes={showRhymes}
-              repairing={repairing}
               hasLyrics={!!displayLyrics}
               lyricsLoading={lyricsLoading}
               onToggleWordSync={handleToggleWordSync}
               onToggleRhymes={handleToggleRhymes}
               onEditSync={() => setSyncMode(true)}
               onEditLyrics={() => setEditMode(true)}
-              onRunRepair={() => setRepairModalOpen(true)}
             />
           )}
         </div>
@@ -139,6 +134,11 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
             isPlaying={isPlaying}
             togglePlayback={togglePlayback}
             initialActiveLine={lastActiveLine}
+            displayLyrics={displayLyrics}
+            displayHtml={displayHtml}
+            updateSynced={updateSynced}
+            updateWordSynced={updateWordSynced}
+            showToast={showToast}
             onSave={(lrc: string) => {
               updateSynced(lrc);
               setSyncMode(false);
@@ -195,19 +195,6 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
           </details>
         )}
 
-        {repairModalOpen && displayLyrics && (
-          <RepairModal
-            displayLyrics={displayLyrics}
-            displayHtml={displayHtml}
-            plainLyrics={plainLyrics}
-            currentPositionMs={currentPositionMs}
-            isPlaying={isPlaying}
-            showToast={showToast}
-            onClose={() => setRepairModalOpen(false)}
-            updateSynced={updateSynced}
-            updateWordSynced={updateWordSynced}
-          />
-        )}
       </div>
     </div>
   );

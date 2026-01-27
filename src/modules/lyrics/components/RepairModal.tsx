@@ -52,7 +52,8 @@ export default function RepairModal({
     };
 
     loadPreview();
-  }, [displayHtml, plainLyrics, displayLyrics.synced, displayLyrics.wordSynced, onClose, showToast]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [displayHtml, plainLyrics, displayLyrics.synced, displayLyrics.wordSynced]);
 
   const applyRepair = async () => {
     if (!preview) return;

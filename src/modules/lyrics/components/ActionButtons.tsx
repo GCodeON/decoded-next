@@ -6,14 +6,12 @@ export type ActionButtonsProps = {
   wordSyncEnabled: boolean;
   showRhymes: boolean;
   hasRhymeColors: boolean;
-  repairing: boolean;
   hasLyrics: boolean;
   lyricsLoading: boolean;
   onToggleWordSync: () => void;
   onToggleRhymes: () => void;
   onEditSync: () => void;
   onEditLyrics: () => void;
-  onRunRepair: () => void;
 };
 
 export default function ActionButtons({
@@ -22,14 +20,12 @@ export default function ActionButtons({
   wordSyncEnabled,
   showRhymes,
   hasRhymeColors,
-  repairing,
   hasLyrics,
   lyricsLoading,
   onToggleWordSync,
   onToggleRhymes,
   onEditSync,
   onEditLyrics,
-  onRunRepair,
 }: ActionButtonsProps) {
   
   if (lyricsLoading) {
@@ -108,16 +104,6 @@ export default function ActionButtons({
           </label>
         )}
       </div>
-
-      {/* {(hasSynced || hasWordSynced) && (
-        <button
-          onClick={onRunRepair}
-          className={`flex items-center gap-2 ${repairing ? 'text-gray-400' : 'text-red-600 hover:text-red-700'} font-semibold`}
-          disabled={repairing}
-        >
-          <FaClock /> {repairing ? 'Repairing…' : 'Repair Sync'}
-        </button>
-      )} */}
     </div>
   );
 }
