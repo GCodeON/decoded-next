@@ -52,7 +52,7 @@ export default function ActionButtons({
   return (
     <div className="flex flex-col md:flex-row md:justify-between items-center gap-4 w-full">  
       {/* Center: Action Buttons */}
-      <div className="flex gap-4 items-center justify-center flex-1 order-2 md:order-1">
+      <div className="flex gap-4 items-center justify-center flex-1 md:order-1">
         <button
           onClick={onEditSync}
           className={`flex items-center gap-2 cursor-pointer ${hasSynced ? 'text-orange-600 hover:text-orange-700' : 'text-green-600 hover:text-green-700'} font-semibold`}
@@ -68,7 +68,7 @@ export default function ActionButtons({
       </div>
 
       {/* Right: Toggles */}
-      <div className="flex gap-4 items-center justify-center md:justify-end order-1 md:order-2">
+      <div className="flex gap-4 items-center justify-center md:justify-end md:order-2">
         {hasWordSynced && (
           <label className="flex items-center gap-2 cursor-pointer">
             <div className="relative inline-block w-11 h-6">
