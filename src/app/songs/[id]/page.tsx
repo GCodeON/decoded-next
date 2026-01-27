@@ -31,6 +31,12 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
   const hasSynced = !!displayLyrics?.synced;
   const hasWordSynced = !!displayLyrics?.wordSynced;
 
+  useEffect(() => {
+    if (hasWordSynced) {
+      setWordSyncEnabled(true);
+    }
+  }, [hasWordSynced]);
+
   const isViewMode = hasSynced && !editMode && !syncMode;
   const { isPlaying, currentPosition, currentPositionMs, togglePlayback } = usePlaybackSync(id, !!track, syncMode, isViewMode);
 
