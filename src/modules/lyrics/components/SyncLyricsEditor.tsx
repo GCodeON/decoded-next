@@ -1,9 +1,10 @@
 'use client';
 import { useRef, useCallback, useEffect, useMemo, useState } from 'react';
-import { FaClock, FaFont } from 'react-icons/fa';
+import { FaClock } from 'react-icons/fa';
 import { formatTime, generateLrc, useLyricSync, useTimestampEditor, SyncControls, generateEnhancedLrc, parseEnhancedLrc, getActiveWordIndex, type Word } from '@/modules/lyrics';
 import LineEditor from  './sync-editor/LineEditor';
 import WordEditor from './sync-editor/WordEditor';
+import TimingModeToggle from './sync-editor/TimingModeToggle';
 import RepairModal from './RepairModal';
 import { LyricsForDisplay } from '@/modules/lyrics/hooks/useDisplayLyrics';
 
@@ -470,96 +471,32 @@ export default function SyncLyricsEditor({
     : generateLrc(lines, timestamps);
 
   return (
-    <div className="space-y-6">
-      <SyncControls
-        isPlaying={isPlaying}
-        currentPosition={currentPosition}
-        togglePlayback={togglePlayback}
-        allStamped={allStampedStatus}
-        manualNavigation={manualNavigation}
-        onEnableAutoScroll={enableAutoScroll}
-      />
-
-      {/* Word Timing Mode Toggle */}
-      {onSaveWordSync && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <div className="flex items-center gap-3">
-              <FaFont className="text-blue-600" />
-              <div>
-                <h3 className="font-semibold text-gray-800"> {wordTimingMode 
-                    ? 'Word Timing Mode - disable to sync individual lines' 
-                    : 'Lyric Timing Mode - Enable to sync individual words (karaoke-style)'}</h3>
-                <p className="text-sm text-gray-600">
-                  {wordTimingMode 
-                    ? 'Press Enter to stamp each word, ← → to navigate words, ↑ ↓ for lines' 
-                    : 'Space = Stamp • ↑ = Prev • ↓ = Next • Esc = Auto-Scroll'}
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={() => {
-                setWordTimingMode(!wordTimingMode);
-                setCurrentWordIndex(0);
-              }}
-              className={`px-6 py-2 rounded-lg font-semibold transition-all ${
-                wordTimingMode
-                  ? 'bg-blue-600 text-white hover:bg-blue-700'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
-            >
-              {wordTimingMode ? 'ON' : 'OFF'}
-            </button>
-          </div>
-
-          {/* Clear Word Timestamps Buttons */}
-          {wordTimingMode && wordTimestamps.size > 0 && (
-            <div className="flex gap-3 p-4 bg-red-50 rounded-lg border border-red-200">
-              <button
-                onClick={handleClearLineWordTimestamps}
-                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all text-sm font-semibold"
-              >
-                Clear Current Line
-              </button>
-              <button
-                onClick={handleClearAllWordTimestamps}
-                className="px-4 py-2 bg-red-700 text-white rounded-lg hover:bg-red-800 transition-all text-sm font-semibold"
-              >
-                Clear All Timestamps
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Advanced Tools Section */}
-      {hasSynced && (
-        <div className="space-y-4">
-          <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <FaClock className="text-red-600" />
-                <div>
-                  <h3 className="font-semibold text-gray-800">Advanced Tools</h3>
-                  <p className="text-sm text-gray-600">
-                    Repair sync issues automatically
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setRepairModalOpen(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all font-semibold"
-              >
-                <FaClock /> Repair Sync
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+    <div className="">
+        <SyncControls
+          isPlaying={isPlaying}
+          currentPosition={currentPosition}
+          togglePlayback={togglePlayback}
+          allStamped={allStampedStatus}
+          manualNavigation={manualNavigation}
+          onEnableAutoScroll={enableAutoScroll}
+        />
+        {/* Word Timing Mode Toggle */}
+        {onSaveWordSync && (
+          <TimingModeToggle
+            wordTimingMode={wordTimingMode}
+            onToggle={() => {
+              setWordTimingMode(!wordTimingMode);
+              setCurrentWordIndex(0);
+            }}
+            wordTimestamps={wordTimestamps}
+            onClearLineWordTimestamps={handleClearLineWordTimestamps}
+            onClearAllWordTimestamps={handleClearAllWordTimestamps}
+          />
+        )}
 
       <div
         ref={containerRef}
-        className="max-h-96 overflow-y-auto space-y-3 p-4 bg-gray-50 rounded-lg border"
+        className="max-h-full overflow-y-auto space-y-3 p-4 bg-gray-50 border"
       >
         {lines.map((line, i) => {
           const time = timestamps[i];
@@ -613,22 +550,46 @@ export default function SyncLyricsEditor({
         })}
       </div>
 
-      <div className="flex justify-between items-center pt-4 border-t">
+      <div className="flex flex-col justify-center items-center pt-4 border-t border bg-gray-200 px-4 py-3 gap-4">
         <button
           onClick={handleSave}
           disabled={!allStampedStatus}
-          className="px-8 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+          className="px-8 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 disabled:opacity-50 shadow-lg cursor-pointer transition-all"
         >
           {wordTimingMode ? 'Save Word-Synced Lyrics' : 'Save Synced Lyrics'}
         </button>
-        <button onClick={onCancel} className="text-gray-600 hover:text-gray-900">
+        <button onClick={onCancel} className="text-gray-600 hover:text-gray-900 cursor-pointer">
           Cancel
         </button>
       </div>
 
       {lrc && (
         <details className="mt-4">
-          <summary className="cursor-pointer font-medium text-gray-700">
+          {/* Advanced Tools Section */}
+          {hasSynced && (
+            <div className="space-y-4">
+              <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <FaClock className="text-red-600" />
+                    <div>
+                      <h3 className="font-semibold text-gray-800">Advanced Tools</h3>
+                      <p className="text-sm text-gray-600">
+                        Repair sync issues automatically
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setRepairModalOpen(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all font-semibold"
+                  >
+                    <FaClock /> Repair Sync
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+          <summary className="cursor-pointer font-medium text-gray-200">
             Preview LRC Output {wordTimingMode && '(Enhanced Format)'}
           </summary>
           <pre className="mt-3 p-4 bg-gray-900 text-gray-300 text-xs font-mono rounded overflow-x-auto">

@@ -35,7 +35,7 @@ export default function LineEditor({
 }: LineEditorProps) {
   return (
     <div
-      className={`flex gap-4 p-4 rounded-lg border-2 transition-all cursor-pointer ${
+      className={`flex flex-col md:flex-row gap-4 p-4 rounded-lg border-2 transition-all cursor-pointer ${
         isActive
           ? 'bg-yellow-100 border-yellow-500 shadow-xl'
           : time !== null
@@ -44,24 +44,26 @@ export default function LineEditor({
       }`}
       onClick={onGoToLine}
     >
-      <TimestampDisplay
-        time={time}
-        isEditing={editingIndex !== null}
-        editValue={editValue}
-        onEditChange={onEditChange}
-        onStartEdit={(index) => {
-          onDisableAutoScroll?.();
-          onStartEdit(index as number, formatTime(time!));
-        }}
-        onSaveEdit={(index) => onSaveEdit(index as number)}
-        onCancelEdit={onCancelEdit}
-        editIndex={editingIndex}
-        currentIndex={lineIndex}
-        compact={false}
-      />
+        <div className="flex flex-row gap-4 flex-1 items-center">
+        <TimestampDisplay
+          time={time}
+          isEditing={editingIndex !== null}
+          editValue={editValue}
+          onEditChange={onEditChange}
+          onStartEdit={(index) => {
+            onDisableAutoScroll?.();
+            onStartEdit(index as number, formatTime(time!));
+          }}
+          onSaveEdit={(index) => onSaveEdit(index as number)}
+          onCancelEdit={onCancelEdit}
+          editIndex={editingIndex}
+          currentIndex={lineIndex}
+          compact={false}
+        />
 
-      <div className="flex-1 font-medium text-lg text-black">
-        {line?.trim() ? line : '(instrumental)'}
+        <div className="flex-1 font-medium text-lg text-black">
+          {line?.trim() ? line : '(instrumental)'}
+        </div>
       </div>
 
       <button

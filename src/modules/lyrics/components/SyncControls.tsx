@@ -18,7 +18,7 @@ export function SyncControls({
   onEnableAutoScroll
 }: SyncControlsProps) {
   return (
-    <div className="flex items-center justify-between bg-gradient-to-r from-green-50 to-blue-50 p-4 rounded-lg">
+    <div className="flex items-center justify-between bg-gradient-to-r from-green-50 to-blue-50 p-4">
       <div className="flex items-center gap-4">
         <h3 className="text-lg font-bold text-black">Sync Lyrics to Music</h3>
         {allStamped && manualNavigation && (
@@ -34,7 +34,7 @@ export function SyncControls({
       <div className="flex items-center gap-4 text-sm">
         <button
           onClick={togglePlayback}
-          className="text-green-600 hover:scale-110 transition"
+          className="text-green-600 hover:scale-110 transition cursor-pointer"
         >
           {isPlaying ? <FaPauseCircle size={28} /> : <FaPlayCircle size={28} />}
         </button>
