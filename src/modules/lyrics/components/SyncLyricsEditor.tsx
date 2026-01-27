@@ -487,11 +487,13 @@ export default function SyncLyricsEditor({
             <div className="flex items-center gap-3">
               <FaFont className="text-blue-600" />
               <div>
-                <h3 className="font-semibold text-gray-800">Word Timing Mode</h3>
+                <h3 className="font-semibold text-gray-800"> {wordTimingMode 
+                    ? 'Word Timing Mode - disable to sync individual lines' 
+                    : 'Lyric Timing Mode - Enable to sync individual words (karaoke-style)'}</h3>
                 <p className="text-sm text-gray-600">
                   {wordTimingMode 
                     ? 'Press Enter to stamp each word, ← → to navigate words, ↑ ↓ for lines' 
-                    : 'Enable to sync individual words (karaoke-style)'}
+                    : 'Space = Stamp • ↑ = Prev • ↓ = Next • Esc = Auto-Scroll'}
                 </p>
               </div>
             </div>

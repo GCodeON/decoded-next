@@ -42,9 +42,6 @@ export function SyncControls({
           {Math.floor(currentPosition / 60)}:
           {(currentPosition % 60).toFixed(0).padStart(2, '0')}
         </span>
-        <span className="text-gray-600">
-          Space = Stamp • ↑ = Prev • ↓ = Next • Esc = Auto-Scroll
-        </span>
       </div>
     </div>
   );
