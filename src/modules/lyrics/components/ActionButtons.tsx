@@ -48,7 +48,7 @@ export default function ActionButtons({
   return (
     <div className="grid grid-cols-2 md:flex md:flex-row md:justify-between items-center gap-2 md:gap-4 w-full">  
       {/* Center: Action Buttons */}
-      <div className="flex flex-col md:flex-row gap-1 md:gap-4 items-center justify-center flex-1 md:order-1">
+      <div className="flex flex-col md:flex-row gap-1 md:gap-4 items-start justify-center flex-1 md:order-1">
         <button
           onClick={onEditSync}
           className={`flex items-center gap-1 md:gap-2 cursor-pointer ${hasSynced ? 'text-orange-600 hover:text-orange-700' : 'text-green-600 hover:text-green-700'} font-semibold`}
