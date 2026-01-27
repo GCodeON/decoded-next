@@ -1,4 +1,4 @@
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import type { SavedSong } from '@/modules/lyrics';
 
@@ -61,6 +61,19 @@ export class SongService {
       'lrclib.signature': signature,
       'lrclib.lastPublishedAt': timestamp,
     });
+  }
+
+  async getSongsWithRhymeComplete(): Promise<Array<SavedSong & { id: string }>> {
+    const songsRef = collection(db, this.collection);
+    const q = query(songsRef, where('lyrics.rhymeColorMappingComplete', '==', true));
+    const querySnapshot = await getDocs(q);
+    
+    const songs: Array<SavedSong & { id: string }> = [];
+    querySnapshot.forEach((doc) => {
+      songs.push({ id: doc.id, ...doc.data() } as SavedSong & { id: string });
+    });
+    
+    return songs;
   }
 }
 
