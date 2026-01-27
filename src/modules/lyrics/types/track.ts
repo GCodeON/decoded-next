@@ -7,7 +7,8 @@ export interface SavedSong {
     synced: string | null;
     wordSynced?: string | null;
     rhymeEncoded: string;
-    rhymeEncodedLines?: string[] | null; 
+    rhymeEncodedLines?: string[] | null;
+    rhymeColorMappingComplete?: boolean;
   };
 }
 export interface SyncedLine {

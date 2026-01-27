@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/useToast';
 import { useDisplayLyrics } from '@/modules/lyrics/hooks/useDisplayLyrics';
 import { useHasRhymeColors } from '@/modules/lyrics/hooks/useHasRhymeColors';
 import { usePageScroll } from '@/modules/lyrics/hooks/usePageScroll';
-import { LyricsEditor, SyncedLyrics, useSavedSong } from '@/modules/lyrics';
+import { LyricsEditor, SyncedLyrics, useSavedSong, songService } from '@/modules/lyrics';
 import { usePlaybackSync, useSpotifyTrack } from '@/modules/spotify';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
@@ -21,6 +21,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
   const [syncMode, setSyncMode] = useState(false);
   const [wordSyncEnabled, setWordSyncEnabled] = useState(false);
   const [showRhymes, setShowRhymes] = useState(true);
+  const [rhymeColorMappingComplete, setRhymeColorMappingComplete] = useState(false);
   const [lastActiveLine, setLastActiveLine] = useState<number | null>(null);
 
   const { toast, show: showToast } = useToast();
@@ -36,6 +37,14 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
       setWordSyncEnabled(true);
     }
   }, [hasWordSynced]);
+
+  useEffect(() => {
+    if (savedSong?.lyrics?.rhymeColorMappingComplete) {
+      setRhymeColorMappingComplete(true);
+    } else {
+      setRhymeColorMappingComplete(false);
+    }
+  }, [savedSong]);
 
   const isViewMode = hasSynced && !editMode && !syncMode;
   const { isPlaying, currentPosition, currentPositionMs, togglePlayback } = usePlaybackSync(id, !!track, syncMode, isViewMode);
@@ -68,6 +77,21 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
 
   const handleToggleWordSync = () => setWordSyncEnabled(prev => !prev);
   const handleToggleRhymes = () => setShowRhymes(prev => !prev);
+  
+  const handleToggleRhymeComplete = async () => {
+    const newValue = !rhymeColorMappingComplete;
+    setRhymeColorMappingComplete(newValue);
+    
+    try {
+      await songService.updateRhymeColorMappingComplete(id, newValue);
+      showToast(newValue ? 'Marked as Complete' : 'Marked as Incomplete', 2000);
+    } catch (err) {
+      console.error('Failed to update mapping status:', err);
+      // Revert on error
+      setRhymeColorMappingComplete(!newValue);
+      showToast('Failed to update status', 2000);
+    }
+  };
 
   usePageScroll({
     activeLineIndex: lastActiveLine,
@@ -101,6 +125,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
           track={track} 
           isPlaying={isPlaying} 
           togglePlayback={togglePlayback}
+          rhymeColorMappingComplete={rhymeColorMappingComplete}
         />
       </div>
 
@@ -113,10 +138,12 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
               wordSyncEnabled={wordSyncEnabled}
               hasRhymeColors={hasRhymeColors}
               showRhymes={showRhymes}
+              rhymeColorMappingComplete={rhymeColorMappingComplete}
               hasLyrics={!!displayLyrics}
               lyricsLoading={lyricsLoading}
               onToggleWordSync={handleToggleWordSync}
               onToggleRhymes={handleToggleRhymes}
+              onToggleRhymeComplete={handleToggleRhymeComplete}
               onEditSync={() => setSyncMode(true)}
               onEditLyrics={() => setEditMode(true)}
             />

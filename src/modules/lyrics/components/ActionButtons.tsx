@@ -6,10 +6,12 @@ export type ActionButtonsProps = {
   wordSyncEnabled: boolean;
   showRhymes: boolean;
   hasRhymeColors: boolean;
+  rhymeColorMappingComplete: boolean;
   hasLyrics: boolean;
   lyricsLoading: boolean;
   onToggleWordSync: () => void;
   onToggleRhymes: () => void;
+  onToggleRhymeComplete: () => void;
   onEditSync: () => void;
   onEditLyrics: () => void;
 };
@@ -20,10 +22,12 @@ export default function ActionButtons({
   wordSyncEnabled,
   showRhymes,
   hasRhymeColors,
+  rhymeColorMappingComplete,
   hasLyrics,
   lyricsLoading,
   onToggleWordSync,
   onToggleRhymes,
+  onToggleRhymeComplete,
   onEditSync,
   onEditLyrics,
 }: ActionButtonsProps) {
@@ -106,6 +110,25 @@ export default function ActionButtons({
                 showRhymes ? 'text-green-600' : 'text-gray-600'
               }`}>
                 Rhymes
+              </span>
+            </label>
+          )}
+          {hasRhymeColors && (
+            <label className="flex items-center gap-2 cursor-pointer">
+              <div className="relative inline-block w-11 h-6">
+                <input
+                  type="checkbox"
+                  checked={rhymeColorMappingComplete}
+                  onChange={onToggleRhymeComplete}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-500 rounded-full peer peer-checked:bg-teal-600 peer-focus:ring-2 peer-focus:ring-teal-300 transition-colors"></div>
+                <div className="absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform peer-checked:translate-x-5"></div>
+              </div>
+              <span className={`font-semibold ${
+                rhymeColorMappingComplete ? 'text-teal-600' : 'text-gray-600'
+              }`}>
+                Mapping Complete
               </span>
             </label>
           )}

@@ -8,11 +8,13 @@ import { SpotifyTrack } from '@/modules/spotify';
 export default function SongHeader({ 
     track, 
     isPlaying,
-    togglePlayback
+    togglePlayback,
+    rhymeColorMappingComplete
 }: { 
     track: SpotifyTrack; 
     isPlaying: boolean,
     togglePlayback?: () => void;
+    rhymeColorMappingComplete?: boolean;
 }) {
   const [optimisticIsPlaying, setOptimisticIsPlaying] = useState(isPlaying);
 
@@ -62,6 +64,13 @@ export default function SongHeader({
         <p className="text-sm text-white">
           Released: {new Date(track.album.release_date).getFullYear()}
         </p>
+        {rhymeColorMappingComplete && (
+          <div className="mt-2">
+            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full bg-teal-600 text-white">
+              ✓ Rhyme Mapping Complete
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );

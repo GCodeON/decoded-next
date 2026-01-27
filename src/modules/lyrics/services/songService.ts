@@ -49,6 +49,12 @@ export class SongService {
     });
   }
 
+  async updateRhymeColorMappingComplete(trackId: string, complete: boolean): Promise<void> {
+    await updateDoc(doc(db, this.collection, trackId), {
+      'lyrics.rhymeColorMappingComplete': complete,
+    });
+  }
+
   async updatePublishMetadata(trackId: string, signature: string, timestamp: number): Promise<void> {
     await updateDoc(doc(db, this.collection, trackId), {
       'lrclib.published': true,
