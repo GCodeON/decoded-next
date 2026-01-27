@@ -1,12 +1,22 @@
 'use client';
 
+import { useEffect } from 'react';
 import { FaUser, FaPowerOff } from 'react-icons/fa';
 import { useUser } from '@/modules/auth/hooks/useUser';
 import { useAuth } from '@/modules/auth/hooks/useAuth';
+import { usePathname } from 'next/navigation';
 
 export default function User() {
-  const { authenticated, user, loading } = useUser();
+  const { authenticated, user, loading, refetch } = useUser();
   const { login, logout } = useAuth();
+  const pathname = usePathname();
+
+  // Refetch user data when pathname changes (e.g., after login redirect)
+  useEffect(() => {
+    if (!loading) {
+      refetch();
+    }
+  }, [pathname, refetch]);
 
   if (loading) {
     return (

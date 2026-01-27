@@ -85,6 +85,9 @@ export const useAuth = () => {
       }
     });
 
+    // Dispatch custom event to notify other components
+    window.dispatchEvent(new Event('auth-state-changed'));
+
     try {
       router.replace('/');
       router.refresh();

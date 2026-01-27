@@ -36,6 +36,8 @@ function CallbackHandler() {
           return data;
         })
         .then(() => {
+          // Notify other components that auth state has changed
+          window.dispatchEvent(new Event('auth-state-changed'));
           // Force full page reload to refresh all components with new auth state
           window.location.href = '/';
         })
