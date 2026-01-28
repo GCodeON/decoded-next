@@ -21,6 +21,7 @@ interface LatestEncodedProps {
     tablet?: number;
     desktop?: number;
   };
+  randomize?: boolean;
 }
 
 export default function LatestEncoded({ 
@@ -29,7 +30,8 @@ export default function LatestEncoded({
   showTitle = true,
   title = "Latest Encoded Songs",
   showCompleteTag = true,
-  itemsPerPage = { mobile: 1, tablet: 2, desktop: 3 }
+  itemsPerPage = { mobile: 1, tablet: 2, desktop: 3 },
+  randomize = false
 }: LatestEncodedProps) {
   const [songs, setSongs] = useState<SongWithTrack[]>([]);
   const [loading, setLoading] = useState(true);
@@ -79,7 +81,12 @@ export default function LatestEncoded({
           })
         );
         
-        setSongs(songsWithTracks);
+        // Randomize if needed
+        const finalSongs = randomize 
+          ? songsWithTracks.sort(() => Math.random() - 0.5)
+          : songsWithTracks;
+        
+        setSongs(finalSongs);
       } catch (err) {
         console.error('Failed to fetch songs:', err);
         setError('Failed to load songs');
@@ -89,7 +96,7 @@ export default function LatestEncoded({
     };
 
     fetchSongs();
-  }, [limit, spotify]);
+  }, [limit, spotify, randomize]);
 
   if (loading) {
     return <LoadingSpinner message="Loading songs..." fullHeight />;
@@ -244,7 +251,7 @@ export default function LatestEncoded({
           <>
             <button
               onClick={goToPrevious}
-              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 bg-black/70 hover:bg-black/90 text-white p-3 rounded-full transition-colors z-10"
+              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 bg-black/70 hover:bg-black/90 text-white p-3 rounded-full transition-colors z-10 cursor-pointer"
               aria-label="Previous song"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -253,7 +260,7 @@ export default function LatestEncoded({
             </button>
             <button
               onClick={goToNext}
-              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 bg-black/70 hover:bg-black/90 text-white p-3 rounded-full transition-colors z-10"
+              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 bg-black/70 hover:bg-black/90 text-white p-3 rounded-full transition-colors z-10 cursor-pointer"
               aria-label="Next song"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

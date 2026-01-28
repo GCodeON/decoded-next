@@ -16,6 +16,7 @@ interface EncodedSongsListProps {
   title?: string;
   showCompleteTag?: boolean;
   showCount?: boolean;
+  randomize?: boolean;
 }
 
 export default function EncodedSongsList({ 
@@ -23,7 +24,8 @@ export default function EncodedSongsList({
   showTitle = true,
   title = "All Encoded Songs",
   showCompleteTag = true,
-  showCount = true
+  showCount = true,
+  randomize = false
 }: EncodedSongsListProps) {
   const [songs, setSongs] = useState<SongWithTrack[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,7 +53,12 @@ export default function EncodedSongsList({
           })
         );
         
-        setSongs(songsWithTracks);
+        // Randomize if needed
+        const finalSongs = randomize 
+          ? songsWithTracks.sort(() => Math.random() - 0.5)
+          : songsWithTracks;
+        
+        setSongs(finalSongs);
       } catch (err) {
         console.error('Failed to fetch songs:', err);
         setError('Failed to load songs');
@@ -61,7 +68,7 @@ export default function EncodedSongsList({
     };
 
     fetchSongs();
-  }, [limit, spotify]);
+  }, [limit, spotify, randomize]);
 
   if (loading) {
     return <LoadingSpinner message="Loading songs..." fullHeight />;

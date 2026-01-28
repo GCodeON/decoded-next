@@ -8,12 +8,13 @@ export default function Songs() {
       {/* Featured Carousel */}
       <div className="w-full max-w-7xl">
         <LatestEncoded 
-          limit={5}
+          limit={10}
           title="Recently Encoded Tracks"
           showCount={false}
           showCompleteTag={false}
           showTitle={true}
-          itemsPerPage={{ mobile: 1, tablet: 2, desktop: 3 }}
+          itemsPerPage={{ mobile: 1, tablet: 3, desktop: 3 }}
+          randomize={true}
         />
       </div>
 
@@ -23,6 +24,7 @@ export default function Songs() {
           title="All Encoded Songs"
           showCount={true}
           showCompleteTag={true}
+          randomize={false}
         />
       </div>
     </div>  

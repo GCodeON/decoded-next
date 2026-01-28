@@ -56,8 +56,9 @@ export default function Home() {
           title="Recently Encoded Tracks"
           showCount={false}
           showCompleteTag={false}
-          showTitle={true}
-          itemsPerPage={{ mobile: 1, tablet: 2, desktop: 3 }}
+          showTitle={false}
+          itemsPerPage={{ mobile: 1, tablet: 3, desktop: 3 }}
+          randomize={true}
         />
       </div>
     </div>
