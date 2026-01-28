@@ -1,6 +1,7 @@
 export interface SavedSong {
   title: string;
   artist: string;
+  artists?: { name: string; id: string }[];
   spotify: string;
   lyrics: {
     plain: string;

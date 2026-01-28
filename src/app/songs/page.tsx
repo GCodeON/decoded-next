@@ -54,7 +54,7 @@ export default function Songs() {
   return (
     <div className="w-full mx-auto p-4 md:p-6 space-y-4">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-white mb-2">Songs with Complete Rhyme Mapping</h1>
+        <h1 className="text-3xl font-bold text-white mb-2">Latest Encoded Songs</h1>
         <p className="text-gray-400">{songs.length} {songs.length === 1 ? 'song' : 'songs'} found</p>
       </div>
 
@@ -65,16 +65,37 @@ export default function Songs() {
             href={`/songs/${song.id}`}
             className="block p-4 bg-gray-900 hover:bg-gray-800 rounded-lg transition-colors border border-gray-800 hover:border-teal-600"
           >
-            <div className="flex items-start justify-between gap-4">
+            <div className="flex flex-col md:flex-row items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
                 <h3 className="text-lg font-semibold text-white truncate">
-                  {song.title}
+                  {song.title || 'Untitled'}
                 </h3>
-                <p className="text-gray-400 text-sm">{song.artist}</p>
+                <p className="text-gray-400 text-sm">
+                  {song.artists && song.artists.length > 0 ? (
+                    song.artists.map((artist, index) => (
+                      <span key={artist?.id || index}>
+                        {artist?.id ? (
+                          <Link
+                            href={`/artists/${artist.id}`}
+                            className="hover:text-teal-400 hover:underline"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {artist.name}
+                          </Link>
+                        ) : (
+                          <span>{artist?.name || 'Unknown Artist'}</span>
+                        )}
+                        {song.artists && index < song.artists.length - 1 && ', '}
+                      </span>
+                    ))
+                  ) : (
+                    song.artist || 'Unknown Artist'
+                  )}
+                </p>
               </div>
               <div className="flex-shrink-0">
                 <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full bg-teal-600 text-white">
-                  ✓ Complete
+                  ✓ Rhyme Encoding Complete
                 </span>
               </div>
             </div>

@@ -36,6 +36,7 @@ export function useSavedSong({ track, trackId }: UseSavedSongParams) {
       const newSong: SavedSong = {
         title: cleanTrackName(track.name),
         artist: artistName,
+        artists: track.artists,
         spotify: trackId,
         lyrics: { plain, synced, wordSynced: null, rhymeEncoded },
       };
