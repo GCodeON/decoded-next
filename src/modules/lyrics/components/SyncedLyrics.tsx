@@ -5,6 +5,7 @@ import { useRhymeColorMap } from '@/modules/lyrics/hooks/useRhymeColorMap';
 import { parseEnhancedLrc } from '@/modules/lyrics/utils/lrcAdvanced';
 import { RhymeWordHighlight } from './RhymeWordHighlight';
 import { PlainWordHighlight } from './PlainWordHighlight';
+import { useTapHandler } from '@/hooks/useTapHandler';
 import type { SyncedLyricsProps } from '@/modules/lyrics/types/rhyme';
 
 interface SyncedLyricsWithActiveLine extends SyncedLyricsProps {
@@ -114,22 +115,28 @@ const SyncedLyrics = ({
           );
         }
 
+        const tapHandlers = useTapHandler({
+          onTap: () => {
+            if (onLineClick && words.length > 0) {
+              // Click/tap seeks to first word time
+              onLineClick(Math.floor(words[0].time * 1000));
+            }
+          },
+          preventDefault: false
+        });
+
         return (
           <div
             key={i}
-            onClick={() => {
-              if (onLineClick && words.length > 0) {
-                // Click seeks to first word time
-                onLineClick(Math.floor(words[0].time * 1000));
-              }
-            }}
+            {...tapHandlers}
+            style={{ touchAction: 'manipulation' }}
             className={`px-3 md:px-6 py-3 rounded-lg transition-all ${
               isActive
                 ? 'bg-blue-900/40'
                 : isPast
                 ? 'opacity-80'
                 : 'opacity-40'
-            } ${onLineClick ? 'cursor-pointer hover:bg-blue-800/20' : ''}`}
+            } ${onLineClick ? 'cursor-pointer hover:bg-blue-800/20 active:bg-blue-700/30' : ''}`}
           >
             {shouldUseWordSync && words.length > 0 && showRhymes ? (
               <RhymeWordHighlight
