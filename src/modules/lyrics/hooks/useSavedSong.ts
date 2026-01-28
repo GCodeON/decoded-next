@@ -66,12 +66,15 @@ export function useSavedSong({ track, trackId }: UseSavedSongParams) {
         setSavedSong({
           title: data.title || cleanTrackName(track.name),
           artist: data.artist || artistName,
+          artists: data.artists,
           spotify: trackId,
           lyrics: {
             plain: data.lyrics?.plain || '',
             synced: data.lyrics?.synced || null,
             wordSynced: data.lyrics?.wordSynced || null,
             rhymeEncoded: data.lyrics?.rhymeEncoded || lyricsToHtml(data.lyrics?.plain || ''),
+            rhymeEncodedLines: data.lyrics?.rhymeEncodedLines || null,
+            rhymeColorMappingComplete: data.lyrics?.rhymeColorMappingComplete || false,
           },
         });
         setShouldFetchLyrics(false); // Song exists, no need to fetch

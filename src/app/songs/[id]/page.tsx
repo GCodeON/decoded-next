@@ -39,12 +39,8 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
   }, [hasWordSynced]);
 
   useEffect(() => {
-    if (savedSong?.lyrics?.rhymeColorMappingComplete) {
-      setRhymeColorMappingComplete(true);
-    } else {
-      setRhymeColorMappingComplete(false);
-    }
-  }, [savedSong]);
+    setRhymeColorMappingComplete(!!savedSong?.lyrics?.rhymeColorMappingComplete);
+  }, [savedSong?.lyrics?.rhymeColorMappingComplete]);
 
   const isViewMode = hasSynced && !editMode && !syncMode;
   const { isPlaying, currentPosition, currentPositionMs, togglePlayback } = usePlaybackSync(id, !!track, syncMode, isViewMode);
