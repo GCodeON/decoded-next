@@ -1,5 +1,6 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import useEmblaCarousel from 'embla-carousel-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -36,11 +37,15 @@ export default function LatestEncoded({
   const [songs, setSongs] = useState<SongWithTrack[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [currentIndex, setCurrentIndex] = useState(0);
   const [itemsToShow, setItemsToShow] = useState(itemsPerPage.mobile || 1);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('right');
+  const [selectedIndex, setSelectedIndex] = useState(0);
   const spotify = useSpotifyApi();
+
+  const [emblaRef, emblaApi] = useEmblaCarousel({
+    loop: true,
+    align: 'start',
+    slidesToScroll: 1,
+  });
 
   // Handle responsive items per page
   useEffect(() => {
@@ -98,60 +103,62 @@ export default function LatestEncoded({
     fetchSongs();
   }, [limit, spotify, randomize]);
 
+  // Embla callbacks
+  const onSelect = useCallback(() => {
+    if (!emblaApi) return;
+    setSelectedIndex(emblaApi.selectedScrollSnap());
+  }, [emblaApi]);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+    onSelect();
+    emblaApi.on('select', onSelect);
+    return () => {
+      emblaApi.off('select', onSelect);
+    };
+  }, [emblaApi, onSelect]);
+
+  const scrollPrev = useCallback(() => {
+    if (emblaApi) emblaApi.scrollPrev();
+  }, [emblaApi]);
+
+  const scrollNext = useCallback(() => {
+    if (emblaApi) emblaApi.scrollNext();
+  }, [emblaApi]);
+
+  const scrollTo = useCallback((index: number) => {
+    if (emblaApi) emblaApi.scrollTo(index);
+  }, [emblaApi]);
+
+  // Group songs by itemsToShow
+  const groupedSongs: SongWithTrack[][] = [];
+  for (let i = 0; i < songs.length; i += itemsToShow) {
+    groupedSongs.push(songs.slice(i, i + itemsToShow));
+  }
+
   if (loading) {
-    return <LoadingSpinner message="Loading songs..." fullHeight />;
+    return (
+      <div className="flex justify-center items-center min-h-[400px]">
+        <LoadingSpinner />
+      </div>
+    );
   }
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen space-y-4">
-        <p className="text-red-500">{error}</p>
+      <div className="flex justify-center items-center min-h-[400px] text-red-500">
+        {error}
       </div>
     );
   }
 
   if (songs.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen space-y-4">
-        <p className="text-gray-400 text-lg">No songs with complete rhyme mapping found.</p>
-        <p className="text-gray-500 text-sm">Mark songs as complete from the song detail page.</p>
+      <div className="flex justify-center items-center min-h-[400px] text-gray-400">
+        No songs found
       </div>
     );
   }
-
-  const goToNext = () => {
-    if (isAnimating) return;
-    setSlideDirection('right');
-    setIsAnimating(true);
-    setCurrentIndex((prev) => {
-      const maxIndex = Math.ceil(songs.length / itemsToShow) - 1;
-      return prev >= maxIndex ? 0 : prev + 1;
-    });
-    setTimeout(() => setIsAnimating(false), 500);
-  };
-
-  const goToPrevious = () => {
-    if (isAnimating) return;
-    setSlideDirection('left');
-    setIsAnimating(true);
-    setCurrentIndex((prev) => {
-      const maxIndex = Math.ceil(songs.length / itemsToShow) - 1;
-      return prev <= 0 ? maxIndex : prev - 1;
-    });
-    setTimeout(() => setIsAnimating(false), 500);
-  };
-
-  const goToSlide = (index: number) => {
-    if (isAnimating || index === currentIndex) return;
-    setSlideDirection(index > currentIndex ? 'right' : 'left');
-    setIsAnimating(true);
-    setCurrentIndex(index);
-    setTimeout(() => setIsAnimating(false), 500);
-  };
-
-  const totalPages = Math.ceil(songs.length / itemsToShow);
-  const startIndex = currentIndex * itemsToShow;
-  const visibleSongs = songs.slice(startIndex, startIndex + itemsToShow);
 
   return (
     <div className="w-full mx-auto p-4 md:p-6 space-y-4">
@@ -166,24 +173,23 @@ export default function LatestEncoded({
         </div>
       )}
 
-      {/* Carousel Container */}
-      <div className="relative overflow-hidden">
-        <div 
-          className={`grid gap-4 transition-all duration-500 ease-in-out ${
-            isAnimating 
-              ? slideDirection === 'right' 
-                ? 'translate-x-[-10px] opacity-90' 
-                : 'translate-x-[10px] opacity-90'
-              : 'translate-x-0 opacity-100'
-          } ${
-            itemsToShow === 1 ? 'grid-cols-1' : 
-            itemsToShow === 2 ? 'grid-cols-1 md:grid-cols-2' : 
-            'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
-          }`}
-        >
-          {visibleSongs.map((song) => (
-            <Link
-              key={song.id}
+      {/* Embla Carousel */}
+      <div className="relative">
+        <div className="overflow-hidden" ref={emblaRef}>
+          <div className="flex">
+            {groupedSongs.map((group, pageIndex) => (
+              <div 
+                key={pageIndex} 
+                className="flex-[0_0_100%] min-w-0"
+              >
+                <div className={`grid gap-4 ${
+                  itemsToShow === 1 ? 'grid-cols-1' : 
+                  itemsToShow === 2 ? 'grid-cols-1 md:grid-cols-2' : 
+                  'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+                }`}>
+                  {group.map((song) => (
+                    <Link
+                      key={song.id}
               href={`/songs/${song.id}`}
               className="block p-4 bg-gray-900 hover:bg-gray-800 rounded-lg transition-all duration-200 border border-gray-800 hover:border-teal-600 hover:scale-[1.02]"
             >
@@ -245,23 +251,27 @@ export default function LatestEncoded({
             </Link>
           ))}
         </div>
+              </div>
+            ))}
+          </div>
+        </div>
 
         {/* Navigation Arrows */}
-        {totalPages > 1 && (
+        {groupedSongs.length > 1 && (
           <>
             <button
-              onClick={goToPrevious}
+              onClick={scrollPrev}
               className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 bg-black/70 hover:bg-black/90 text-white p-3 rounded-full transition-colors z-10 cursor-pointer"
-              aria-label="Previous song"
+              aria-label="Previous slide"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
             <button
-              onClick={goToNext}
+              onClick={scrollNext}
               className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 bg-black/70 hover:bg-black/90 text-white p-3 rounded-full transition-colors z-10 cursor-pointer"
-              aria-label="Next song"
+              aria-label="Next slide"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -272,16 +282,16 @@ export default function LatestEncoded({
       </div>
 
       {/* Dots Indicator */}
-      {totalPages > 1 && (
+      {groupedSongs.length > 1 && (
         <div className="flex justify-center gap-2 mt-4">
-          {Array.from({ length: totalPages }).map((_, index) => (
+          {Array.from({ length: groupedSongs.length }).map((_, index) => (
             <button
               key={index}
-              onClick={() => goToSlide(index)}
+              onClick={() => scrollTo(index)}
               className={`w-2 h-2 rounded-full transition-colors ${
-                index === currentIndex ? 'bg-teal-500' : 'bg-gray-600'
+                index === selectedIndex ? 'bg-teal-500' : 'bg-gray-600'
               }`}
-              aria-label={`Go to page ${index + 1}`}
+              aria-label={`Go to slide ${index + 1}`}
             />
           ))}
         </div>
