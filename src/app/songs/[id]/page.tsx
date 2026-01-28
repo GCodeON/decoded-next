@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/useToast';
 import { useDisplayLyrics } from '@/modules/lyrics/hooks/useDisplayLyrics';
 import { useHasRhymeColors } from '@/modules/lyrics/hooks/useHasRhymeColors';
 import { usePageScroll } from '@/modules/lyrics/hooks/usePageScroll';
+import { useSeekToLine } from '@/modules/lyrics/hooks/useSeekToLine';
 import { LyricsEditor, SyncedLyrics, useSavedSong, songService } from '@/modules/lyrics';
 import { usePlaybackSync, useSpotifyTrack } from '@/modules/spotify';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -67,7 +68,10 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
       showToast('Synced Lyrics Published', 3000);
     };
     window.addEventListener('lrclib:published', onPublished as EventListener);
-    return () => window.removeEventListener('lrclib:published', onPublished as EventListener);
+    return () => {
+      window.removeEventListener('lrclib:published', onPublished as EventListener);
+      cleanupSeek();
+    };
   }, [showToast]);
 
   const displayHtml = displayLyrics?.rhymeEncoded || '';
@@ -91,25 +95,29 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
     }
   };
 
-  const handleSeekToLine = async (timeMs: number) => {
-    // Disable auto scroll when user manually seeks
-    setDisableAutoScroll(true);
-    
-    // Adjust time backwards by lead constant (0.25s) to account for word sync lead
-    const adjustedTimeMs = Math.max(0, timeMs - 150);
-    await seekTo(adjustedTimeMs);
-    
-    // Re-enable auto scroll after 3 seconds
-    setTimeout(() => {
-      setDisableAutoScroll(false);
-    }, 3000);
-  };
+  const { handleSeekToLine, cleanup: cleanupSeek } = useSeekToLine({
+    seekTo,
+    onDisableAutoScroll: setDisableAutoScroll,
+    leadAdjustmentMs: 150,
+    reEnableDelayMs: 3000,
+  });
+
+  useEffect(() => {
+    const onPublished = (e: Event) => {
+      console.log('published synced lyrics', e);
+      showToast('Synced Lyrics Published', 3000);
+    };
+    window.addEventListener('lrclib:published', onPublished as EventListener);
+    return () => {
+      window.removeEventListener('lrclib:published', onPublished as EventListener);
+      cleanupSeek();
+    };
+  }, [showToast, cleanupSeek]);
 
   const handleUserScroll = () => {
     // User is manually scrolling, disable auto scroll
     setDisableAutoScroll(true);
     
-    // Clear existing timeout
     if (scrollDebounceRef.current) {
       clearTimeout(scrollDebounceRef.current);
     }

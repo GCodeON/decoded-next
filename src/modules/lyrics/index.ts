@@ -18,6 +18,7 @@ export { useLrcLibPublish } from './hooks/useLrcLibPublish';
 export { useRhymeColorMap } from './hooks/useRhymeColorMap';
 export { useWordProgress } from './hooks/useWordProgress';
 export { useHasRhymeColors } from './hooks/useHasRhymeColors';
+export { useSeekToLine } from './hooks/useSeekToLine';
 
 // Services
 export { lyricsService } from './services/lyricsService';
