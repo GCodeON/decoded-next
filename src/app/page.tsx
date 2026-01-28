@@ -3,6 +3,7 @@ import { useState, useRef, useCallback } from 'react';
 import { useSpotifyApi, useSafePolling, useSimplePlayback } from '@/modules/spotify';
 import SongHeader from '@/components/SongHeader';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import LatestEncoded from '@/components/LatestEncoded';
 
 export default function Home() {
   const [currentTrack, setCurrentTrack] = useState<any>(null);
@@ -44,6 +45,10 @@ export default function Home() {
             isPlaying={isPlaying} 
             togglePlayback={togglePlayback}
           />
+          <LatestEncoded 
+            limit={5}
+            title="Recently Encoded Tracks"
+            />
         </div>
       ) : (
         <p className="text-sm text-gray-400">No track playing right now.</p>

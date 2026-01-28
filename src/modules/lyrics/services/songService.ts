@@ -1,4 +1,4 @@
-import { doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import type { SavedSong } from '@/modules/lyrics';
 
@@ -63,9 +63,14 @@ export class SongService {
     });
   }
 
-  async getSongsWithRhymeComplete(): Promise<Array<SavedSong & { id: string }>> {
+  async getSongsWithRhymeComplete(limitCount?: number): Promise<Array<SavedSong & { id: string }>> {
     const songsRef = collection(db, this.collection);
-    const q = query(songsRef, where('lyrics.rhymeColorMappingComplete', '==', true));
+    let q = query(songsRef, where('lyrics.rhymeColorMappingComplete', '==', true));
+    
+    if (limitCount) {
+      q = query(q, limit(limitCount));
+    }
+    
     const querySnapshot = await getDocs(q);
     
     const songs: Array<SavedSong & { id: string }> = [];
