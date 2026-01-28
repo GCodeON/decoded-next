@@ -166,7 +166,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
         />
       </div>
 
-      <div className="sticky top-0 z-10 bg-black shadow-lg p-1 md:p-2 mb-2">
+      <div className="md:sticky top-0 z-10 bg-black shadow-lg p-1 md:p-2 mb-2">
         <div className="flex justify-around items-center">
           {!editMode && !syncMode && (
             <ActionButtons
