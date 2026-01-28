@@ -9,6 +9,8 @@ interface UsePageScrollOptions {
     mobile?: number;
     desktop?: number;
   } | number;
+  disabled?: boolean;
+  onUserScroll?: () => void;
 }
 
 export function usePageScroll({
@@ -16,9 +18,12 @@ export function usePageScroll({
   lyricsContainerId,
   scrollContainerId = 'content-scroll-container',
   viewportOffset = 50,
+  disabled = false,
+  onUserScroll,
 }: UsePageScrollOptions) {
   const scrollAnimationRef = useRef<number | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const isProgrammaticScrollRef = useRef(false);
 
   const getViewportOffset = () => {
     if (typeof viewportOffset === 'number') {
@@ -39,7 +44,7 @@ export function usePageScroll({
   }, []);
 
   useEffect(() => {
-    if (activeLineIndex === null) return;
+    if (disabled || activeLineIndex === null) return;
 
     const lyricsContainer = document.getElementById(lyricsContainerId);
     const scrollContainer = document.getElementById(scrollContainerId);
@@ -66,6 +71,9 @@ export function usePageScroll({
 
     const duration = 300;
     const startTime = Date.now();
+    
+    // Mark scroll as programmatic
+    isProgrammaticScrollRef.current = true;
 
     const animateScroll = () => {
       const elapsed = Date.now() - startTime;
@@ -79,6 +87,9 @@ export function usePageScroll({
 
       if (progress < 1) {
         scrollAnimationRef.current = requestAnimationFrame(animateScroll);
+      } else {
+        // Clear flag after animation completes
+        isProgrammaticScrollRef.current = false;
       }
     };
 
@@ -90,4 +101,22 @@ export function usePageScroll({
       }
     };
   }, [activeLineIndex, lyricsContainerId, scrollContainerId, isMobile]);
+
+  // Detect user scrolling
+  useEffect(() => {
+    if (!onUserScroll) return;
+
+    const scrollContainer = document.getElementById(scrollContainerId);
+    if (!scrollContainer) return;
+
+    const handleScroll = () => {
+      // Only trigger if this is a user scroll, not programmatic
+      if (!isProgrammaticScrollRef.current) {
+        onUserScroll();
+      }
+    };
+
+    scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
+    return () => scrollContainer.removeEventListener('scroll', handleScroll);
+  }, [scrollContainerId, onUserScroll]);
 }

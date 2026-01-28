@@ -1,5 +1,5 @@
 'use client';
-import { use, useEffect, useMemo, useState } from 'react';
+import { use, useEffect, useMemo, useState, useRef } from 'react';
 import SongHeader from '@/components/SongHeader';
 import ActionButtons from '@/modules/lyrics/components/ActionButtons';
 import SyncLyricsEditor from '@/modules/lyrics/components/SyncLyricsEditor';
@@ -23,6 +23,8 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
   const [showRhymes, setShowRhymes] = useState(true);
   const [rhymeColorMappingComplete, setRhymeColorMappingComplete] = useState(false);
   const [lastActiveLine, setLastActiveLine] = useState<number | null>(null);
+  const [disableAutoScroll, setDisableAutoScroll] = useState(false);
+  const scrollDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
   const { toast, show: showToast } = useToast();
 
@@ -43,7 +45,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
   }, [savedSong?.lyrics?.rhymeColorMappingComplete]);
 
   const isViewMode = hasSynced && !editMode && !syncMode;
-  const { isPlaying, currentPosition, currentPositionMs, togglePlayback } = usePlaybackSync(id, !!track, syncMode, isViewMode);
+  const { isPlaying, currentPosition, currentPositionMs, togglePlayback, seekTo } = usePlaybackSync(id, !!track, syncMode, isViewMode);
 
   const syncConfig = useMemo(() => {
     if (!displayLyrics || !hasSynced) return null;
@@ -89,6 +91,35 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
     }
   };
 
+  const handleSeekToLine = async (timeMs: number) => {
+    // Disable auto scroll when user manually seeks
+    setDisableAutoScroll(true);
+    
+    // Adjust time backwards by lead constant (0.25s) to account for word sync lead
+    const adjustedTimeMs = Math.max(0, timeMs - 150);
+    await seekTo(adjustedTimeMs);
+    
+    // Re-enable auto scroll after 3 seconds
+    setTimeout(() => {
+      setDisableAutoScroll(false);
+    }, 3000);
+  };
+
+  const handleUserScroll = () => {
+    // User is manually scrolling, disable auto scroll
+    setDisableAutoScroll(true);
+    
+    // Clear existing timeout
+    if (scrollDebounceRef.current) {
+      clearTimeout(scrollDebounceRef.current);
+    }
+    
+    // Re-enable auto scroll after user stops scrolling for 2 seconds
+    scrollDebounceRef.current = setTimeout(() => {
+      setDisableAutoScroll(false);
+    }, 2000);
+  };
+
   usePageScroll({
     activeLineIndex: lastActiveLine,
     lyricsContainerId: 'synced-lyrics-container',
@@ -96,6 +127,8 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
       mobile: 55,
       desktop: 66,
     },
+    disabled: disableAutoScroll,
+    onUserScroll: handleUserScroll,
   });
 
   if (trackLoading) {
@@ -193,6 +226,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
             showRhymes={showRhymes}
             mode={syncConfig.mode}
             onActiveLineChange={setLastActiveLine}
+            onLineClick={handleSeekToLine}
             containerId="synced-lyrics-container"
           />
         )}

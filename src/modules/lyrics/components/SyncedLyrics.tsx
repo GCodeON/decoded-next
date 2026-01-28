@@ -9,6 +9,7 @@ import type { SyncedLyricsProps } from '@/modules/lyrics/types/rhyme';
 
 interface SyncedLyricsWithActiveLine extends SyncedLyricsProps {
   onActiveLineChange?: (line: number) => void;
+  onLineClick?: (timeMs: number) => void;
   containerId?: string;
 }
 
@@ -20,6 +21,7 @@ const SyncedLyrics = ({
   showRhymes = true,
   mode = 'auto',
   onActiveLineChange,
+  onLineClick,
   containerId = 'synced-lyrics-container',
 }: SyncedLyricsWithActiveLine) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -115,13 +117,19 @@ const SyncedLyrics = ({
         return (
           <div
             key={i}
+            onClick={() => {
+              if (onLineClick && words.length > 0) {
+                // Click seeks to first word time
+                onLineClick(Math.floor(words[0].time * 1000));
+              }
+            }}
             className={`px-3 md:px-6 py-3 rounded-lg transition-all ${
               isActive
                 ? 'bg-blue-900/40'
                 : isPast
                 ? 'opacity-80'
                 : 'opacity-40'
-            }`}
+            } ${onLineClick ? 'cursor-pointer hover:bg-blue-800/20' : ''}`}
           >
             {shouldUseWordSync && words.length > 0 && showRhymes ? (
               <RhymeWordHighlight

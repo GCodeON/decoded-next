@@ -59,6 +59,10 @@ export function createSpotifyService(transport: SpotifyTransport) {
       await transport.request('PUT', spotifyEndpoints.pause(deviceId));
     },
 
+    async seek(position_ms: number, deviceId?: string): Promise<void> {
+      await transport.request('PUT', spotifyEndpoints.seek(position_ms, deviceId));
+    },
+
     async transferPlayback(deviceId: string, play: boolean = true): Promise<void> {
       await transport.request('PUT', spotifyEndpoints.transferPlayback(), {
         device_ids: [deviceId],

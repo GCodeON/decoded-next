@@ -315,6 +315,19 @@ export function usePlaybackSync(
     }
   }, [coreToggle]);
 
+  // Seek to a specific position in milliseconds
+  const seekTo = useCallback(async (position_ms: number) => {
+    try {
+      await spotify.seek(position_ms, deviceId || undefined);
+      // Immediately update interpolation baseline
+      lastSampleMsRef.current = position_ms;
+      lastSampleAtRef.current = performance.now();
+      setCurrentInterpolatedMs(position_ms);
+    } catch (err: any) {
+      console.error('Seek failed:', err);
+    }
+  }, [spotify, deviceId]);
+
   return {
     isPlaying,
     currentPosition,
@@ -327,5 +340,6 @@ export function usePlaybackSync(
       return currentPosition * 1000;
     })(),
     togglePlayback,
+    seekTo,
   };
 }

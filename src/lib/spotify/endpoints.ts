@@ -13,5 +13,7 @@ export const spotifyEndpoints = {
     deviceId ? `/me/player/play?device_id=${encodeURIComponent(deviceId)}` : '/me/player/play',
   pause: (deviceId?: string) =>
     deviceId ? `/me/player/pause?device_id=${encodeURIComponent(deviceId)}` : '/me/player/pause',
+  seek: (position_ms: number, deviceId?: string) =>
+    deviceId ? `/me/player/seek?position_ms=${position_ms}&device_id=${encodeURIComponent(deviceId)}` : `/me/player/seek?position_ms=${position_ms}`,
   userTracks: (limit = 50, offset = 0) => `/me/tracks?limit=${limit}&offset=${offset}`,
 };
