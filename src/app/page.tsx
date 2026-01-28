@@ -44,6 +44,8 @@ export default function Home() {
               track={currentTrack} 
               isPlaying={isPlaying} 
               togglePlayback={togglePlayback}
+              showTitle={true}
+              title="Currently Playing"
             />
           </div>
         ) : ('')}
@@ -52,11 +54,11 @@ export default function Home() {
       {/* Featured Carousel */}
       <div className="w-full max-w-7xl">
         <LatestEncoded 
-          limit={5}
-          title="Recently Encoded Tracks"
+          limit={10}
+          title={isPlaying ? 'Other Tracks' : 'Recently Encoded Tracks'}
           showCount={false}
           showCompleteTag={false}
-          showTitle={false}
+          showTitle={true}
           itemsPerPage={{ mobile: 1, tablet: 3, desktop: 3 }}
           randomize={true}
         />
