@@ -51,7 +51,7 @@ export default function LatestEncoded({
   useEffect(() => {
     const updateItemsToShow = () => {
       const width = window.innerWidth;
-      if (width >= 1024) {
+      if (width >= 1440) {
         setItemsToShow(itemsPerPage.desktop || 3);
       } else if (width >= 768) {
         setItemsToShow(itemsPerPage.tablet || 2);
@@ -138,7 +138,7 @@ export default function LatestEncoded({
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-[400px]">
+      <div className="flex justify-center items-center min-h-[500px]">
         <LoadingSpinner />
       </div>
     );
@@ -146,7 +146,7 @@ export default function LatestEncoded({
 
   if (error) {
     return (
-      <div className="flex justify-center items-center min-h-[400px] text-red-500">
+      <div className="flex justify-center items-center min-h-[500px] text-red-500">
         {error}
       </div>
     );
@@ -154,7 +154,7 @@ export default function LatestEncoded({
 
   if (songs.length === 0) {
     return (
-      <div className="flex justify-center items-center min-h-[400px] text-gray-400">
+      <div className="flex justify-center items-center min-h-[500px] text-gray-400">
         No songs found
       </div>
     );

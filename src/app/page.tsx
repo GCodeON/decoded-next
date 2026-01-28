@@ -59,7 +59,7 @@ export default function Home() {
           showCount={false}
           showCompleteTag={false}
           showTitle={true}
-          itemsPerPage={{ mobile: 1, tablet: 3, desktop: 3 }}
+          itemsPerPage={{ mobile: 1, tablet: 2, desktop: 3 }}
           randomize={true}
         />
       </div>
