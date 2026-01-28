@@ -10,6 +10,7 @@ export type ActionButtonsProps = {
   rhymeColorMappingComplete: boolean;
   hasLyrics: boolean;
   lyricsLoading: boolean;
+  isPlaying?: boolean;
   onToggleWordSync: () => void;
   onToggleRhymes: () => void;
   onToggleRhymeComplete: () => void;
@@ -26,6 +27,7 @@ export default function ActionButtons({
   rhymeColorMappingComplete,
   hasLyrics,
   lyricsLoading,
+  isPlaying = false,
   onToggleWordSync,
   onToggleRhymes,
   onToggleRhymeComplete,
@@ -152,7 +154,7 @@ export default function ActionButtons({
 
       {/* Mobile Menu Modal */}
       {showMobileMenu && (
-        <div className="fixed inset-0 z-50 flex items-end md:hidden pb-[72px]">
+        <div className={`fixed inset-0 z-50 flex items-end md:hidden ${isPlaying ? 'pb-[120px]' : 'pb-[72px]'}`}>
           {/* Backdrop */}
           <div 
             className="absolute inset-0 bg-black bg-opacity-50"

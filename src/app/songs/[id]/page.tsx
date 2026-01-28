@@ -178,6 +178,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
               rhymeColorMappingComplete={rhymeColorMappingComplete}
               hasLyrics={!!displayLyrics}
               lyricsLoading={lyricsLoading}
+              isPlaying={isPlaying}
               onToggleWordSync={handleToggleWordSync}
               onToggleRhymes={handleToggleRhymes}
               onToggleRhymeComplete={handleToggleRhymeComplete}
