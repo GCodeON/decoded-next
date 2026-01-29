@@ -60,9 +60,116 @@ export default function SpotifySearchBar({ className = '', isMobile = false }: {
   const shouldSearch = trimmedQuery.length >= MIN_QUERY_LENGTH;
 
   const tracks = results?.tracks?.items ?? [];
-  const artists = results?.artists?.items ?? [];
   const albums = results?.albums?.items ?? [];
-  const hasResults = tracks.length > 0 || artists.length > 0 || albums.length > 0;
+  const directArtists = results?.artists?.items ?? [];
+
+  // Filter albums to prefer deluxe versions for duplicate titles by same artist
+  const filteredAlbums = useMemo(() => {
+    const albumsByTitleAndArtist = new Map<string, typeof albums>();
+    
+    // Group albums by base title AND main artist
+    albums.forEach((album) => {
+      const baseTitle = album.name
+        .replace(/\s*\(Explicit\)\s*/i, '')
+        .replace(/\s*\(Deluxe[^)]*\)\s*/i, '')
+        .replace(/\s*\(Remaster[^)]*\)\s*/i, '')
+        .trim();
+      
+      const mainArtist = album.artists?.[0]?.name ?? 'Unknown';
+      const key = `${baseTitle}|${mainArtist}`;
+      
+      if (!albumsByTitleAndArtist.has(key)) {
+        albumsByTitleAndArtist.set(key, []);
+      }
+      albumsByTitleAndArtist.get(key)!.push(album);
+    });
+    
+    // For each title+artist combo, keep only deluxe/explicit if it exists
+    const result: typeof albums = [];
+    albumsByTitleAndArtist.forEach((group) => {
+      const hasSpecialVersion = group.some((album) =>
+        /\(Explicit\)|\(Deluxe[^)]*\)|\(Remaster[^)]*\)/i.test(album.name)
+      );
+      
+      if (hasSpecialVersion) {
+        const specialVersions = group.filter((album) =>
+          /\(Explicit\)|\(Deluxe[^)]*\)|\(Remaster[^)]*\)/i.test(album.name)
+        );
+        result.push(specialVersions[0]);
+      } else {
+        result.push(group[0]);
+      }
+    });
+    
+    return result;
+  }, [albums]);
+
+  // Extract artists from matching tracks and albums
+  const enrichedArtists = useMemo(() => {
+    const artistMap = new Map<string, any>();
+    const prioritizedIds = new Set<string>();
+    
+    // Prioritize artists from top track and album results
+    const topTrackArtists = tracks[0]?.artists ?? [];
+    const topAlbumArtists = filteredAlbums[0]?.artists ?? [];
+    const topAlbumImages = filteredAlbums[0]?.images ?? [];
+    
+    [...topTrackArtists, ...topAlbumArtists].forEach((artist) => {
+      prioritizedIds.add(artist.id);
+      artistMap.set(artist.id, {
+        id: artist.id,
+        name: artist.name,
+        images: topAlbumImages,
+      });
+    });
+
+    // Add direct artist search results
+    directArtists.forEach((artist) => {
+      if (!artistMap.has(artist.id)) {
+        artistMap.set(artist.id, artist);
+      }
+    });
+
+    // Add artists from matching tracks
+    tracks.forEach((track) => {
+      track.artists?.forEach((artist) => {
+        if (!artistMap.has(artist.id)) {
+          artistMap.set(artist.id, {
+            id: artist.id,
+            name: artist.name,
+            images: [],
+          });
+        }
+      });
+    });
+
+    // Add artists from matching albums
+    filteredAlbums.forEach((album) => {
+      album.artists?.forEach((artist) => {
+        if (!artistMap.has(artist.id)) {
+          artistMap.set(artist.id, {
+            id: artist.id,
+            name: artist.name,
+            images: album.images || [],
+          });
+        } else {
+          // Update with album images if artist doesn't have images
+          const existing = artistMap.get(artist.id);
+          if (!existing.images || existing.images.length === 0) {
+            existing.images = album.images || [];
+          }
+        }
+      });
+    });
+
+    // Return with prioritized artists first, limited to 5
+    const result = Array.from(artistMap.values());
+    const prioritized = result.filter((a) => prioritizedIds.has(a.id));
+    const rest = result.filter((a) => !prioritizedIds.has(a.id));
+    return [...prioritized, ...rest].slice(0, 5);
+  }, [directArtists, tracks, filteredAlbums]);
+
+  const hasResults = tracks.length > 0 || enrichedArtists.length > 0 || albums.length > 0;
 
   // Sync query state with URL params when on search page
   useEffect(() => {
@@ -280,7 +387,7 @@ export default function SpotifySearchBar({ className = '', isMobile = false }: {
                               <div className="min-w-0">
                                 <div className="truncate text-sm text-white">{track.name}</div>
                                 <div className="truncate text-xs text-white/50">
-                                  {track.artists?.map((artist) => artist.name).join(', ')}
+                                  {track.artists?.[0]?.name}
                                 </div>
                               </div>
                             </Link>
@@ -290,11 +397,11 @@ export default function SpotifySearchBar({ className = '', isMobile = false }: {
                     </div>
                   )}
 
-                  {artists.length > 0 && (
+                  {enrichedArtists.length > 0 && (
                     <div>
                       <div className="mb-2 text-xs uppercase tracking-wide text-white/50">Artists</div>
                       <ul className="space-y-2">
-                        {artists.map((artist) => (
+                        {enrichedArtists.map((artist) => (
                           <li key={artist.id}>
                             <Link
                               href={`/artists/${artist.id}`}
@@ -312,11 +419,11 @@ export default function SpotifySearchBar({ className = '', isMobile = false }: {
                     </div>
                   )}
 
-                  {albums.length > 0 && (
+                  {filteredAlbums.length > 0 && (
                     <div>
                       <div className="mb-2 text-xs uppercase tracking-wide text-white/50">Albums</div>
                       <ul className="space-y-2">
-                        {albums.map((album) => (
+                        {filteredAlbums.map((album) => (
                           <li key={album.id}>
                             <Link
                               href={`/albums/${album.id}`}
@@ -439,7 +546,7 @@ export default function SpotifySearchBar({ className = '', isMobile = false }: {
                           <div className="min-w-0">
                             <div className="truncate text-sm text-white">{track.name}</div>
                             <div className="truncate text-xs text-white/50">
-                              {track.artists?.map((artist) => artist.name).join(', ')}
+                              {track.artists?.[0]?.name}
                             </div>
                           </div>
                         </Link>
@@ -449,11 +556,11 @@ export default function SpotifySearchBar({ className = '', isMobile = false }: {
                 </div>
               )}
 
-              {artists.length > 0 && (
+              {enrichedArtists.length > 0 && (
                 <div>
                   <div className="mb-2 text-xs uppercase tracking-wide text-white/50">Artists</div>
                   <ul className="space-y-2">
-                    {artists.map((artist) => (
+                    {enrichedArtists.map((artist) => (
                       <li key={artist.id}>
                         <Link
                           href={`/artists/${artist.id}`}
@@ -471,11 +578,11 @@ export default function SpotifySearchBar({ className = '', isMobile = false }: {
                 </div>
               )}
 
-              {albums.length > 0 && (
+              {filteredAlbums.length > 0 && (
                 <div>
                   <div className="mb-2 text-xs uppercase tracking-wide text-white/50">Albums</div>
                   <ul className="space-y-2">
-                    {albums.map((album) => (
+                    {filteredAlbums.map((album) => (
                       <li key={album.id}>
                         <Link
                           href={`/albums/${album.id}`}
