@@ -154,10 +154,10 @@ export default function ActionButtons({
 
       {/* Mobile Menu Modal */}
       {showMobileMenu && (
-        <div className={`fixed inset-0 z-50 flex items-end md:hidden ${isPlaying ? 'pb-[180px]' : 'pb-[56px]'}`}>
+        <div className={`fixed inset-0 z-50 flex items-end md:hidden ${isPlaying ? 'pb-[150px]' : 'pb-[70px]'}`}>
           {/* Backdrop */}
           <div 
-            className="absolute inset-0 bg-black bg-opacity-50"
+            className="absolute inset-0 bg-black/75"
             onClick={() => setShowMobileMenu(false)}
           />
           
@@ -170,7 +170,7 @@ export default function ActionButtons({
                 onClick={() => setShowMobileMenu(false)}
                 className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
               >
-                <FaTimes className="text-xl" />
+                <FaTimes className="text-xl cursor-pointer" />
               </button>
             </div>
 
