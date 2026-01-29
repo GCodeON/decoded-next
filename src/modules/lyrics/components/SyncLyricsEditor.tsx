@@ -491,16 +491,18 @@ export default function SyncLyricsEditor({
         />
         {/* Word Timing Mode Toggle */}
         {onSaveWordSync && (
-          <TimingModeToggle
-            wordTimingMode={wordTimingMode}
-            onToggle={() => {
-              setWordTimingMode(!wordTimingMode);
-              setCurrentWordIndex(0);
-            }}
-            wordTimestamps={wordTimestamps}
-            onClearLineWordTimestamps={handleClearLineWordTimestamps}
-            onClearAllWordTimestamps={handleClearAllWordTimestamps}
-          />
+          <div className={wordTimingMode ? "sticky top-0 z-10 bg-white shadow-sm" : ""}>
+            <TimingModeToggle
+              wordTimingMode={wordTimingMode}
+              onToggle={() => {
+                setWordTimingMode(!wordTimingMode);
+                setCurrentWordIndex(0);
+              }}
+              wordTimestamps={wordTimestamps}
+              onClearLineWordTimestamps={handleClearLineWordTimestamps}
+              onClearAllWordTimestamps={handleClearAllWordTimestamps}
+            />
+          </div>
         )}
 
       <div
