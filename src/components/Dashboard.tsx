@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { Divide as Hamburger } from 'hamburger-react';
 import Navigation from '@/components/Navigation';
 import { SpotifyWebPlayer } from '@/modules/player';
+import SpotifySearchBar from '@/components/SpotifySearchBar';
 
 interface SidebarContextType {
   isOpen: boolean;
@@ -71,12 +72,20 @@ function DashboardUI({ children }: { children: React.ReactNode }) {
       )}
 
       <main className="relative flex flex-1 flex-col w-full h-[100dvh] lg:h-screen">
-        <div className="flex items-center justify-between p-2 shadow-md lg:hidden">
+        <div className="flex items-center justify-between gap-3 p-3 shadow-md lg:hidden">
           <Link href="/">
-            <h1 className="title text-md md:text-lg font-bold">DECODED</h1>
+            <h1 className="title text-sm md:text-md font-bold">DECODED</h1>
           </Link>
+          <div className="flex-1" />
+          <SpotifySearchBar isMobile />
           <div className="position relative z-50">
             <Hamburger toggled={isOpen} toggle={setOpen} rounded />
+          </div>
+        </div>
+
+        <div className="hidden lg:flex items-center justify-center px-6 py-4 border-b border-white/10 bg-black/40">
+          <div className="w-full max-w-2xl">
+            <SpotifySearchBar />
           </div>
         </div>
 

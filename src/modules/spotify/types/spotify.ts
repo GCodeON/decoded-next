@@ -9,6 +9,8 @@ export interface SpotifyAlbum {
   id: string;
   name: string;
   images: { url: string; width?: number; height?: number }[];
+  artists?: { id: string; name: string }[];
+  release_date?: string;
   tracks?: {
     items: SpotifyTrack[];
   };
@@ -44,4 +46,17 @@ export interface SavedTracksResponse {
   limit: number;
   offset: number;
   total: number;
+}
+
+export interface SpotifySearchResult<T> {
+  items: T[];
+  limit: number;
+  offset: number;
+  total: number;
+}
+
+export interface SpotifySearchResponse {
+  tracks?: SpotifySearchResult<SpotifyTrack>;
+  artists?: SpotifySearchResult<SpotifyArtist>;
+  albums?: SpotifySearchResult<SpotifyAlbum>;
 }
