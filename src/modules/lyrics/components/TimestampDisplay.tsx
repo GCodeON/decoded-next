@@ -34,7 +34,7 @@ export function TimestampDisplay({
 
   if (time === null) {
     return (
-      <div className={`${width} text-center font-mono text-sm`}>
+      <div className={`${width} text-center font-mono text-xs md:text-sm`}>
         <span className="text-gray-400">[--:--.--]</span>
       </div>
     );
@@ -42,7 +42,7 @@ export function TimestampDisplay({
 
   if (isThisItemEditing) {
     return (
-      <div className={`${width} text-center font-mono text-sm`}>
+      <div className={`${width} text-center font-mono text-xs md:text-sm`}>
         <input
           type="text"
           value={editValue}
@@ -58,7 +58,7 @@ export function TimestampDisplay({
             }
           }}
           onBlur={cancelOnBlur ? onCancelEdit : undefined}
-          className={`w-full px-1 text-right font-mono text-sm border-2 border-yellow-500 rounded bg-white focus:outline-none text-black`}
+          className={`w-full px-1 text-right font-mono text-xs md:text-sm border-2 border-yellow-500 rounded bg-white focus:outline-none text-black`}
           autoFocus
           onFocus={(e) => e.target.select()}
           onClick={(e) => e.stopPropagation()}
@@ -68,7 +68,7 @@ export function TimestampDisplay({
   }
 
   return (
-    <div className={`${width} text-right font-mono text-sm`}>
+    <div className={`${width} text-right font-mono text-xs md:text-sm`}>
       <span
         onClick={(e) => {
           e.stopPropagation();

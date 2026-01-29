@@ -91,7 +91,7 @@ export default function WordEditor({
 
   return (
     <div
-      className={`flex flex-col gap-3 p-4 rounded-lg border-2 transition-all ${
+      className={`flex flex-col gap-3 p-2 md:p-4 rounded-lg border-2 transition-all ${
         isActive
           ? 'bg-yellow-100 border-yellow-500 shadow-xl'
           : time !== null
@@ -100,7 +100,7 @@ export default function WordEditor({
       }`}
     >
       {/* Line-level controls */}
-      <div className="flex gap-4 items-center cursor-pointer" onClick={onGoToLine}>
+      <div className="flex gap-2 md:gap-4 items-center cursor-pointer" onClick={onGoToLine}>
         <TimestampDisplay
           time={time}
           isEditing={editingIndex === lineIndex}
@@ -115,14 +115,14 @@ export default function WordEditor({
           compact={false}
         />
 
-        <div className="flex-1 font-medium text-lg text-black">
+        <div className="flex-1 font-medium text-sm md:text-lg text-black">
           {line?.trim() ? line : '(instrumental)'}
         </div>
       </div>
 
       {/* Word-level controls */}
       {line?.trim() && (
-        <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-200">
+        <div className="flex flex-wrap gap-1 md:gap-2 pt-2 border-t border-gray-200">
           {lineWords.map((word, wi) => {
             // Calculate the position of this specific word instance
             const lineText = line.trim();
@@ -156,7 +156,7 @@ export default function WordEditor({
             return (
               <div
                 key={wi}
-                className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-md transition-all text-sm font-medium ${
+                className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-md transition-all text-xs md:text-sm font-medium ${
                   isCurrent
                     ? 'bg-yellow-500 text-white ring-2 ring-yellow-600 shadow-lg'
                     : hasTime
