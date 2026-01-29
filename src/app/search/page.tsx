@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import { useSpotifyApi, SpotifySearchResponse } from '@/modules/spotify';
 
-const FULL_RESULTS_LIMIT = 50;
+const FULL_RESULTS_LIMIT = 5;
 
 function ResultImage({ src, alt }: { src?: string; alt?: string }) {
   if (!src) {
@@ -90,7 +90,7 @@ export default function SearchPage() {
       )}
 
       {!isLoading && !error && query && (
-        <div className="space-y-8">
+        <div className="flex flex-col gap-8 md:grid md:grid-cols-3 md:gap-6">
           {tracks.length > 0 && (
             <section>
               <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-white/60">Songs</h2>

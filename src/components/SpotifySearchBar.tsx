@@ -3,10 +3,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useSpotifyApi, SpotifySearchResponse } from '@/modules/spotify';
 
-const RESULTS_LIMIT = 5;
+const RESULTS_LIMIT_DESKTOP = 3;
+const RESULTS_LIMIT_MOBILE = 3;
 const MIN_QUERY_LENGTH = 2;
 
 function getInitials(name?: string) {
@@ -39,9 +40,14 @@ function ResultImage({ src, alt }: { src?: string; alt?: string }) {
 export default function SpotifySearchBar({ className = '', isMobile = false }: { className?: string; isMobile?: boolean }) {
   const spotify = useSpotifyApi();
   const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const requestIdRef = useRef(0);
+
+  const isOnSearchPage = pathname === '/search';
+  const urlQuery = searchParams.get('q') ?? '';
 
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SpotifySearchResponse | null>(null);
@@ -57,6 +63,13 @@ export default function SpotifySearchBar({ className = '', isMobile = false }: {
   const artists = results?.artists?.items ?? [];
   const albums = results?.albums?.items ?? [];
   const hasResults = tracks.length > 0 || artists.length > 0 || albums.length > 0;
+
+  // Sync query state with URL params when on search page
+  useEffect(() => {
+    if (isOnSearchPage && urlQuery !== query) {
+      setQuery(urlQuery);
+    }
+  }, [isOnSearchPage, urlQuery]);
 
   useEffect(() => {
     setIsOpen(false);
@@ -75,6 +88,19 @@ export default function SpotifySearchBar({ className = '', isMobile = false }: {
     }
   }, [isExpanded, isMobile]);
 
+  // Update URL query param when on search page and user types
+  useEffect(() => {
+    if (!isOnSearchPage || !shouldSearch) return;
+
+    const timeoutId = window.setTimeout(() => {
+      if (trimmedQuery !== urlQuery) {
+        router.replace(`/search?q=${encodeURIComponent(trimmedQuery)}`, { scroll: false });
+      }
+    }, 500);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [isOnSearchPage, shouldSearch, trimmedQuery, urlQuery, router]);
+
   useEffect(() => {
     if (!shouldSearch) {
       setResults(null);
@@ -84,12 +110,19 @@ export default function SpotifySearchBar({ className = '', isMobile = false }: {
       return;
     }
 
-    setIsOpen(true);
+    // Don't show dropdown on search page
+    if (isOnSearchPage) {
+      setIsOpen(false);
+    } else {
+      setIsOpen(true);
+    }
+    
     setIsLoading(true);
     const requestId = ++requestIdRef.current;
     const timeoutId = window.setTimeout(async () => {
       try {
-        const data = await spotify.search(trimmedQuery, { limit: RESULTS_LIMIT });
+        const limit = isMobile ? RESULTS_LIMIT_MOBILE : RESULTS_LIMIT_DESKTOP;
+        const data = await spotify.search(trimmedQuery, { limit });
         if (requestId !== requestIdRef.current) return;
         setResults(data);
         setError(null);
@@ -105,7 +138,7 @@ export default function SpotifySearchBar({ className = '', isMobile = false }: {
     }, 300);
 
     return () => window.clearTimeout(timeoutId);
-  }, [shouldSearch, trimmedQuery, spotify]);
+  }, [shouldSearch, trimmedQuery, spotify, isMobile, isOnSearchPage]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -216,99 +249,101 @@ export default function SpotifySearchBar({ className = '', isMobile = false }: {
         </div>
 
         {isOpen && (
-          <div className="absolute left-0 right-0 top-full z-50 mt-2 rounded-xl border border-white/10 bg-black/95 p-4 shadow-lg backdrop-blur">
-            {isLoading && (
-              <div className="text-sm text-white/60">Searching…</div>
-            )}
+          <div className="fixed inset-x-0 top-[60px] z-50 mx-3 rounded-xl border border-white/10 bg-black/95 shadow-lg backdrop-blur flex flex-col max-h-[70vh]">
+            <div className="overflow-y-auto p-4 flex-1">
+              {isLoading && (
+                <div className="text-sm text-white/60">Searching…</div>
+              )}
 
-            {!isLoading && error && (
-              <div className="text-sm text-red-400">{error}</div>
-            )}
+              {!isLoading && error && (
+                <div className="text-sm text-red-400">{error}</div>
+              )}
 
-            {!isLoading && !error && !hasResults && (
-              <div className="text-sm text-white/60">No results found.</div>
-            )}
+              {!isLoading && !error && !hasResults && (
+                <div className="text-sm text-white/60">No results found.</div>
+              )}
 
-            {!isLoading && !error && hasResults && (
-              <div className="space-y-4">
-                {tracks.length > 0 && (
-                  <div>
-                    <div className="mb-2 text-xs uppercase tracking-wide text-white/50">Songs</div>
-                    <ul className="space-y-2">
-                      {tracks.map((track) => (
-                        <li key={track.id}>
-                          <Link
-                            href={`/songs/${track.id}`}
-                            className="flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-white/5"
-                            onClick={() => setIsOpen(false)}
-                          >
-                            <ResultImage src={track.album?.images?.[0]?.url} alt={track.name} />
-                            <div className="min-w-0">
-                              <div className="truncate text-sm text-white">{track.name}</div>
-                              <div className="truncate text-xs text-white/50">
-                                {track.artists?.map((artist) => artist.name).join(', ')}
-                              </div>
-                            </div>
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {artists.length > 0 && (
-                  <div>
-                    <div className="mb-2 text-xs uppercase tracking-wide text-white/50">Artists</div>
-                    <ul className="space-y-2">
-                      {artists.map((artist) => (
-                        <li key={artist.id}>
-                          <Link
-                            href={`/artists/${artist.id}`}
-                            className="flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-white/5"
-                            onClick={() => setIsOpen(false)}
-                          >
-                            <ResultImage src={artist.images?.[0]?.url} alt={artist.name} />
-                            <div className="min-w-0">
-                              <div className="truncate text-sm text-white">{artist.name}</div>
-                            </div>
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {albums.length > 0 && (
-                  <div>
-                    <div className="mb-2 text-xs uppercase tracking-wide text-white/50">Albums</div>
-                    <ul className="space-y-2">
-                      {albums.map((album) => (
-                        <li key={album.id}>
-                          <Link
-                            href={`/albums/${album.id}`}
-                            className="flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-white/5"
-                            onClick={() => setIsOpen(false)}
-                          >
-                            <ResultImage src={album.images?.[0]?.url} alt={album.name} />
-                            <div className="min-w-0">
-                              <div className="truncate text-sm text-white">{album.name}</div>
-                              {album.artists?.length ? (
+              {!isLoading && !error && hasResults && (
+                <div className="space-y-4">
+                  {tracks.length > 0 && (
+                    <div>
+                      <div className="mb-2 text-xs uppercase tracking-wide text-white/50">Songs</div>
+                      <ul className="space-y-2">
+                        {tracks.map((track) => (
+                          <li key={track.id}>
+                            <Link
+                              href={`/songs/${track.id}`}
+                              className="flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-white/5"
+                              onClick={() => setIsOpen(false)}
+                            >
+                              <ResultImage src={track.album?.images?.[0]?.url} alt={track.name} />
+                              <div className="min-w-0">
+                                <div className="truncate text-sm text-white">{track.name}</div>
                                 <div className="truncate text-xs text-white/50">
-                                  {album.artists.map((artist) => artist.name).join(', ')}
+                                  {track.artists?.map((artist) => artist.name).join(', ')}
                                 </div>
-                              ) : null}
-                            </div>
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            )}
+                              </div>
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {artists.length > 0 && (
+                    <div>
+                      <div className="mb-2 text-xs uppercase tracking-wide text-white/50">Artists</div>
+                      <ul className="space-y-2">
+                        {artists.map((artist) => (
+                          <li key={artist.id}>
+                            <Link
+                              href={`/artists/${artist.id}`}
+                              className="flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-white/5"
+                              onClick={() => setIsOpen(false)}
+                            >
+                              <ResultImage src={artist.images?.[0]?.url} alt={artist.name} />
+                              <div className="min-w-0">
+                                <div className="truncate text-sm text-white">{artist.name}</div>
+                              </div>
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {albums.length > 0 && (
+                    <div>
+                      <div className="mb-2 text-xs uppercase tracking-wide text-white/50">Albums</div>
+                      <ul className="space-y-2">
+                        {albums.map((album) => (
+                          <li key={album.id}>
+                            <Link
+                              href={`/albums/${album.id}`}
+                              className="flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-white/5"
+                              onClick={() => setIsOpen(false)}
+                            >
+                              <ResultImage src={album.images?.[0]?.url} alt={album.name} />
+                              <div className="min-w-0">
+                                <div className="truncate text-sm text-white">{album.name}</div>
+                                {album.artists?.length ? (
+                                  <div className="truncate text-xs text-white/50">
+                                    {album.artists.map((artist) => artist.name).join(', ')}
+                                  </div>
+                                ) : null}
+                              </div>
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
 
             {shouldSearch && (
-              <div className="mt-4 border-t border-white/10 pt-3 text-right">
+              <div className="sticky bottom-0 border-t border-white/10 bg-black/95 px-4 py-3 text-right backdrop-blur">
                 <Link
                   href={viewAllHref}
                   onClick={() => setIsOpen(false)}
@@ -371,15 +406,17 @@ export default function SpotifySearchBar({ className = '', isMobile = false }: {
           </button>
         )}
       </div>
-      {isOpen && (
-        <div className="absolute left-0 right-0 top-full z-50 mt-2 rounded-xl border border-white/10 bg-black/95 p-4 shadow-lg backdrop-blur">
-          {isLoading && (
-            <div className="text-sm text-white/60">Searching…</div>
-          )}
 
-          {!isLoading && error && (
-            <div className="text-sm text-red-400">{error}</div>
-          )}
+      {isOpen && (
+        <div className="absolute left-0 right-0 top-full z-50 mt-2 rounded-xl border border-white/10 bg-black/95 shadow-lg backdrop-blur flex flex-col max-h-[70vh]">
+          <div className="overflow-y-auto p-4 flex-1">
+            {isLoading && (
+              <div className="text-sm text-white/60">Searching…</div>
+            )}
+
+            {!isLoading && error && (
+              <div className="text-sm text-red-400">{error}</div>
+            )}
 
           {!isLoading && !error && !hasResults && (
             <div className="text-sm text-white/60">No results found.</div>
@@ -462,9 +499,10 @@ export default function SpotifySearchBar({ className = '', isMobile = false }: {
               )}
             </div>
           )}
+          </div>
 
           {shouldSearch && (
-            <div className="mt-4 border-t border-white/10 pt-3 text-right">
+            <div className="sticky bottom-0 border-t border-white/10 bg-black/95 px-4 py-3 text-right backdrop-blur">
               <Link
                 href={viewAllHref}
                 onClick={() => setIsOpen(false)}
