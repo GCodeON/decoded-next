@@ -36,7 +36,7 @@ export default function Home() {
   });
 
   return (
-    <div className="flex flex-col items-center py-8 space-y-8">
+    <div className="flex flex-col items-center md:py-8 space-y-8">
       <div className="w-full max-w-7xl">
         { currentTrack ? (
           <div className="bg-black rounded-xl shadow-lg p-6 mb-4">

@@ -4,7 +4,7 @@ import EncodedSongsList from '@/components/EncodedSongsList';
 
 export default function Songs() {
   return (
-    <div className="flex flex-col items-center py-8 space-y-8">
+    <div className="flex flex-col items-center md:py-8 space-y-8">
       {/* Featured Carousel */}
       <div className="w-full max-w-7xl">
         <LatestEncoded 
