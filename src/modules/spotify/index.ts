@@ -26,5 +26,7 @@ export type {
   SpotifyAlbum,
   SpotifyRequestOptions,
   PlaybackState,
-  SavedTracksResponse
+  SavedTracksResponse,
+  SpotifySearchResult,
+  SpotifySearchResponse
 } from './types/spotify';

@@ -5,7 +5,8 @@ import {
   SpotifyArtist, 
   SpotifyAlbum, 
   PlaybackState, 
-  SavedTracksResponse  
+  SavedTracksResponse,
+  SpotifySearchResponse
 } from '@/modules/spotify';
 
 /**
@@ -49,6 +50,20 @@ export function createSpotifyService(transport: SpotifyTransport) {
 
     async getArtistAlbums(artistId: string): Promise<{ items: SpotifyAlbum[] }> {
       return transport.request<{ items: SpotifyAlbum[] }>('GET', spotifyEndpoints.artistAlbums(artistId));
+    },
+
+    async search(
+      query: string,
+      options?: { limit?: number; offset?: number; types?: Array<'track' | 'artist' | 'album'> }
+    ): Promise<SpotifySearchResponse> {
+      const limit = options?.limit ?? 5;
+      const offset = options?.offset ?? 0;
+      const types = options?.types ?? ['track', 'artist', 'album'];
+
+      return transport.request<SpotifySearchResponse>(
+        'GET',
+        spotifyEndpoints.search(query, types, limit, offset)
+      );
     },
 
     async play(deviceId?: string, uris?: string[], position_ms?: number): Promise<void> {

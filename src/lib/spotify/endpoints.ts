@@ -4,6 +4,12 @@ export const spotifyEndpoints = {
   album: (id: string) => `/albums/${id}`,
   artist: (id: string) => `/artists/${id}`,
   artistAlbums: (id: string) => `/artists/${id}/albums`,
+  search: (
+    query: string,
+    types: Array<'track' | 'artist' | 'album'> = ['track', 'artist', 'album'],
+    limit = 5,
+    offset = 0
+  ) => `/search?q=${encodeURIComponent(query)}&type=${types.join(',')}&limit=${limit}&offset=${offset}`,
   topArtists: (limit = 20) => `/me/top/artists?limit=${limit}`,
   playback: () => '/me/player',
   transferPlayback: () => '/me/player',

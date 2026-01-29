@@ -35,11 +35,11 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
   const hasSynced = !!displayLyrics?.synced;
   const hasWordSynced = !!displayLyrics?.wordSynced;
 
-  useEffect(() => {
-    if (hasWordSynced) {
-      setWordSyncEnabled(true);
-    }
-  }, [hasWordSynced]);
+  // useEffect(() => {
+  //   if (hasWordSynced) {
+  //     setWordSyncEnabled(true);
+  //   }
+  // }, [hasWordSynced]);
 
   useEffect(() => {
     setRhymeColorMappingComplete(!!savedSong?.lyrics?.rhymeColorMappingComplete);
