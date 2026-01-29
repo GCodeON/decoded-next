@@ -164,7 +164,7 @@ export default function LatestEncoded({
     <div className="w-full mx-auto p-4 md:p-6 space-y-4">
         {showTitle && (
         <div className="mb-6">
-            <h1 className="text-3xl font-bold text-white mb-2">{title}</h1>
+            <h1 className="text-smmd:text-3xl font-bold text-white mb-2">{title}</h1>
             {showCount && (
             <p className="text-gray-400">
                 {songs.length} {songs.length === 1 ? 'song' : 'songs'} found

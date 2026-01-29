@@ -36,7 +36,7 @@ export default function SongHeader({
   return (
     <div className="space-y-4">
       {showTitle && (
-        <h1 className="text-3xl md:text-3xl font-bold text-white">{title}</h1>
+        <h1 className="text-sm md:text-3xl md:text-3xl font-bold text-white">{title}</h1>
       )}
       <div className="flex md:flex-row items-center space-x-6">
         <div className='relative order-1 md:order-1'>
@@ -62,10 +62,10 @@ export default function SongHeader({
 
         <div className="flex-1 order-1 md:order-2 mb-4 md:mb-0 text-wrap text-left">
           <Link className="link" href={`/songs/${track.id}`}>
-            <h1 className="text-3xl font-bold text-white">{track.name}</h1>
+            <h1 className="text-lg md:text-3xl font-bold text-white">{track.name}</h1>
           </Link>
           
-          <p className="text-xl text-white mt-1">
+          <p className="text-base md:text-xl text-white mt-1">
             {track.artists.map((a) => a.name).join(', ')}
           </p>
           <p className="text-sm text-white mt-2">Album: {track.album.name}</p>
