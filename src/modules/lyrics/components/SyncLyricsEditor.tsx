@@ -49,6 +49,9 @@ export default function SyncLyricsEditor({
   const hasSynced = !!displayLyrics?.synced;
   
   const containerRef = useRef<HTMLDivElement>(null);
+  // Refs to always have the latest position values for stamping
+  const currentPositionMsRef = useRef(currentPositionMs);
+  const currentPositionRef = useRef(currentPosition);
   const [wordTimingMode, setWordTimingMode] = useState(false);
   const [wordTimestamps, setWordTimestamps] = useState<Map<number, Word[]>>(new Map());
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
@@ -71,6 +74,12 @@ export default function SyncLyricsEditor({
       }
     }
   }, [existingWordLrc]);
+
+  // Keep position refs updated with latest values
+  useEffect(() => {
+    currentPositionMsRef.current = currentPositionMs;
+    currentPositionRef.current = currentPosition;
+  }, [currentPositionMs, currentPosition]);
 
   const { lines, timestamps, setTimestamps, allStamped, activeLine } = useLyricSync({
     plainLyrics,
@@ -209,7 +218,8 @@ export default function SyncLyricsEditor({
 
 
   const handleStampLine = useCallback((index: number) => {
-    const ms = typeof currentPositionMs === 'number' ? currentPositionMs : currentPosition * 1000;
+    // Use refs to get the LATEST position value, not closure value
+    const ms = typeof currentPositionMsRef.current === 'number' ? currentPositionMsRef.current : currentPositionRef.current * 1000;
     const sec = Math.floor(ms / 1000);
     const lineTime = Number(sec.toFixed(2));
     
@@ -271,7 +281,7 @@ export default function SyncLyricsEditor({
     if (isPlaying) {
       setManualNavigation(true);
     }
-  }, [currentPositionMs, currentPosition, currentLine, lines.length, setTimestamps, isPlaying, lines]);
+  }, [currentLine, lines.length, setTimestamps, isPlaying, lines]);
 
   const handleStampWord = useCallback((lineIndex: number, wordIndex: number, wordText: string) => {
     if (!wordText || wordText.trim().length === 0) {
@@ -279,7 +289,8 @@ export default function SyncLyricsEditor({
       return;
     }
     
-    const ms = typeof currentPositionMs === 'number' ? currentPositionMs : currentPosition * 1000;
+    // Use refs to get the LATEST position value, not closure value
+    const ms = typeof currentPositionMsRef.current === 'number' ? currentPositionMsRef.current : currentPositionRef.current * 1000;
     const timeSec = Number((ms / 1000).toFixed(3));
     
     setWordTimestamps(prev => {
@@ -327,7 +338,7 @@ export default function SyncLyricsEditor({
       
       return newMap;
     });
-  }, [currentPositionMs, currentPosition, lines]);
+  }, [lines]);
 
   const handleSaveWordTime = useCallback((lineIndex: number, wordIndex: number, newTime: number) => {
     const lineText = lines[lineIndex]?.trim() || '';
