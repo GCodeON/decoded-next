@@ -154,7 +154,7 @@ export default function ActionButtons({
 
       {/* Mobile Menu Modal */}
       {showMobileMenu && (
-        <div className={`fixed inset-0 z-50 flex items-end md:hidden ${isPlaying ? 'pb-[120px]' : 'pb-[72px]'}`}>
+        <div className={`fixed inset-0 z-50 flex items-end md:hidden ${isPlaying ? 'pb-[180px]' : 'pb-[56px]'}`}>
           {/* Backdrop */}
           <div 
             className="absolute inset-0 bg-black bg-opacity-50"
