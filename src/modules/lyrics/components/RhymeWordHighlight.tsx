@@ -73,7 +73,7 @@ export const RhymeWordHighlight = memo(function RhymeWordHighlight({
           backgroundColor: bgColor || 'transparent',
           color: textColor || undefined,
           textDecoration: underline ? 'underline' : undefined,
-          transition: 'opacity 160ms ease-out, transform 200ms ease-out',
+          transition: 'opacity 160ms ease-out, transform 200ms ease-out, clip-path 200ms ease-out',
           transitionDelay: `${delayMs}ms`,
         });
       }
@@ -120,8 +120,10 @@ export const RhymeWordHighlight = memo(function RhymeWordHighlight({
                 <span
                   style={{
                     ...styleCache(segBgColor, seg.textColor, seg.underline, wordDelay),
-                    opacity: progress > 0 ? 1 : 0.6,
-                    transform: progress > 0 ? 'translateY(0px)' : 'translateY(2px)',
+                    opacity: 0.6 + (easedProgress * 0.4),
+                    transform: `translateY(${2 - (easedProgress * 2)}px) scaleX(${0.95 + (easedProgress * 0.05)})`,
+                    transformOrigin: 'left center',
+                    clipPath: `inset(0 ${(1 - easedProgress) * 100}% 0 0)`,
                   }}
                 >
                   {visibleText}
