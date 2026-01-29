@@ -132,7 +132,7 @@ const SyncedLyrics = ({
             style={{ touchAction: 'manipulation' }}
             className={`px-3 md:px-6 py-3 rounded-lg transition-all ${
               isActive
-                ? 'bg-blue-900/40'
+                ? ''
                 : isPast
                 ? 'opacity-80'
                 : 'opacity-40'
