@@ -4,9 +4,10 @@ import { getUserById, updateUserRole } from '@/modules/auth/services/userService
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const cookieStore = await cookies();
     const userId = cookieStore.get('user_id')?.value;
     const userRole = cookieStore.get('user_role')?.value;
@@ -29,7 +30,7 @@ export async function PUT(
     }
 
     // Prevent admin from changing their own role
-    if (userId === params.id) {
+    if (userId === id) {
       return NextResponse.json(
         { error: 'Cannot modify your own role' },
         { status: 400 }
@@ -47,7 +48,7 @@ export async function PUT(
     }
 
     // Verify target user exists
-    const targetUser = await getUserById(params.id);
+    const targetUser = await getUserById(id);
     if (!targetUser) {
       return NextResponse.json(
         { error: 'User not found' },
@@ -56,7 +57,7 @@ export async function PUT(
     }
 
     // Update user role
-    await updateUserRole(params.id, role);
+    await updateUserRole(id, role);
 
     return NextResponse.json({
       success: true,
