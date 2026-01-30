@@ -2,11 +2,14 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { User } from '@/modules/auth/types/user';
 
 export const useAuth = () => {
   const router = useRouter();
   const [isChecking, setIsChecking] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const redirectToLogin = useCallback(() => {
     try {
@@ -16,37 +19,37 @@ export const useAuth = () => {
 
   const checkAuth = useCallback(async () => {
     setIsChecking(true);
+    setError(null);
     try {
-      const res = await fetch('/api/auth/token', { credentials: 'include' });
-      const contentType = res.headers.get('content-type') || '';
-
-      if (contentType.includes('text/html')) {
-        setIsAuthenticated(false);
-        setIsChecking(false);
-        redirectToLogin();
-        return false;
-      }
-
+      const res = await fetch('/api/auth/me', { credentials: 'include' });
+      
       if (!res.ok) {
         setIsAuthenticated(false);
+        setUser(null);
         setIsChecking(false);
-        redirectToLogin();
         return false;
       }
 
-      setIsAuthenticated(true);
-      setIsChecking(false);
-      return true;
-
-    } catch (err) {
-
-      setIsAuthenticated(false);
-      setIsChecking(false);
-      redirectToLogin();
-      return false;
+      const data = await res.json();
       
+      if (data.authenticated && data.user) {
+        setIsAuthenticated(true);
+        setUser(data.user);
+        setIsChecking(false);
+        return true;
+      } else {
+        setIsAuthenticated(false);
+        setUser(null);
+        setIsChecking(false);
+        return false;
+      }
+    } catch (err) {
+      setIsAuthenticated(false);
+      setUser(null);
+      setIsChecking(false);
+      return false;
     }
-  }, [redirectToLogin]);
+  }, []);
 
   useEffect(() => {
     checkAuth();
@@ -76,11 +79,95 @@ export const useAuth = () => {
     window.location.href = `https://accounts.spotify.com/authorize?${params}`;
   }, []);
 
-  const logout = useCallback(async () => {
+  const register = useCallback(async (email: string, password: string, displayName: string) => {
+    setError(null);
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, displayName }),
+        credentials: 'include',
+      });
 
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || 'Registration failed');
+        return false;
+      }
+
+      return true;
+    } catch (err: any) {
+      setError(err.message || 'Registration failed');
+      return false;
+    }
+  }, []);
+
+  const loginWithEmail = useCallback(async (email: string, password: string) => {
+    setError(null);
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+        credentials: 'include',
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || 'Login failed');
+        return false;
+      }
+
+      setUser(data.user);
+      setIsAuthenticated(true);
+      return true;
+    } catch (err: any) {
+      setError(err.message || 'Login failed');
+      return false;
+    }
+  }, []);
+
+  const resendVerification = useCallback(async () => {
+    setError(null);
+    try {
+      const res = await fetch('/api/auth/resend-verification', {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || 'Failed to resend verification email');
+        return false;
+      }
+
+      return true;
+    } catch (err: any) {
+      setError(err.message || 'Failed to resend verification email');
+      return false;
+    }
+  }, []);
+
+  const logout = useCallback(async () => {
+    setError(null);
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
+
+    // Clear local state
+    setIsAuthenticated(false);
+    setUser(null);
     document.cookie.split(';').forEach((c) => {
       const [name] = c.trim().split('=');
-      if (name.startsWith('spotify_')) {
+      if (name.startsWith('spotify_') || name.startsWith('user_') || name.startsWith('firebase_')) {
         document.cookie = `${name}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;`;
       }
     });
@@ -94,7 +181,20 @@ export const useAuth = () => {
     } catch (e) {}
   }, [router]);
 
-  return { login, logout, isChecking, isAuthenticated, checkAuth, redirectToLogin };
+  return {
+    login,
+    loginWithEmail,
+    register,
+    resendVerification,
+    logout,
+    isChecking,
+    isAuthenticated,
+    user,
+    checkAuth,
+    redirectToLogin,
+    error,
+    setError,
+  };
 };
 
 export default useAuth;

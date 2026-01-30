@@ -1,7 +1,13 @@
 export interface User {
   id: string;
   display_name: string;
+  email?: string;
+  emailVerified?: boolean;
+  authProvider?: 'spotify' | 'email';
+  role?: 'admin' | 'user';
   images?: { url: string }[];
+  createdAt?: number;
+  lastLoginAt?: number;
 }
 
 export interface AuthState {
