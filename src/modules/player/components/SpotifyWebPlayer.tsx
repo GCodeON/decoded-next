@@ -65,7 +65,7 @@ export default function SpotifyWebPlayer() {
 
   if (!token) {
     return (
-      <div className="flex items-center justify-center w-full bg-black p-2">
+      <div className="flex items-center justify-center w-full bg-black p-2 fixed bottom-0 left-0 right-0 z-50 lg:left-48 lg:right-auto lg:w-[calc(100%-12rem)]">
         <button
           type="button"
           onClick={handleSpotifyLogin}

@@ -29,12 +29,14 @@ export default function Navigation() {
 
       {/* Admin Link */}
       {isAuthenticated && user?.role === 'admin' && (
-        <Link
-          href="/admin"
-          className={pathname === '/admin' ? 'text-blue-500' : 'text-white hover:text-gray-300'}
-        >
-          Admin Dashboard
-        </Link>
+        <div className="pt-4 border-t border-gray-700">
+          <Link
+            href="/admin"
+            className={pathname === '/admin' ? 'text-blue-500' : 'text-white hover:text-gray-300'}
+          >
+            Admin Dashboard
+          </Link>
+        </div>
       )}
 
       <div className="pt-4 border-t border-gray-700">
