@@ -2,6 +2,7 @@
 import { SpotifyPlayerProvider, PlaybackStateProvider } from '@/modules/player';
 import { AuthGuard } from '@/modules/auth';
 import Dashboard from '@/components/Dashboard';
+import VerificationPrompt from '@/components/VerificationPrompt';
 
 export default function ClientProviders({children}: {children: React.ReactNode}) {
   return (
@@ -9,6 +10,7 @@ export default function ClientProviders({children}: {children: React.ReactNode})
       <Dashboard>
         <AuthGuard>
           <PlaybackStateProvider />
+          <VerificationPrompt />
           {children}
         </AuthGuard>
       </Dashboard>
