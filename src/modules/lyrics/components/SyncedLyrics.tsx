@@ -130,7 +130,7 @@ const SyncedLyrics = ({
             key={i}
             {...tapHandlers}
             style={{ touchAction: 'manipulation' }}
-            className={`px-3 md:px-6 py-3 rounded-lg transition-all ${
+            className={`px-3 md:px-6 py-2 rounded-lg transition-all ${
               isActive
                 ? ''
                 : isPast
