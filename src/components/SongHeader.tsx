@@ -11,6 +11,7 @@ export default function SongHeader({
     togglePlayback,
     rhymeColorMappingComplete,
     isAdmin = false,
+    showPlaybackControl = true,
     showTitle = false,
     title = "Now Playing"
 }: { 
@@ -19,6 +20,7 @@ export default function SongHeader({
     togglePlayback?: () => void;
     rhymeColorMappingComplete?: boolean;
     isAdmin?: boolean;
+    showPlaybackControl?: boolean;
     showTitle?: boolean;
     title?: string;
 }) {
@@ -50,15 +52,17 @@ export default function SongHeader({
               className="rounded-lg object-cover"
             />
           </div>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <button
-              onClick={handleToggle}
-              aria-label={optimisticIsPlaying ? 'Pause' : 'Play'}
-              className="text-green-500 hover:text-green-600 transition bg-white bg-opacity-100 rounded-full cursor-pointer"
-            >
-              {optimisticIsPlaying ? <FaPauseCircle size={48} /> : <FaPlayCircle size={48} />}
-            </button>
-          </div>
+          {showPlaybackControl && togglePlayback && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <button
+                onClick={handleToggle}
+                aria-label={optimisticIsPlaying ? 'Pause' : 'Play'}
+                className="text-green-500 hover:text-green-600 transition bg-white bg-opacity-100 rounded-full cursor-pointer"
+              >
+                {optimisticIsPlaying ? <FaPauseCircle size={48} /> : <FaPlayCircle size={48} />}
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="flex-1 order-1 md:order-2 mb-4 md:mb-0 text-wrap text-left">

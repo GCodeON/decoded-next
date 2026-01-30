@@ -9,9 +9,10 @@ import { parseLrcForEditing } from '@/modules/lyrics/utils/lrc';
 interface UseSavedSongParams {
   track: SpotifyTrack | null;
   trackId: string;
+  allowWrite?: boolean;
 }
 
-export function useSavedSong({ track, trackId }: UseSavedSongParams) {
+export function useSavedSong({ track, trackId, allowWrite = true }: UseSavedSongParams) {
   const [savedSong, setSavedSong] = useState<SavedSong | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [shouldFetchLyrics, setShouldFetchLyrics] = useState(false);
@@ -30,6 +31,7 @@ export function useSavedSong({ track, trackId }: UseSavedSongParams) {
 
   const createAndSaveSong = useCallback(
     async (plain: string, rhymeEncoded: string, synced: string | null = null) => {
+      if (!allowWrite) return null;
       if (!track) return null;
 
       setIsSaving(true);
@@ -52,7 +54,7 @@ export function useSavedSong({ track, trackId }: UseSavedSongParams) {
       } finally {
         setIsSaving(false);
       }
-    }, [track, trackId, artistName]
+    }, [track, trackId, artistName, allowWrite]
   );
 
   // Load from Firestore
@@ -95,11 +97,24 @@ export function useSavedSong({ track, trackId }: UseSavedSongParams) {
     const synced = lyricsData.lyrics.synced?.trim() || null;
     const rhymeEncoded = lyricsToHtml(plain);
 
+    if (!allowWrite) {
+      setSavedSong({
+        title: cleanTrackName(track.name),
+        artist: artistName,
+        artists: track.artists,
+        spotify: trackId,
+        lyrics: { plain, synced, wordSynced: null, rhymeEncoded },
+      });
+      setShouldFetchLyrics(false);
+      return;
+    }
+
     createAndSaveSong(plain, rhymeEncoded, synced);
-  }, [lyricsData, savedSong, track, createAndSaveSong]);
+  }, [lyricsData, savedSong, track, createAndSaveSong, allowWrite, artistName, trackId]);
 
   const updateLyrics = useCallback(
     async (htmlContent: string) => {
+      if (!allowWrite) return;
 
       const plain = htmlToLyrics(htmlContent);
 
@@ -210,11 +225,12 @@ export function useSavedSong({ track, trackId }: UseSavedSongParams) {
         console.error('Failed to update lyrics:', err);
       }
     },
-    [savedSong, trackId]
+    [savedSong, trackId, allowWrite]
   );
 
   const updateSynced = useCallback(
     async (syncedLrc: string) => {
+      if (!allowWrite) return;
       if (!savedSong) return;
 
       const trimmed = syncedLrc.trim() || null;
@@ -234,11 +250,12 @@ export function useSavedSong({ track, trackId }: UseSavedSongParams) {
         console.error('Failed to update synced lyrics:', err);
       }
     },
-    [savedSong, trackId, publishIfReady]
+    [savedSong, trackId, publishIfReady, allowWrite]
   );
 
   const updateWordSynced = useCallback(
     async (wordSyncedLrc: string) => {
+      if (!allowWrite) return;
       if (!savedSong) return;
 
       const trimmed = wordSyncedLrc.trim() || null;
@@ -255,7 +272,7 @@ export function useSavedSong({ track, trackId }: UseSavedSongParams) {
         console.error('Failed to update word-synced lyrics:', err);
       }
     },
-    [savedSong, trackId]
+    [savedSong, trackId, allowWrite]
   );
 
   return {

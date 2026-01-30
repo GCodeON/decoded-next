@@ -92,8 +92,15 @@ export function usePlaybackState(enabled: boolean = true) {
         webPosition: isWebPlayer ? newPosition : lastStateRef.current?.webPosition,
         webIsPlaying: isWebPlayer ? newIsPlaying : lastStateRef.current?.webIsPlaying,
       };
-    } catch (err) {
-      // Log once per error class could be added; keep silent for now
+      } catch (err: any) {
+        // Gracefully handle unauthenticated access
+        const errMsg = err?.message || '';
+        if (errMsg.includes('Unauthorized') || errMsg.includes('Unauthenticated') || errMsg.includes('401')) {
+          console.log('[usePlaybackState] User not authenticated - skipping playback state polling');
+          setGlobalIsPlaying(false);
+        } else {
+          console.warn('[usePlaybackState] Error polling playback state:', errMsg);
+        }
     } finally {
       isPollingRef.current = false;
     }

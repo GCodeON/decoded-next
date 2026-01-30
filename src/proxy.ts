@@ -20,6 +20,19 @@ export async function proxy(req: NextRequest) {
     return NextResponse.next();
   }
 
+  const publicSpotifyEndpoints = [
+    '/api/spotify/tracks/',
+    '/api/spotify/albums/',
+    '/api/spotify/artists/',
+    '/api/spotify/search'
+  ];
+  
+  const isPublicSpotifyEndpoint = publicSpotifyEndpoints.some(endpoint => path.startsWith(endpoint));
+  
+  if (isPublicSpotifyEndpoint) {
+    return NextResponse.next();
+  }
+
   const expiresAt = req.cookies.get('spotify_expires_at')?.value;
   const accessToken = req.cookies.get('spotify_access_token')?.value;
   const refreshToken = req.cookies.get('spotify_refresh_token')?.value;

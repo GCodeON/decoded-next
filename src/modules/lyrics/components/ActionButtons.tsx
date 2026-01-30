@@ -14,6 +14,7 @@ export type ActionButtonsProps = {
   lyricsLoading: boolean;
   isPlaying?: boolean;
   isAdmin?: boolean;
+  showWordSyncToggle?: boolean;
   onToggleWordSync: () => void;
   onToggleRhymes: () => void;
   onToggleRhymeComplete: () => void;
@@ -32,6 +33,7 @@ export default function ActionButtons({
   lyricsLoading,
   isPlaying = false,
   isAdmin = false,
+  showWordSyncToggle = true,
   onToggleWordSync,
   onToggleRhymes,
   onToggleRhymeComplete,
@@ -59,7 +61,8 @@ export default function ActionButtons({
     );
   }
 
-  const hasToggleButtons = hasWordSynced || hasRhymeColors;
+  const canShowWordSync = hasWordSynced && showWordSyncToggle;
+  const hasToggleButtons = canShowWordSync || hasRhymeColors;
 
   return (
     <>
@@ -86,7 +89,7 @@ export default function ActionButtons({
         {/* Right: Toggles */}
         {hasToggleButtons && (
           <div className="flex flex-row gap-4 items-center justify-end md:order-2">
-            {hasWordSynced && (
+            {canShowWordSync && (
               <label className="flex items-center gap-2 cursor-pointer">
                 <div className="relative inline-block w-11 h-6">
                   <input
@@ -162,7 +165,7 @@ export default function ActionButtons({
         {hasToggleButtons && (
           <div className="bg-black  border-gray-700">
             <div className="p-2 flex flex-row gap-3 items-center justify-center flex-wrap w-full">
-              {hasWordSynced && (
+              {canShowWordSync && (
                 <label className="flex items-center gap-1 cursor-pointer">
                   <div className="relative inline-block w-10 h-6">
                     <input

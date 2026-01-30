@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
 
     // Send verification email
     await sendEmailVerification(currentUser, {
-      url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/login`,
+      url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://127.0.0.1:3000'}/login`,
     });
 
     return NextResponse.json({

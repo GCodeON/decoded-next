@@ -47,7 +47,7 @@ function DashboardUI({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   // Show minimal layout for public pages when not authenticated
-  const isPublicPage = ['/', '/login', '/register', '/callback'].some(p => pathname.startsWith(p));
+  const isPublicPage = ['/', '/login', '/register', '/callback', '/songs'].some(p => pathname.startsWith(p));
   const showMinimalLayout = isPublicPage && !isAuthenticated && !isChecking;
 
   if (showMinimalLayout) {
@@ -69,6 +69,9 @@ function DashboardUI({ children }: { children: React.ReactNode }) {
         <main className="flex-1">
           {children}
         </main>
+        <div className="w-full">
+          <SpotifyWebPlayer />
+        </div>
       </div>
     );
   }

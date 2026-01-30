@@ -10,7 +10,7 @@ type Props = {
   requireEmailVerification?: boolean;
 };
 
-const PUBLIC_PATHS = ['/', '/login', '/register', '/api/auth/callback', '/callback'];
+const PUBLIC_PATHS = ['/', '/login', '/register', '/api/auth/callback', '/callback', '/songs', '/artists', '/albums'];
 
 export default function AuthGuard({ children, requireRole, requireEmailVerification = true }: Props) {
   const pathname = usePathname();

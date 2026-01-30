@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { signOut } from 'firebase/auth';
+import { auth as firebaseAuth } from '@/lib/firebase/config';
 import { User } from '@/modules/auth/types/user';
 
 export const useAuth = () => {
@@ -160,6 +162,12 @@ export const useAuth = () => {
       });
     } catch (err) {
       console.error('Logout error:', err);
+    }
+
+    try {
+      await signOut(firebaseAuth);
+    } catch (err) {
+      console.error('Firebase signOut error:', err);
     }
 
     // Clear local state

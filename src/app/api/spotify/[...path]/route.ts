@@ -66,7 +66,12 @@ function getApiPath(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+  console.log('=== SPOTIFY API ROUTE HANDLER CALLED ===');
+  console.log('Request URL:', request.url);
+  console.log('Has cookies:', request.cookies.getAll().length > 0);
+  
   const apiPath = getApiPath(request);
+  console.log('API Path:', apiPath);
   const cacheKey = getCacheKey('GET', apiPath);
 
   // Check response cache first
@@ -95,8 +100,11 @@ export async function GET(request: NextRequest) {
     await waitIfServerRateLimited();
 
     try {
+      console.log('[Spotify API Route] Creating client for path:', apiPath);
       const client = spotifyClient();
+      console.log('[Spotify API Route] Making request to:', apiPath);
       const res = await client.get(apiPath);
+      console.log('[Spotify API Route] Request successful:', apiPath);
       
       // Reset backoff on success
       serverBackoffMultiplier = 1;
@@ -114,6 +122,13 @@ export async function GET(request: NextRequest) {
       }
       return res.data;
     } catch (err: any) {
+      console.error('[Spotify API Route] Error occurred:', {
+        message: err.message,
+        status: err.response?.status,
+        data: err.response?.data,
+        stack: err.stack?.split('\n').slice(0, 3).join('\n')
+      });
+      
       // Check for 429 rate limit error
       const status = err.response?.status;
       const retryAfter = err.response?.headers?.['retry-after'];

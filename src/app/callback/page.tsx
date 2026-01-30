@@ -39,7 +39,17 @@ function CallbackHandler() {
           // Notify other components that auth state has changed
           window.dispatchEvent(new Event('auth-state-changed'));
           // Force full page reload to refresh all components with new auth state
-          window.location.href = '/';
+          let redirectPath = '/';
+          try {
+            const stored = sessionStorage.getItem('post_login_redirect');
+            if (stored) {
+              redirectPath = stored;
+              sessionStorage.removeItem('post_login_redirect');
+            }
+          } catch {
+            // Ignore storage errors
+          }
+          window.location.href = redirectPath;
         })
         .catch(err => {
           console.error('Auth error:', err);

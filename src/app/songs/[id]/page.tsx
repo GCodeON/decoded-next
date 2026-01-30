@@ -11,13 +11,21 @@ import { usePageScroll } from '@/modules/lyrics/hooks/usePageScroll';
 import { useSeekToLine } from '@/modules/lyrics/hooks/useSeekToLine';
 import { LyricsEditor, SyncedLyrics, useSavedSong, songService } from '@/modules/lyrics';
 import { usePlaybackSync, useSpotifyTrack } from '@/modules/spotify';
+import { useSpotifyPlayer } from '@/modules/player';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { useUser } from '@/modules/auth';
+import useAuth from '@/modules/auth/hooks/useAuth';
 
 export default function Song({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { track, loading: trackLoading, error: trackError } = useSpotifyTrack(id);
-  const { savedSong, isSaving, lyricsLoading, lyricsError, updateLyrics, updateSynced, updateWordSynced } = useSavedSong({ track, trackId: id });
+  const { user } = useUser();
+  const { isAuthenticated, isChecking } = useAuth();
+  const { deviceId } = useSpotifyPlayer();
+  const canWrite = !!user;
+  const { savedSong, isSaving, lyricsLoading, lyricsError, updateLyrics, updateSynced, updateWordSynced } = useSavedSong({ track, trackId: id, allowWrite: canWrite });
+
+  const [hasSpotifyToken, setHasSpotifyToken] = useState(false);
 
   const [editMode, setEditMode] = useState(false);
   const [syncMode, setSyncMode] = useState(false);
@@ -29,7 +37,6 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
   const scrollDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
   const { toast, show: showToast } = useToast();
-  const { user } = useUser();
   const isAdmin = user?.role === 'admin';
 
   const displayLyrics = useDisplayLyrics(savedSong);
@@ -82,6 +89,30 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
 
   const handleToggleWordSync = () => setWordSyncEnabled(prev => !prev);
   const handleToggleRhymes = () => setShowRhymes(prev => !prev);
+
+  const canShowWordSyncToggle = hasSpotifyToken && !!deviceId;
+
+  useEffect(() => {
+    if (isChecking) return;
+    if (!isAuthenticated) {
+      setHasSpotifyToken(false);
+      return;
+    }
+
+    let mounted = true;
+    fetch('/api/auth/token', { credentials: 'include' })
+      .then((res) => {
+        if (!mounted) return;
+        setHasSpotifyToken(res.ok);
+      })
+      .catch(() => {
+        if (mounted) setHasSpotifyToken(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [isAuthenticated, isChecking]);
   
   const handleToggleRhymeComplete = async () => {
     const newValue = !rhymeColorMappingComplete;
@@ -166,6 +197,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
           isPlaying={isPlaying} 
           togglePlayback={togglePlayback}
           rhymeColorMappingComplete={rhymeColorMappingComplete}
+          showPlaybackControl={hasSpotifyToken}
         />
       </div>
 
@@ -183,6 +215,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
               lyricsLoading={lyricsLoading}
               isPlaying={isPlaying}
               isAdmin={isAdmin}
+              showWordSyncToggle={canShowWordSyncToggle}
               onToggleWordSync={handleToggleWordSync}
               onToggleRhymes={handleToggleRhymes}
               onToggleRhymeComplete={handleToggleRhymeComplete}
