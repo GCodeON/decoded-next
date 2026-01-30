@@ -338,7 +338,7 @@ export default function SpotifySearchBar({ className = '', isMobile = false }: {
               }
             }}
             placeholder={isMobile ? "Search" : "Search songs, artists, albums"}
-            className="w-full rounded-full border border-white/10 bg-white/5 pl-9 pr-10 py-2 text-sm text-white placeholder:text-white/40 focus:border-white/30 focus:outline-none"
+            className="w-full rounded-full border border-white/10 bg-white/5 pl-9 pr-10 py-2 text-base md:text-sm text-white placeholder:text-white/40 focus:border-white/30 focus:outline-none"
           />
           {query.length > 0 && (
             <button
@@ -497,7 +497,7 @@ export default function SpotifySearchBar({ className = '', isMobile = false }: {
             }
           }}
           placeholder="Search songs, artists, albums"
-          className="w-full rounded-full border border-white/10 bg-white/5 pl-9 pr-10 py-2 text-sm text-white placeholder:text-white/40 focus:border-white/30 focus:outline-none"
+          className="w-full rounded-full border border-white/10 bg-white/5 pl-9 pr-10 py-2 text-base md:text-sm text-white placeholder:text-white/40 focus:border-white/30 focus:outline-none"
         />
         {query.length > 0 && (
           <button
