@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { User } from '@/modules/auth';  
+import { User } from '@/modules/auth';
+import useAuth from '@/modules/auth/hooks/useAuth';
 
 const nav = [
   { name: 'Artists', href: '/artists' },
@@ -9,6 +10,7 @@ const nav = [
 
 export default function Navigation() {
   const pathname = usePathname();
+  const { user, isAuthenticated } = useAuth();
 
   return (
     <div className="flex flex-col gap-4">
@@ -24,7 +26,20 @@ export default function Navigation() {
           </Link>
         );
       })}
-      <User />
+
+      {/* Admin Link */}
+      {isAuthenticated && user?.role === 'admin' && (
+        <Link
+          href="/admin"
+          className={pathname === '/admin' ? 'text-blue-500' : 'text-white hover:text-gray-300'}
+        >
+          Admin Dashboard
+        </Link>
+      )}
+
+      <div className="pt-4 border-t border-gray-700">
+        <User />
+      </div>
     </div>
   );
 }

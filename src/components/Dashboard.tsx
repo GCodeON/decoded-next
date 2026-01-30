@@ -6,6 +6,7 @@ import { Divide as Hamburger } from 'hamburger-react';
 import Navigation from '@/components/Navigation';
 import { SpotifyWebPlayer } from '@/modules/player';
 import SpotifySearchBar from '@/components/SpotifySearchBar';
+import useAuth from '@/modules/auth/hooks/useAuth';
 
 interface SidebarContextType {
   isOpen: boolean;
@@ -42,6 +43,35 @@ function SidebarProvider({ children }: { children: React.ReactNode }) {
 
 function DashboardUI({ children }: { children: React.ReactNode }) {
   const { isOpen, setOpen } = useSidebar();
+  const { isAuthenticated, isChecking } = useAuth();
+  const pathname = usePathname();
+
+  // Show minimal layout for public pages when not authenticated
+  const isPublicPage = ['/', '/login', '/register', '/callback'].some(p => pathname.startsWith(p));
+  const showMinimalLayout = isPublicPage && !isAuthenticated && !isChecking;
+
+  if (showMinimalLayout) {
+    return (
+      <div className="flex w-screen flex-col min-h-screen bg-black">
+        <header className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-black/40">
+          <Link href="/" className="hover:opacity-80 transition-opacity">
+            <h1 className="title text-lg md:text-xl font-bold text-white">DECODED</h1>
+          </Link>
+          <div className="flex gap-4">
+            <Link href="/login" className="text-white hover:text-gray-300 transition-colors">
+              Login
+            </Link>
+            <Link href="/register" className="text-white hover:text-gray-300 transition-colors">
+              Register
+            </Link>
+          </div>
+        </header>
+        <main className="flex-1">
+          {children}
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="flex w-screen">
