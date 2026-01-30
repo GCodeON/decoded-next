@@ -40,8 +40,7 @@ export default function SongHeader({
       )}
       <div className="flex md:flex-row items-center space-x-6">
         <div className='relative order-1 md:order-1'>
-          <div className="relative w-32 h-32
-          md:w-48 md:h-48 flex-shrink-0">
+          <div className="relative w-32 h-32 md:w-48 md:h-48 flex-shrink-0">
             <Image
               src={track.album.images[0]?.url || '/placeholder.png'}
               alt={track.name}

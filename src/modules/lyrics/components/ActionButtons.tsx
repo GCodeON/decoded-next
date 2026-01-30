@@ -1,3 +1,5 @@
+'use client';
+
 import { useState } from 'react';
 import { FaClock, FaEdit, FaCog, FaTimes } from 'react-icons/fa';
 
@@ -11,6 +13,7 @@ export type ActionButtonsProps = {
   hasLyrics: boolean;
   lyricsLoading: boolean;
   isPlaying?: boolean;
+  isAdmin?: boolean;
   onToggleWordSync: () => void;
   onToggleRhymes: () => void;
   onToggleRhymeComplete: () => void;
@@ -28,6 +31,7 @@ export default function ActionButtons({
   hasLyrics,
   lyricsLoading,
   isPlaying = false,
+  isAdmin = false,
   onToggleWordSync,
   onToggleRhymes,
   onToggleRhymeComplete,
@@ -43,12 +47,14 @@ export default function ActionButtons({
   if (!hasLyrics) {
     return (
       <div className="flex gap-4">
-        <button
-          onClick={onEditLyrics}
-          className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-semibold cursor-pointer"
-        >
-          <FaEdit /> Add Lyrics
-        </button>
+        {isAdmin && (
+          <button
+            onClick={onEditLyrics}
+            className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-semibold cursor-pointer"
+          >
+            <FaEdit /> Add Lyrics
+          </button>
+        )}
       </div>
     );
   }
@@ -58,25 +64,24 @@ export default function ActionButtons({
   return (
     <>
       {/* Desktop View */}
-      <div className={`hidden md:flex ${hasToggleButtons 
-        ? "md:flex-row md:justify-between items-center gap-4 w-full"
-        : "flex-row gap-4 items-center justify-center w-full"
-      }`}>  
-        {/* Center: Action Buttons */}
-        <div className="flex flex-row gap-4 items-center justify-center flex-1 md:order-1">
-          <button
-            onClick={onEditSync}
-            className={`flex items-center gap-2 cursor-pointer ${hasSynced ? 'text-orange-600 hover:text-orange-700' : 'text-green-600 hover:text-green-700'} font-semibold`}
-          >
-            <FaClock /> {hasSynced ? 'Edit Sync' : 'Sync Lyrics'}
-          </button>
-          <button
-            onClick={onEditLyrics}
-            className="flex items-center gap-2 text-blue-600 hover:text-blue-700 cursor-pointer"
-          >
-            <FaEdit /> Edit Lyrics
-          </button>
-        </div>
+      <div className={`hidden md:flex ${(isAdmin && hasToggleButtons) ? 'justify-between' : (hasToggleButtons ? 'justify-end' : 'justify-center')} items-center gap-8 w-full`}>
+        {/* Center: Action Buttons (Edit Sync, Edit Lyrics) - Admin Only */}
+        {isAdmin && (
+          <div className="flex flex-row gap-4 items-center justify-center flex-1 md:order-1">
+            <button
+              onClick={onEditSync}
+              className={`flex items-center gap-2 cursor-pointer ${hasSynced ? 'text-orange-600 hover:text-orange-700' : 'text-green-600 hover:text-green-700'} font-semibold`}
+            >
+              <FaClock /> {hasSynced ? 'Edit Sync' : 'Sync Lyrics'}
+            </button>
+            <button
+              onClick={onEditLyrics}
+              className="flex items-center gap-2 text-blue-600 hover:text-blue-700 cursor-pointer font-semibold"
+            >
+              <FaEdit /> Edit Lyrics
+            </button>
+          </div>
+        )}
 
         {/* Right: Toggles */}
         {hasToggleButtons && (
@@ -119,7 +124,7 @@ export default function ActionButtons({
                 </span>
               </label>
             )}
-            {hasRhymeColors && (
+            {hasRhymeColors && isAdmin && (
               <label className="flex items-center gap-2 cursor-pointer">
                 <div className="relative inline-block w-11 h-6">
                   <input
@@ -174,27 +179,29 @@ export default function ActionButtons({
               </button>
             </div>
 
-            {/* Action Buttons */}
-            <div className="space-y-3 border-b border-gray-200 dark:border-gray-700 pb-4">
-              <button
-                onClick={() => {
-                  onEditSync();
-                  setShowMobileMenu(false);
-                }}
-                className={`flex items-center gap-3 w-full cursor-pointer ${hasSynced ? 'text-orange-600 hover:text-orange-700' : 'text-green-600 hover:text-green-700'} font-semibold text-lg p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800`}
-              >
-                <FaClock className="text-xl" /> {hasSynced ? 'Edit Sync' : 'Sync Lyrics'}
-              </button>
-              <button
-                onClick={() => {
-                  onEditLyrics();
-                  setShowMobileMenu(false);
-                }}
-                className="flex items-center gap-3 w-full text-blue-600 hover:text-blue-700 cursor-pointer font-semibold text-lg p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-              >
-                <FaEdit className="text-xl" /> Edit Lyrics
-              </button>
-            </div>
+            {/* Admin Action Buttons - Mobile */}
+            {isAdmin && (
+              <div className="space-y-3 border-b border-gray-200 dark:border-gray-700 pb-4">
+                <button
+                  onClick={() => {
+                    onEditSync();
+                    setShowMobileMenu(false);
+                  }}
+                  className={`flex items-center gap-3 w-full cursor-pointer ${hasSynced ? 'text-orange-600 hover:text-orange-700' : 'text-green-600 hover:text-green-700'} font-semibold text-lg p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800`}
+                >
+                  <FaClock className="text-xl" /> {hasSynced ? 'Edit Sync' : 'Sync Lyrics'}
+                </button>
+                <button
+                  onClick={() => {
+                    onEditLyrics();
+                    setShowMobileMenu(false);
+                  }}
+                  className="flex items-center gap-3 w-full text-blue-600 hover:text-blue-700 cursor-pointer font-semibold text-lg p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+                >
+                  <FaEdit className="text-xl" /> Edit Lyrics
+                </button>
+              </div>
+            )}
 
             {/* Toggles */}
             {hasToggleButtons && (
@@ -237,7 +244,7 @@ export default function ActionButtons({
                     </div>
                   </label>
                 )}
-                {hasRhymeColors && (
+                {hasRhymeColors && isAdmin && (
                   <label className="flex items-center justify-between cursor-pointer p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                     <span className={`font-semibold text-lg ${
                       rhymeColorMappingComplete ? 'text-teal-600' : 'text-gray-600 dark:text-gray-400'

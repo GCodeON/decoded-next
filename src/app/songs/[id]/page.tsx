@@ -12,6 +12,7 @@ import { useSeekToLine } from '@/modules/lyrics/hooks/useSeekToLine';
 import { LyricsEditor, SyncedLyrics, useSavedSong, songService } from '@/modules/lyrics';
 import { usePlaybackSync, useSpotifyTrack } from '@/modules/spotify';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import { useUser } from '@/modules/auth';
 
 export default function Song({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -28,6 +29,8 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
   const scrollDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
   const { toast, show: showToast } = useToast();
+  const { user } = useUser();
+  const isAdmin = user?.role === 'admin';
 
   const displayLyrics = useDisplayLyrics(savedSong);
   const hasRhymeColors = useHasRhymeColors(displayLyrics);
@@ -179,6 +182,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
               hasLyrics={!!displayLyrics}
               lyricsLoading={lyricsLoading}
               isPlaying={isPlaying}
+              isAdmin={isAdmin}
               onToggleWordSync={handleToggleWordSync}
               onToggleRhymes={handleToggleRhymes}
               onToggleRhymeComplete={handleToggleRhymeComplete}
