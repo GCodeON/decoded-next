@@ -65,12 +65,12 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-gradient-to-br from-gray-900 to-black">
+    <div className="min-h-[75dvh] flex items-center justify-center px-4 py-8 bg-gradient-to-bl from-gray-900 to-black">
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-white mb-2">
-            <span className="text-blue-500">DECODED</span>
+            <span className="text-white">DECODED</span>
           </h1>
           <p className="text-gray-400">Create your account</p>
         </div>
@@ -161,7 +161,7 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white font-semibold py-2 rounded-lg transition-colors"
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white font-semibold py-2 rounded-lg transition-colors cursor-pointer"
             >
               {isLoading ? 'Creating Account...' : 'Create Account'}
             </button>
@@ -184,7 +184,7 @@ export default function RegisterPage() {
         </div>
 
         {/* Footer */}
-        <p className="text-center text-gray-500 text-xs mt-8">
+        <p className="text-center text-gray-500 text-xs mt-8 mb-8">
           By registering, you agree to our Terms of Service and Privacy Policy
         </p>
       </div>

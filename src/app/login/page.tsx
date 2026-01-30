@@ -58,7 +58,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-gradient-to-br from-gray-900 to-black">
+    <div className="min-h-[75dvh] flex items-center justify-center px-4 py-12 bg-gradient-to-bl from-gray-900 to-black">
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
@@ -135,7 +135,7 @@ export default function LoginPage() {
               <div>
                 <button
                   onClick={login}
-                  className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
+                  className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.6 0 12 0zm5.5 17.5c-1.5 0-1.8-.9-5.5-.9-3.5 0-4 .9-5.5.9-1.6 0-3-1.3-3-3 0-1.6 1.3-3 3-3 .6 0 1.3.1 2 .3.7.2 1.5.4 2.5.4 1 0 1.8-.2 2.5-.4.7-.2 1.3-.3 2-.3 1.6 0 3 1.3 3 3 0 1.7-1.3 3-3 3zm0-6c-1.5 0-1.8-.9-5.5-.9-3.5 0-4 .9-5.5.9-1.6 0-3-1.3-3-3 0-1.6 1.3-3 3-3 .6 0 1.3.1 2 .3.7.2 1.5.4 2.5.4 1 0 1.8-.2 2.5-.4.7-.2 1.3-.3 2-.3 1.6 0 3 1.3 3 3 0 1.7-1.3 3-3 3z" />
@@ -154,7 +154,7 @@ export default function LoginPage() {
               {/* Email Login Button */}
               <button
                 onClick={() => setShowEmailForm(true)}
-                className="w-full bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 rounded-lg transition-colors"
+                className="w-full bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 rounded-lg transition-colors cursor-pointer"
               >
                 Login with Email
               </button>

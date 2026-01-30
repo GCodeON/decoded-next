@@ -1,5 +1,6 @@
 'use client'
 import Link from 'next/link';
+import { FaUser } from 'react-icons/fa';
 import { createContext, useContext, useState, useEffect, Dispatch, SetStateAction } from 'react'
 import { usePathname } from 'next/navigation';
 import { Divide as Hamburger } from 'hamburger-react';
@@ -52,25 +53,57 @@ function DashboardUI({ children }: { children: React.ReactNode }) {
 
   if (showMinimalLayout) {
     return (
-      <div className="flex w-screen flex-col min-h-screen bg-black">
-        <header className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-black/40">
-          <Link href="/" className="hover:opacity-80 transition-opacity">
-            <h1 className="title text-lg md:text-xl font-bold text-white">DECODED</h1>
-          </Link>
-          <div className="flex gap-4">
-            <Link href="/login" className="text-white hover:text-gray-300 transition-colors">
-              Login
+      <div className="flex w-screen">
+        {/* Desktop Sidebar */}
+        <aside className="hidden lg:flex fixed top-0 left-0 z-40 h-full w-48 bg-black shadow-md flex-col p-5">
+          <div className="sticky top-0 flex flex-col flex-grow">
+            <Link href="/" className="mb-8">
+              <h1 className="title text-md md:text-lg font-bold text-white">DECODED</h1>
             </Link>
-            <Link href="/register" className="text-white hover:text-gray-300 transition-colors">
-              Register
+            <Navigation />
+          </div>
+        </aside>
+
+        {/* Main Content */}
+        <div className="flex flex-col min-h-screen bg-black w-full lg:ml-48">
+          {/* Mobile Header */}
+          <header className="flex lg:hidden items-center justify-between px-6 py-4 border-b border-white/10 bg-black/40">
+            <Link href="/" className="hover:opacity-80 transition-opacity">
+              <h1 className="title text-lg md:text-xl font-bold text-white">DECODED</h1>
+            </Link>
+            <div className="flex items-center gap-4">
+              <Link
+                href="/login"
+                className="flex items-center justify-center text-white hover:text-gray-300 transition-colors"
+                aria-label="Account"
+              >
+                <FaUser className="text-lg" />
+              </Link>
+            </div>
+          </header>
+
+          {/* Desktop Search Bar */}
+          <div className="hidden lg:flex items-center justify-between px-6 py-4 border-b border-white/10 bg-black/40">
+            <div className="flex-1 flex justify-center">
+              <div className="w-full max-w-2xl">
+                <SpotifySearchBar />
+              </div>
+            </div>
+            <Link
+              href="/login"
+              className="flex items-center justify-center text-white hover:text-gray-300 transition-colors"
+              aria-label="Account"
+            >
+              <FaUser className="text-lg" />
             </Link>
           </div>
-        </header>
-        <main className="flex-1">
-          {children}
-        </main>
-        <div className="w-full">
-          <SpotifyWebPlayer />
+
+          <main className="flex-1">
+            {children}
+          </main>
+          <div className="w-full">
+            <SpotifyWebPlayer />
+          </div>
         </div>
       </div>
     );
