@@ -148,65 +148,62 @@ export default function ActionButtons({
       </div>
 
       {/* Mobile View */}
-      <div className=" sticky top-0 flex md:hidden flex-col w-full gap-2">
-        {/* Sticky Container - Toggles and Admin Button Together */}
-        <div className="z-40 bg-black border-b border-gray-700">
-          {/* Toggle Row */}
-          {hasToggleButtons && (
-            <div className="p-2 flex flex-row gap-3 items-center justify-center flex-wrap w-full">
-              {hasWordSynced && (
-                <label className="flex items-center gap-1 cursor-pointer">
-                  <div className="relative inline-block w-10 h-6">
-                    <input
-                      type="checkbox"
-                      checked={wordSyncEnabled}
-                      onChange={onToggleWordSync}
-                      className="sr-only peer"
-                    />
-                    <div className="w-10 h-6 bg-gray-500 rounded-full peer peer-checked:bg-purple-600 transition-colors"></div>
-                    <div className="absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform peer-checked:translate-x-4"></div>
-                  </div>
-                  <span className={`font-semibold text-xs ${
-                    wordSyncEnabled ? 'text-purple-600' : 'text-gray-600'
-                  }`}>
-                    Word Sync
-                  </span>
-                </label>
-              )}
-              {hasRhymeColors && (
-                <label className="flex items-center gap-1 cursor-pointer">
-                  <div className="relative inline-block w-10 h-6">
-                    <input
-                      type="checkbox"
-                      checked={showRhymes}
-                      onChange={onToggleRhymes}
-                      className="sr-only peer"
-                    />
-                    <div className="w-10 h-6 bg-gray-500 rounded-full peer peer-checked:bg-green-600 transition-colors"></div>
-                    <div className="absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform peer-checked:translate-x-4"></div>
-                  </div>
-                  <span className={`font-semibold text-xs ${
-                    showRhymes ? 'text-green-600' : 'text-gray-600'
-                  }`}>
-                    Rhymes
-                  </span>
-                </label>
-              )}
-            </div>
-          )}
+      <div className="flex md:hidden flex-col w-full gap-2">
+        {/* Sticky Toggle Row */}
+        {hasToggleButtons && (
+          <div className="sticky top-0 z-40 bg-black p-2 flex flex-row gap-3 items-center justify-center flex-wrap w-full border-b border-gray-700">
+            {hasWordSynced && (
+              <label className="flex items-center gap-1 cursor-pointer">
+                <div className="relative inline-block w-10 h-6">
+                  <input
+                    type="checkbox"
+                    checked={wordSyncEnabled}
+                    onChange={onToggleWordSync}
+                    className="sr-only peer"
+                  />
+                  <div className="w-10 h-6 bg-gray-500 rounded-full peer peer-checked:bg-purple-600 transition-colors"></div>
+                  <div className="absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform peer-checked:translate-x-4"></div>
+                </div>
+                <span className={`font-semibold text-xs ${
+                  wordSyncEnabled ? 'text-purple-600' : 'text-gray-600'
+                }`}>
+                  Word Sync
+                </span>
+              </label>
+            )}
+            {hasRhymeColors && (
+              <label className="flex items-center gap-1 cursor-pointer">
+                <div className="relative inline-block w-10 h-6">
+                  <input
+                    type="checkbox"
+                    checked={showRhymes}
+                    onChange={onToggleRhymes}
+                    className="sr-only peer"
+                  />
+                  <div className="w-10 h-6 bg-gray-500 rounded-full peer peer-checked:bg-green-600 transition-colors"></div>
+                  <div className="absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform peer-checked:translate-x-4"></div>
+                </div>
+                <span className={`font-semibold text-xs ${
+                  showRhymes ? 'text-green-600' : 'text-gray-600'
+                }`}>
+                  Rhymes
+                </span>
+              </label>
+            )}
+          </div>
+        )}
 
-          {/* Admin Button */}
-          {isAdmin && (
-            <div className="p-2 border-t border-gray-700">
-              <button
-                onClick={() => setShowMobileMenu(true)}
-                className="flex items-center justify-center gap-2 w-full text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white font-semibold cursor-pointer bg-gray-200 dark:bg-gray-800 px-4 py-2 rounded-lg"
-              >
-                <FaCog className="text-xl" /> Admin
-              </button>
-            </div>
-          )}
-        </div>
+        {/* Admin Button - Shows admin commands in modal */}
+        {isAdmin && (
+          <div className=" bottom-0 left-0 right-0 w-full bg-black p-2 border-t border-gray-700">
+            <button
+              onClick={() => setShowMobileMenu(true)}
+              className="flex items-center justify-center gap-2 w-full text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white font-semibold cursor-pointer bg-gray-200 dark:bg-gray-800 px-4 py-2 rounded-lg"
+            >
+              <FaCog className="text-xl" /> Admin
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Mobile Menu Modal - Admin Only Commands */}
