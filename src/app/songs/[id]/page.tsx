@@ -166,11 +166,10 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
           isPlaying={isPlaying} 
           togglePlayback={togglePlayback}
           rhymeColorMappingComplete={rhymeColorMappingComplete}
-          isAdmin={isAdmin}
         />
       </div>
 
-      <div className="md:sticky top-0 z-10 bg-black shadow-lg p-1 md:p-2 mb-2">
+      <div className="sticky top-0 z-20 bg-black shadow-lg p-1 md:p-2 mb-2">
         <div className="flex justify-around items-center">
           {!editMode && !syncMode && (
             <ActionButtons
