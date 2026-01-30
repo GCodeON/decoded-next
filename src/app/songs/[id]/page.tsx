@@ -166,6 +166,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
           isPlaying={isPlaying} 
           togglePlayback={togglePlayback}
           rhymeColorMappingComplete={rhymeColorMappingComplete}
+          isAdmin={isAdmin}
         />
       </div>
 
