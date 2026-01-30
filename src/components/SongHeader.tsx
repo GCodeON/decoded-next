@@ -10,6 +10,7 @@ export default function SongHeader({
     isPlaying,
     togglePlayback,
     rhymeColorMappingComplete,
+    isAdmin = false,
     showTitle = false,
     title = "Now Playing"
 }: { 
@@ -17,6 +18,7 @@ export default function SongHeader({
     isPlaying: boolean,
     togglePlayback?: () => void;
     rhymeColorMappingComplete?: boolean;
+    isAdmin?: boolean;
     showTitle?: boolean;
     title?: string;
 }) {
