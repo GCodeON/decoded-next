@@ -96,7 +96,7 @@ function DashboardUI({ children }: { children: React.ReactNode }) {
             </div>
           </div>
 
-          <div className="w-full">
+          <div className="w-full overflow-hidden">
             <SpotifyWebPlayer />
           </div>
         </div>
