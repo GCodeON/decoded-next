@@ -70,7 +70,9 @@ export default function RegisterPage() {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-white mb-2">
-            <span className="text-white">DECODED</span>
+            <span className="text-white">
+              DE<span className="text-green-500">CODED</span>
+            </span>
           </h1>
           <p className="text-gray-400">Create your account</p>
         </div>
@@ -161,7 +163,7 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white font-semibold py-2 rounded-lg transition-colors cursor-pointer"
+              className="w-full border border-green-900 hover:border-green-700 hover:bg-green-700 disabled:bg-gray-600 text-white font-semibold py-2 rounded-lg transition-colors cursor-pointer"
             >
               {isLoading ? 'Creating Account...' : 'Create Account'}
             </button>

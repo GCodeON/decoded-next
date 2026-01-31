@@ -4,29 +4,41 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 import Link from 'next/link';
 
 import { useSpotifyApi, SpotifyArtist } from '@/modules/spotify';
+import { useUser } from '@/modules/auth';
 
 export default function Artists() {
   const [artists, setArtists] = useState<SpotifyArtist[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const spotify = useSpotifyApi();
+  const { user } = useUser();
 
   useEffect(() => {
-    const fetchTopArtists = async () => {
+    const fetchArtists = async () => {
       setIsLoading(true);
       try {
-        const data = await spotify.getTopArtists(20);
-        if (data?.items) {
-          setArtists(data.items);
+        if (user) {
+          // Fetch user's personal top artists
+          const data = await spotify.getTopArtists(20);
+          if (data?.items) {
+            setArtists(data.items);
+          }
+        } else {
+          // Fetch general popular artists from server
+          const response = await fetch('/api/artists/popular');
+          if (response.ok) {
+            const data = await response.json();
+            setArtists(data.artists);
+          }
         }
       } catch (error) {
-        console.error('Failed to fetch top artists:', error);
+        console.error('Failed to fetch artists:', error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchTopArtists();
-  }, [spotify]);
+    fetchArtists();
+  }, [spotify, user]);
 
   return (
     <div className="flex justify-center py-8">

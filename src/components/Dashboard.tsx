@@ -58,7 +58,7 @@ function DashboardUI({ children }: { children: React.ReactNode }) {
         <aside className="hidden lg:flex fixed top-0 left-0 z-40 h-full w-48 bg-black shadow-md flex-col p-5">
           <div className="sticky top-0 flex flex-col flex-grow">
             <Link href="/" className="mb-8">
-              <h1 className="title text-md md:text-lg font-bold text-white">DECODED</h1>
+              <h1 className="title text-md md:text-lg font-bold text-white">DE<span className="text-green-500">CODED</span></h1>
             </Link>
             <Navigation />
           </div>
@@ -69,7 +69,7 @@ function DashboardUI({ children }: { children: React.ReactNode }) {
           {/* Mobile Header */}
           <header className="flex lg:hidden items-center justify-between px-6 py-4 border-b border-white/10 bg-black/40">
             <Link href="/" className="hover:opacity-80 transition-opacity">
-              <h1 className="title text-lg md:text-xl font-bold text-white">DECODED</h1>
+              <h1 className="title text-lg md:text-xl font-bold text-white">DE<span className="text-green-500">CODED</span></h1>
             </Link>
             <div className="flex items-center gap-4">
               <Link
@@ -122,7 +122,9 @@ function DashboardUI({ children }: { children: React.ReactNode }) {
       >
         <div className="sticky top-0 flex flex-col flex-grow">
           <Link href="/" className="mb-8">
-            <h1 className="title text-md md:text-lg font-bold text-white">DECODED</h1>
+            <h1 className="title text-md md:text-lg font-bold text-white">
+              DE<span className="text-green-500">CODED</span>
+            </h1>
           </Link>
 
           <Navigation />
@@ -140,7 +142,9 @@ function DashboardUI({ children }: { children: React.ReactNode }) {
       <main className="relative flex flex-1 flex-col w-full h-[100dvh] lg:h-screen">
         <div className="flex items-center justify-between gap-3 p-3 shadow-md lg:hidden">
           <Link href="/">
-            <h1 className="title text-sm md:text-md font-bold">DECODED</h1>
+            <h1 className="title text-sm md:text-md font-bold">
+              DE<span className="text-green-500">CODED</span>
+            </h1>
           </Link>
           <div className="flex-1" />
           <SpotifySearchBar isMobile />

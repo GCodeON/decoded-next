@@ -41,10 +41,10 @@ export default function Home() {
   // Public landing page for unauthenticated users
   if (!isAuthenticated && !isChecking) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[70vh] space-y-8 px-6">
+      <div className="flex flex-col items-center justify-center min-h-[70vh] space-y-8 px-6 my-12">
         <div className="text-center space-y-4 max-w-2xl">
           <h2 className="text-5xl md:text-6xl font-bold text-white">
-            Welcome to <span className="text-blue-500">DECODED</span>
+          DE<span className="text-green-500">CODED</span>
           </h2>
           <p className="text-xl text-gray-300">
             Explore and create encoded rap lyrics with perfect rhyme highlighting and synchronization.
@@ -54,7 +54,7 @@ export default function Home() {
         <div className="flex gap-4 justify-center">
           <Link 
             href="/login"
-            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors"
+            className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors"
           >
             Login
           </Link>

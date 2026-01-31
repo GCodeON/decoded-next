@@ -63,7 +63,7 @@ export default function LoginPage() {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-white mb-2">
-            <span className="text-white">DECODED</span>
+            <span className="text-white">DE<span className="text-green-500">CODED</span></span>
           </h1>
           <p className="text-gray-400">Login to your account</p>
         </div>
