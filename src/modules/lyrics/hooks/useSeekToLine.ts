@@ -15,7 +15,7 @@ export function useSeekToLine({
   togglePlayback,
   isPlaying = false,
   onDisableAutoScroll,
-  leadAdjustmentMs = 150,
+  leadAdjustmentMs = 200,
   reEnableDelayMs = 3000,
 }: UseSeekToLineOptions) {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -31,9 +31,14 @@ export function useSeekToLine({
     
     // Adjust time backwards by lead constant to account for word sync lead
     const adjustedTimeMs = Math.max(0, timeMs - leadAdjustmentMs);
+    const targetTimeMs = isPlaying ? adjustedTimeMs : timeMs;
     
     try {
-      await seekTo(adjustedTimeMs);
+      if(adjustedTimeMs) {
+        await seekTo(adjustedTimeMs);
+      } else {
+        await seekTo(targetTimeMs);
+      }
       // If not currently playing, start playing the current song
       if (!isPlaying && togglePlayback) {
         await togglePlayback();
