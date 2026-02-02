@@ -3,6 +3,8 @@ import { useCallback, useRef } from 'react';
 
 interface UseSeekToLineOptions {
   seekTo: (positionMs: number) => Promise<void>;
+  togglePlayback?: () => Promise<void>;
+  isPlaying?: boolean;
   onDisableAutoScroll: (disabled: boolean) => void;
   leadAdjustmentMs?: number;
   reEnableDelayMs?: number;
@@ -10,6 +12,8 @@ interface UseSeekToLineOptions {
 
 export function useSeekToLine({
   seekTo,
+  togglePlayback,
+  isPlaying = false,
   onDisableAutoScroll,
   leadAdjustmentMs = 150,
   reEnableDelayMs = 3000,
@@ -30,6 +34,10 @@ export function useSeekToLine({
     
     try {
       await seekTo(adjustedTimeMs);
+      // If not currently playing, start playing the current song
+      if (!isPlaying && togglePlayback) {
+        await togglePlayback();
+      }
     } catch (err) {
       console.error('Seek to line failed:', err);
     }
@@ -38,7 +46,7 @@ export function useSeekToLine({
     timeoutRef.current = setTimeout(() => {
       onDisableAutoScroll(false);
     }, reEnableDelayMs);
-  }, [seekTo, onDisableAutoScroll, leadAdjustmentMs, reEnableDelayMs]);
+  }, [seekTo, togglePlayback, isPlaying, onDisableAutoScroll, leadAdjustmentMs, reEnableDelayMs]);
 
   // Cleanup timeout on unmount
   const cleanup = useCallback(() => {

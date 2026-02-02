@@ -131,6 +131,8 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
 
   const { handleSeekToLine, cleanup: cleanupSeek } = useSeekToLine({
     seekTo,
+    togglePlayback,
+    isPlaying,
     onDisableAutoScroll: setDisableAutoScroll,
     leadAdjustmentMs: 150,
     reEnableDelayMs: 3000,

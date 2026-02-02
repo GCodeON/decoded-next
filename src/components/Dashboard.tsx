@@ -15,7 +15,13 @@ interface SidebarContextType {
   closeSidebar: () => void;
 }
 
+interface CurrentTrackContextType {
+  currentTrackId: string | null;
+  setCurrentTrackId: Dispatch<SetStateAction<string | null>>;
+}
+
 const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
+const CurrentTrackContext = createContext<CurrentTrackContextType | undefined>(undefined);
 
 export function useSidebar() {
   const context = useContext(SidebarContext);
@@ -25,25 +31,43 @@ export function useSidebar() {
   return context;
 }
 
+export function useCurrentTrack() {
+  const context = useContext(CurrentTrackContext);
+  if (!context) {
+    throw new Error('useCurrentTrack must be used within CurrentTrackProvider');
+  }
+  return context;
+}
+
 function SidebarProvider({ children }: { children: React.ReactNode }) {
   const [isOpen, setOpen] = useState(false);
+  const [currentTrackId, setCurrentTrackId] = useState<string | null>(null);
   const pathname = usePathname();
 
   useEffect(() => {
     setOpen(false);
   }, [pathname]);
 
+  // Extract track ID from URL if on song page
+  useEffect(() => {
+    const songMatch = pathname.match(/^\/songs\/([^\/]+)/);
+    setCurrentTrackId(songMatch ? songMatch[1] : null);
+  }, [pathname]);
+
   const closeSidebar = () => setOpen(false);
 
   return (
-    <SidebarContext.Provider value={{ isOpen, setOpen, closeSidebar }}>
-      {children}
-    </SidebarContext.Provider>
+    <CurrentTrackContext.Provider value={{ currentTrackId, setCurrentTrackId }}>
+      <SidebarContext.Provider value={{ isOpen, setOpen, closeSidebar }}>
+        {children}
+      </SidebarContext.Provider>
+    </CurrentTrackContext.Provider>
   );
 }
 
 function DashboardUI({ children }: { children: React.ReactNode }) {
   const { isOpen, setOpen } = useSidebar();
+  const { currentTrackId } = useCurrentTrack();
   const { isAuthenticated, isChecking } = useAuth();
   const pathname = usePathname();
 
@@ -102,7 +126,7 @@ function DashboardUI({ children }: { children: React.ReactNode }) {
             {children}
           </main>
           <div className="w-full">
-            <SpotifyWebPlayer />
+            <SpotifyWebPlayer currentTrackId={currentTrackId} />
           </div>
         </div>
       </div>
@@ -167,7 +191,7 @@ function DashboardUI({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="w-full overflow-hidden">
-            <SpotifyWebPlayer />
+            <SpotifyWebPlayer currentTrackId={currentTrackId} />
           </div>
         </div>
       </main>

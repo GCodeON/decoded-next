@@ -4,10 +4,10 @@ import SpotifyPlayer from 'react-spotify-web-playback';
 import { useAuth } from '@/modules/auth/';
 import { useSpotifyAuthToken, useSpotifyPlayerCallback, PlayerErrorBoundary } from '@/modules/player';
 
-export default function SpotifyWebPlayer() {
+export default function SpotifyWebPlayer({ currentTrackId }: { currentTrackId?: string | null } = {}) {
   const { isChecking: isAuthChecking, isAuthenticated, login } = useAuth();
   const { token, authError, handleToken, setAuthError, setToken } = useSpotifyAuthToken();
-  const handleCallback = useSpotifyPlayerCallback(handleToken);
+  const handleCallback = useSpotifyPlayerCallback(handleToken, currentTrackId);
   const hasInitialized = useRef(false);
   const playerKey = useRef(0);
   const fetchingRef = useRef(false);

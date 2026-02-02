@@ -39,6 +39,9 @@ export function usePlaybackToggle(
       const targetDeviceId = isPlaying
         ? selectTargetDevice(devices, lastExternalDevice, deviceId, false)
         : selectTargetDevice(devices, lastExternalDevice, deviceId, !!preferWebPlayer);
+      const targetDevice = targetDeviceId
+        ? devices.find((d: any) => d.id === targetDeviceId)
+        : null;
 
       try {
         if (isPlaying) {
@@ -50,6 +53,14 @@ export function usePlaybackToggle(
         } else {
    
           const positionMs = getPositionMs();
+
+          if (targetDeviceId && !targetDevice?.is_active) {
+            try {
+              await spotify.transferPlayback(targetDeviceId, true);
+            } catch {
+              // Ignore transfer errors; play will handle device errors below
+            }
+          }
 
           if (onPlayStart) {
             await onPlayStart();
