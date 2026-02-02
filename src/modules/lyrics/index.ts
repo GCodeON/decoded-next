@@ -32,6 +32,8 @@ export { parseEnhancedLrc, generateEnhancedLrc, getActiveWordIndex, splitLineInt
 export { parseRhymeLine, buildWordRanges, sliceSegmentsToWords, buildColorMap } from './utils/rhyme-parser';
 export type { Word, TimedLine, LrcFile, WordSegment } from './utils/lrcAdvanced';
 export { computeSignature } from './utils/signature';
+export { playVowelSound, preloadVowelSounds, vowelAudioMap } from './utils/vowelAudio';
+export { playSynthesizedVowel, isSynthesisSupported } from './utils/vowelSynthesizer';
 
 // Config
 export { customColors, vowels } from './config/rhyme-colors';
