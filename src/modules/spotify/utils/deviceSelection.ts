@@ -11,10 +11,18 @@
 export function selectTargetDevice(
   devices: any[],
   lastExternalDeviceId?: string | null,
-  webDeviceId?: string | null
+  webDeviceId?: string | null,
+  preferWebPlayer: boolean = false
 ): string | undefined {
   if (!devices || !Array.isArray(devices)) {
     return undefined;
+  }
+
+  if (preferWebPlayer && webDeviceId) {
+    const webDevice = devices.find((d: any) => d.id === webDeviceId);
+    if (webDevice) {
+      return webDeviceId;
+    }
   }
 
   // Priority 1: Last external device (if still available)

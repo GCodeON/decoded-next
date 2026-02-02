@@ -23,6 +23,16 @@ export function usePlaybackSync(
     globalIsPlaying,
   } = useSpotifyPlayer();
 
+  const [preferWebPlayer, setPreferWebPlayer] = useState(false);
+  useEffect(() => {
+    const updatePreference = () => {
+      setPreferWebPlayer(window.innerWidth < 768);
+    };
+    updatePreference();
+    window.addEventListener('resize', updatePreference);
+    return () => window.removeEventListener('resize', updatePreference);
+  }, []);
+
 
   const lastPollIsPlayingRef = useRef<boolean | null>(null);
   const optimisticPlayUntilRef = useRef<number>(0);
@@ -253,6 +263,7 @@ export function usePlaybackSync(
     {
       deviceId,
       lastExternalDevice,
+      preferWebPlayer,
       onPlayStart: (syncMode || viewMode) ? async () => {
         // Optimistically start interpolation BEFORE API call
         lastPollIsPlayingRef.current = true;

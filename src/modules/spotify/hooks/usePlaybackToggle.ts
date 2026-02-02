@@ -6,6 +6,7 @@ import { selectTargetDevice } from '../utils/deviceSelection';
 export interface PlaybackToggleOptions {
   deviceId?: string | null;
   lastExternalDevice?: string | null;
+  preferWebPlayer?: boolean;
   onPlayStart?: () => void | Promise<void>;
   onPauseStart?: () => void | Promise<void>;
   onSuccess?: (state: any) => void;
@@ -22,6 +23,7 @@ export function usePlaybackToggle(
   const {
     deviceId,
     lastExternalDevice,
+    preferWebPlayer,
     onPlayStart,
     onPauseStart,
     onSuccess,
@@ -34,11 +36,9 @@ export function usePlaybackToggle(
       const devicesRes: any = await spotify.getDevices();
       const devices: any[] = devicesRes?.devices || [];
 
-      const targetDeviceId = selectTargetDevice(
-        devices,
-        lastExternalDevice,
-        deviceId
-      );
+      const targetDeviceId = isPlaying
+        ? selectTargetDevice(devices, lastExternalDevice, deviceId, false)
+        : selectTargetDevice(devices, lastExternalDevice, deviceId, !!preferWebPlayer);
 
       try {
         if (isPlaying) {
