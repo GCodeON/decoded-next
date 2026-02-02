@@ -71,7 +71,7 @@ export default function RegisterPage() {
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-white mb-2">
             <span className="text-white">
-              DE<span className="text-green-500">CODED</span>
+              DECODED
             </span>
           </h1>
           <p className="text-gray-400">Create your account</p>

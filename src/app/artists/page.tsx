@@ -9,41 +9,63 @@ import { useUser } from '@/modules/auth';
 export default function Artists() {
   const [artists, setArtists] = useState<SpotifyArtist[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [source, setSource] = useState<'popular' | 'user' | null>(null);
   const spotify = useSpotifyApi();
-  const { user } = useUser();
+  const { user, authenticated, loading } = useUser();
 
   useEffect(() => {
-    const fetchArtists = async () => {
-      setIsLoading(true);
+    if (loading) return;
+
+    const fetchPopularArtists = async () => {
+      if (source !== 'popular') {
+        setArtists(null);
+        setIsLoading(true);
+      }
       try {
-        if (user) {
-          // Fetch user's personal top artists
-          const data = await spotify.getTopArtists(20);
-          if (data?.items) {
-            setArtists(data.items);
-          }
-        } else {
-          // Fetch general popular artists from server
-          const response = await fetch('/api/artists/popular');
-          if (response.ok) {
-            const data = await response.json();
-            setArtists(data.artists);
-          }
+        const response = await fetch('/api/artists/popular');
+        if (response.ok) {
+          const data = await response.json();
+          setArtists(data.artists);
+          setSource('popular');
         }
       } catch (error) {
-        console.error('Failed to fetch artists:', error);
+        console.error('Failed to fetch popular artists:', error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchArtists();
-  }, [spotify, user]);
+    const fetchUserArtists = async () => {
+      if (source !== 'user') {
+        setArtists(null);
+        setIsLoading(true);
+      }
+      try {
+        const data = await spotify.getTopArtists(20);
+        if (data?.items) {
+          setArtists(data.items);
+          setSource('user');
+        }
+      } catch (error) {
+        console.error('Failed to fetch user top artists:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (authenticated) {
+      fetchUserArtists();
+    } else {
+      fetchPopularArtists();
+    }
+  }, [authenticated, loading, source, spotify]);
 
   return (
     <div className="flex justify-center py-8">
-      {artists ? (
-       <div className='grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 sm:gap-4 p-2 sm:p-6'>
+      {isLoading ? (
+        <LoadingSpinner message="Loading artists..." fullHeight />
+      ) : artists ? (
+        <div className='grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 sm:gap-4 p-2 sm:p-6'>
           {artists && (
             artists.map((artist, index) => {
               const imageUrl = artist.images[0]?.url || '/placeholder-artist.jpg';
@@ -67,9 +89,7 @@ export default function Artists() {
             })
           )}
         </div>
-      ) : (
-        <LoadingSpinner message="Loading artists..." fullHeight />
-      )}
+      ) : null}
     </div>
   )
 };
