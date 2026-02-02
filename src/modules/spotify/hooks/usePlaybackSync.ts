@@ -150,7 +150,6 @@ export function usePlaybackSync(
       const sec = Math.floor(currentInterpolatedMs / 1000);
       return sec;
     }
-    // Fallback chain
     if (globalTrackId === trackId && globalPosition !== null) {
       return globalPosition;
     }
@@ -158,7 +157,7 @@ export function usePlaybackSync(
       return webLastPosition;
     }
     return 0;
-  }, [needsInterpolation, currentInterpolatedMs, trackId, globalTrackId, globalPosition, webLastTrack, webLastPosition]);
+  }, [currentInterpolatedMs, trackId, globalTrackId, globalPosition, webLastTrack, webLastPosition]);
 
   // High-frequency sync polling when in sync/view modes; faster cadence for responsiveness
   const pollSync = useCallback(async () => {
@@ -363,7 +362,7 @@ export function usePlaybackSync(
       }
       if (globalTrackId === trackId && globalPosition !== null) return globalPosition * 1000;
       if (webLastTrack === trackId && webLastPosition !== null) return webLastPosition * 1000;
-      return currentPosition * 1000;
+      return 0;
     })(),
     togglePlayback,
     seekTo,

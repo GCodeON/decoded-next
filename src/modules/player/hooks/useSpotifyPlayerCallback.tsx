@@ -6,15 +6,15 @@ export const useSpotifyPlayerCallback = (
   handleToken: () => Promise<string | null>,
   currentTrackId?: string | null
 ) => {
-  const { setDeviceId, setGlobalTrackId } = useSpotifyPlayer();
+  const { setDeviceId, setGlobalTrackId, globalTrackId, globalIsPlaying } = useSpotifyPlayer();
 
   const handleCallback = useCallback((state: any) => {
     if (state?.status === 'READY') {
       try {
         const deviceId = state?.device_id || state?.deviceId || null;
         if (deviceId) setDeviceId(deviceId);
-        // Set the current track ID when player is ready, so playback targets the correct song
-        if (currentTrackId) {
+        // Only set current track when nothing is playing to avoid overriding active playback
+        if (currentTrackId && !globalIsPlaying && !globalTrackId) {
           setGlobalTrackId(currentTrackId);
         }
       } catch (e) {
@@ -27,7 +27,7 @@ export const useSpotifyPlayerCallback = (
       console.warn('Spotify SDK authentication error detected, attempting token refresh...');
       handleToken();
     }
-  }, [setDeviceId, setGlobalTrackId, handleToken, currentTrackId]);
+  }, [setDeviceId, setGlobalTrackId, handleToken, currentTrackId, globalTrackId, globalIsPlaying]);
 
   return handleCallback;
 };
