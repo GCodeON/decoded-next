@@ -4,6 +4,7 @@ export interface User {
   email?: string;
   emailVerified?: boolean;
   authProvider?: 'spotify' | 'email';
+  spotifyProduct?: 'premium' | 'free' | string;
   role?: 'admin' | 'user';
   images?: { url: string }[];
   createdAt?: number;
