@@ -110,6 +110,8 @@ export const createSpotifyAxios = (): AxiosInstance => {
         (url.startsWith('/tracks') ||
           url.startsWith('/albums') ||
           url.startsWith('/artists') ||
+          url.startsWith('/audio-analysis') ||
+          url.startsWith('/audio-features') ||
           url.startsWith('/search'));
 
       if (status === 401 && authType === 'user' && isPublic) {

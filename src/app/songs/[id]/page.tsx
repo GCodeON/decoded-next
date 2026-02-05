@@ -276,6 +276,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
             onActiveLineChange={setLastActiveLine}
             onLineClick={handleSeekToLine}
             containerId="synced-lyrics-container"
+            isAuthenticated={isAuthenticated}
           />
         )}
 

@@ -24,6 +24,7 @@ const SyncedLyrics = ({
   onActiveLineChange,
   onLineClick,
   containerId = 'synced-lyrics-container',
+  isAuthenticated = false,
 }: SyncedLyricsWithActiveLine) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const currentPositionSec = currentPositionMs / 1000;
@@ -100,6 +101,9 @@ const SyncedLyrics = ({
         const isActive = i === effectiveActiveLineIndex;
         const isPast = effectiveActiveLineIndex !== null && i < effectiveActiveLineIndex;
         const words = wordsByLine[i] || [];
+        
+        // When rhymes are toggled and user is not authenticated, show full opacity
+        const shouldShowFullOpacity = showRhymes && !isAuthenticated;
 
         // Empty line (instrumental break)
         if (!text) {
@@ -107,7 +111,9 @@ const SyncedLyrics = ({
             <div
               key={i}
               className={`synced-line px-6 py-3 text-center text-gray-500 italic text-md ${
-                isActive ? 'opacity-100' : isPast ? 'opacity-70' : 'opacity-40'
+                shouldShowFullOpacity
+                  ? 'opacity-100'
+                  : isActive ? 'opacity-100' : isPast ? 'opacity-70' : 'opacity-40'
               }`}
             >
               (instrumental)
@@ -131,7 +137,9 @@ const SyncedLyrics = ({
             {...tapHandlers}
             style={{ touchAction: 'manipulation' }}
             className={`px-3 md:px-6 py-2 rounded-lg transition-all ${
-              isActive
+              shouldShowFullOpacity
+                ? 'opacity-100'
+                : isActive
                 ? ''
                 : isPast
                 ? 'opacity-80'

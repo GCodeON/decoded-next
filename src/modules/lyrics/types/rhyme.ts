@@ -28,4 +28,5 @@ export interface SyncedLyricsProps {
   rhymeEncodedLines?: string[];
   showRhymes?: boolean;
   mode?: SyncMode;
+  isAuthenticated?: boolean;
 }
