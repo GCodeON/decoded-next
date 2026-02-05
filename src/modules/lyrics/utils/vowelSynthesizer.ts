@@ -123,7 +123,7 @@ class VowelSynthesizer {
 
   /**
    * Play a monophthong (single steady vowel)
-   */x
+    */
   private async playMonophthong(
     formants: FormantData,
     duration: number = 0.35
