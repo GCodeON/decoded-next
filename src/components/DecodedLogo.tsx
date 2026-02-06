@@ -24,7 +24,7 @@ const DecodeLogo = () => {
         {letters.map((letter, i) => (
           <motion.span
             key={`${cycle}-${i}`}
-            initial={{ opacity: 0, x: -20, filter: "blur(8px)" }}
+            initial={{ opacity: 0, x: -10, filter: "blur(8px)" }}
             animate={{
               opacity: 1,
               x: 0,
