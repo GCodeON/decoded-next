@@ -34,6 +34,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
   const [rhymeColorMappingComplete, setRhymeColorMappingComplete] = useState(false);
   const [lastActiveLine, setLastActiveLine] = useState<number | null>(null);
   const [disableAutoScroll, setDisableAutoScroll] = useState(false);
+  const [isHeaderCompact, setIsHeaderCompact] = useState(false);
   const scrollDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
   const { toast, show: showToast } = useToast();
@@ -113,6 +114,26 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
       mounted = false;
     };
   }, [isAuthenticated, isChecking]);
+
+  useEffect(() => {
+    const threshold = 48;
+    const updateCompact = () => {
+      const container = document.getElementById('content-scroll-container');
+      const scrollTop = container ? container.scrollTop : window.scrollY;
+      setIsHeaderCompact(scrollTop > threshold);
+    };
+
+    updateCompact();
+
+    const container = document.getElementById('content-scroll-container');
+    if (container) {
+      container.addEventListener('scroll', updateCompact, { passive: true });
+      return () => container.removeEventListener('scroll', updateCompact);
+    }
+
+    window.addEventListener('scroll', updateCompact, { passive: true });
+    return () => window.removeEventListener('scroll', updateCompact);
+  }, []);
   
   const handleToggleRhymeComplete = async () => {
     const newValue = !rhymeColorMappingComplete;
@@ -168,7 +189,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
     activeLineIndex: lastActiveLine,
     lyricsContainerId: 'synced-lyrics-container',
     viewportOffset: {
-      mobile: 75,
+      mobile: 70,
       desktop: 75,
     },
     disabled: disableAutoScroll,
@@ -193,7 +214,11 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
     <div className="w-full mx-auto p-1 md:p-6 space-y-1 md:space-y-8 relative">
       <Toast message={toast?.message || null} />
       
-      <div className="bg-black rounded-tl-xl rounded-tr-xl shadow-lg p-2 md:p-6 mb-0">
+      <div
+        className={`bg-black rounded-tl-xl rounded-tr-xl shadow-lg mb-0 transition-all duration-200 ${
+          isHeaderCompact ? 'p-0.5 md:p-6' : 'p-2 md:p-6'
+        }`}
+      >
         <SongHeader 
           track={track} 
           isPlaying={isPlaying} 
@@ -203,7 +228,11 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
         />
       </div>
 
-      <div className="sticky top-0 z-20 bg-black shadow-lg p-1 md:p-2 mb-2">
+      <div
+        className={`sticky top-0 z-20 bg-black shadow-lg mb-2 transition-all duration-200 ${
+          isHeaderCompact ? 'p-0.5 md:p-2' : 'p-1 md:p-2'
+        }`}
+      >
         <div className="flex justify-around items-center">
           {!editMode && !syncMode && (
             <ActionButtons

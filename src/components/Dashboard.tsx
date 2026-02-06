@@ -8,7 +8,7 @@ import Navigation from '@/components/Navigation';
 import { SpotifyWebPlayer } from '@/modules/player';
 import SpotifySearchBar from '@/components/SpotifySearchBar';
 import useAuth from '@/modules/auth/hooks/useAuth';
-
+import DecodeLogo from '@/components/DecodedLogo';
 interface SidebarContextType {
   isOpen: boolean;
   setOpen: Dispatch<SetStateAction<boolean>>;
@@ -70,10 +70,38 @@ function DashboardUI({ children }: { children: React.ReactNode }) {
   const { currentTrackId } = useCurrentTrack();
   const { isAuthenticated, isChecking } = useAuth();
   const pathname = usePathname();
+  const [isNavCompact, setIsNavCompact] = useState(false);
 
   // Show minimal layout for public pages when not authenticated
   const isPublicPage = ['/', '/login', '/register', '/callback', '/songs'].some(p => pathname.startsWith(p));
   const showMinimalLayout = isPublicPage && !isAuthenticated && !isChecking;
+  const isSongPage = pathname.startsWith('/songs/');
+
+  useEffect(() => {
+    if (!isSongPage) {
+      setIsNavCompact(false);
+      return;
+    }
+
+    const threshold = 32;
+    const onScroll = () => {
+      const scrollTop = showMinimalLayout
+        ? window.scrollY
+        : document.getElementById('content-scroll-container')?.scrollTop ?? 0;
+      setIsNavCompact(scrollTop > threshold);
+    };
+
+    onScroll();
+
+    if (showMinimalLayout) {
+      window.addEventListener('scroll', onScroll, { passive: true });
+      return () => window.removeEventListener('scroll', onScroll);
+    }
+
+    const container = document.getElementById('content-scroll-container');
+    container?.addEventListener('scroll', onScroll, { passive: true });
+    return () => container?.removeEventListener('scroll', onScroll);
+  }, [isSongPage, showMinimalLayout]);
 
   if (showMinimalLayout) {
     return (
@@ -82,7 +110,7 @@ function DashboardUI({ children }: { children: React.ReactNode }) {
         <aside className="hidden lg:flex fixed top-0 left-0 z-40 h-full w-48 bg-black shadow-md flex-col p-5">
           <div className="sticky top-0 flex flex-col flex-grow">
             <Link href="/" className="mb-8">
-              <h1 className="title text-md md:text-lg font-bold text-white">DECODED</h1>
+              <DecodeLogo />
             </Link>
             <Navigation />
           </div>
@@ -91,9 +119,15 @@ function DashboardUI({ children }: { children: React.ReactNode }) {
         {/* Main Content */}
         <div className="flex flex-col min-h-screen bg-black w-full lg:ml-48">
           {/* Mobile Header */}
-          <header className="flex lg:hidden items-center justify-between px-6 py-4 border-b border-white/10 bg-black/40">
+          <header
+            className={`flex lg:hidden items-center justify-between px-6 border-b border-white/10 bg-black/40 transition-all duration-200 ${
+              isNavCompact ? 'py-2' : 'py-4'
+            }`}
+          >
             <Link href="/" className="hover:opacity-80 transition-opacity">
-              <h1 className="title text-lg md:text-xl font-bold text-white">DECODED</h1>
+              <div className={`transition-transform duration-200 ${isNavCompact ? 'scale-90 origin-left' : ''}`}>
+                <DecodeLogo />
+              </div>
             </Link>
             <div className="flex items-center gap-4">
               <Link
@@ -146,9 +180,7 @@ function DashboardUI({ children }: { children: React.ReactNode }) {
       >
         <div className="sticky top-0 flex flex-col flex-grow">
           <Link href="/" className="mb-8">
-            <h1 className="title text-md md:text-lg font-bold text-white">
-              DECODED
-            </h1>
+            <DecodeLogo />
           </Link>
 
           <Navigation />
@@ -164,11 +196,15 @@ function DashboardUI({ children }: { children: React.ReactNode }) {
       )}
 
       <main className="relative flex flex-1 flex-col w-full h-[100dvh] lg:h-screen">
-        <div className="flex items-center justify-between gap-3 p-3 shadow-md lg:hidden">
+        <div
+          className={`flex items-center justify-between gap-3 shadow-md lg:hidden transition-all duration-100 ${
+            isNavCompact ? 'p-1' : 'p-3'
+          }`}
+        >
           <Link href="/">
-            <h1 className="title text-sm md:text-md font-bold">
-              DECODED
-            </h1>
+            <div className={`transition-transform duration-100 ${isNavCompact ? 'scale-90 origin-left' : ''}`}>
+              <DecodeLogo />
+            </div>
           </Link>
           <div className="flex-1" />
           <SpotifySearchBar isMobile />

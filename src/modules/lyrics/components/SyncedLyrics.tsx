@@ -137,7 +137,7 @@ const SyncedLyrics = ({
             key={i}
             {...tapHandlers}
             style={{ touchAction: 'manipulation' }}
-            className={`px-3 md:px-6 py-2 rounded-lg transition-all ${
+            className={`px-10 py-0.5 md:px-3 md:px-6 md:py-1  rounded-lg transition-all lg:text-lg ${
               shouldShowFullOpacity
                 ? 'opacity-100'
                 : isActive
