@@ -8,7 +8,6 @@ import { WORD_STYLE, SEGMENT_STYLE } from '../config/sync-constants';
 
 interface RhymeWordHighlightProps {
   words: Word[];
-  rhymeColorMap: Map<string, string>;
   isActive: boolean;
   isPast: boolean;
   filledWords: number;
@@ -16,9 +15,145 @@ interface RhymeWordHighlightProps {
   wordParts?: WordRhymeParts[];
 }
 
+type Segment = {
+  text: string;
+  bgColor: string | null;
+  textColor: string | null;
+  underline: boolean;
+  start: number;
+  end: number;
+};
+
+interface WordRevealProps {
+  index: number;
+  segmentsWithSpace: Segment[];
+  filledWords: number;
+  isPast: boolean;
+  isActive: boolean;
+  getWordProgress: (index: number) => number;
+  styleCache: (textColor: string | null, underline: boolean) => React.CSSProperties;
+}
+
+const WordReveal = memo(function WordReveal({
+  index,
+  segmentsWithSpace,
+  filledWords,
+  isPast,
+  isActive,
+  getWordProgress,
+  styleCache,
+}: WordRevealProps) {
+  const progress = getWordProgress(index);
+  const easedProgress = Math.pow(progress, 0.82);
+  const wordDelay = index * 12;
+  const isLineActive = isActive || isPast;
+  const activeIndex = isLineActive ? filledWords : -1;
+  const shouldAnimate = isLineActive && !isPast && index === activeIndex;
+  const wordRef = useRef<HTMLSpanElement>(null);
+  const lastRevealRef = useRef(0);
+  const hasActivatedRef = useRef(false);
+  const revealSetterRef = useRef<((value: number) => void) | null>(null);
+
+  useLayoutEffect(() => {
+    if (!wordRef.current) return;
+    if (!revealSetterRef.current) {
+      revealSetterRef.current = gsap.quickTo(wordRef.current, '--reveal', {
+        duration: 0.2,
+        ease: 'power2.out',
+      });
+      gsap.set(wordRef.current, { '--reveal': 0 });
+    }
+    const last = lastRevealRef.current;
+
+    if (!shouldAnimate) {
+      const target = isLineActive
+        ? isPast || index < activeIndex
+          ? 1
+          : 0
+        : 0;
+      lastRevealRef.current = target;
+      hasActivatedRef.current = false;
+      gsap.set(wordRef.current, { '--reveal': target });
+      return;
+    }
+
+    if (hasActivatedRef.current) return;
+    hasActivatedRef.current = true;
+    lastRevealRef.current = 1;
+    if (revealSetterRef.current) {
+      gsap.set(wordRef.current, { '--reveal': 0 });
+      revealSetterRef.current(1);
+    } else {
+      gsap.to(wordRef.current, {
+        '--reveal': 1,
+        duration: 0.2,
+        ease: 'power2.out',
+        delay: wordDelay / 1000,
+        overwrite: true,
+      });
+    }
+  }, [shouldAnimate, wordDelay, isPast, index, activeIndex, easedProgress, isLineActive]);
+
+  return (
+    <span
+      ref={wordRef}
+      data-word={index}
+      style={{
+        ...WORD_STYLE,
+        position: 'relative',
+        display: 'inline-block',
+      }}
+    >
+      {segmentsWithSpace.map((seg, segIdx) => {
+        const isSpace = seg.text === ' ' && !seg.bgColor && !seg.underline && !seg.textColor;
+        if (isSpace) {
+          return (
+            <span key={`${index}-space-${segIdx}`} className="inline-block">
+              {seg.text}
+            </span>
+          );
+        }
+
+        return (
+          <span
+            key={`${index}-segment-${segIdx}`}
+            className="relative inline-block"
+            style={styleCache(seg.textColor, seg.underline)}
+          >
+            {seg.bgColor && (
+              <span
+                className="absolute inset-0"
+                aria-hidden="true"
+                style={{
+                  backgroundColor: seg.bgColor,
+                  transform: 'scaleX(var(--reveal, 0))',
+                  transformOrigin: 'left center',
+                  willChange: 'transform',
+                  zIndex: 0,
+                }}
+              />
+            )}
+            <span
+              style={{
+                display: 'inline-block',
+                position: 'relative',
+                zIndex: 1,
+                opacity: 0.6 + (easedProgress * 0.4),
+                transform: `translateY(${2 - (easedProgress * 2)}px) scaleX(${0.95 + (easedProgress * 0.05)})`,
+                transformOrigin: 'left center',
+              }}
+            >
+              {seg.text}
+            </span>
+          </span>
+        );
+      })}
+    </span>
+  );
+});
+
 export const RhymeWordHighlight = memo(function RhymeWordHighlight({
   words,
-  rhymeColorMap,
   isActive,
   isPast,
   filledWords,
@@ -53,13 +188,7 @@ export const RhymeWordHighlight = memo(function RhymeWordHighlight({
           ]
         : segments;
 
-      const totalChars =
-        segmentsWithSpace.reduce((sum, seg) => {
-          const len = seg.end - seg.start > 0 ? seg.end - seg.start : seg.text.length;
-          return sum + len;
-        }, 0) || 1;
-
-      return { segmentsWithSpace, totalChars };
+      return { segmentsWithSpace };
     });
   }, [words, wordParts]);
 
@@ -79,137 +208,6 @@ export const RhymeWordHighlight = memo(function RhymeWordHighlight({
     };
   }, []);
 
-  const WordReveal = memo(function WordReveal({
-    index,
-    segmentsWithSpace,
-    totalChars,
-    filledWords,
-    isPast,
-    isActive,
-  }: {
-    index: number;
-    segmentsWithSpace: Array<{
-      text: string;
-      bgColor: string | null;
-      textColor: string | null;
-      underline: boolean;
-      start: number;
-      end: number;
-    }>;
-    totalChars: number;
-    filledWords: number;
-    isPast: boolean;
-    isActive: boolean;
-  }) {
-    const progress = getWordProgress(index);
-    const easedProgress = Math.pow(progress, 0.82);
-    const wordDelay = index * 12;
-    const isLineActive = isActive || isPast;
-    const activeIndex = isLineActive ? filledWords : -1;
-    const shouldAnimate = isLineActive && !isPast && index === activeIndex;
-    const wordRef = useRef<HTMLSpanElement>(null);
-    const lastRevealRef = useRef(0);
-    const hasActivatedRef = useRef(false);
-    const revealSetterRef = useRef<((value: number) => void) | null>(null);
-
-    useLayoutEffect(() => {
-      if (!wordRef.current) return;
-      if (!revealSetterRef.current) {
-        revealSetterRef.current = gsap.quickTo(wordRef.current, '--reveal', {
-          duration: 0.2,
-          ease: 'power2.out',
-        });
-        gsap.set(wordRef.current, { '--reveal': 0 });
-      }
-      const last = lastRevealRef.current;
-
-      if (!shouldAnimate) {
-        const target = isLineActive
-          ? isPast || index < activeIndex
-            ? 1
-            : 0
-          : 0;
-        lastRevealRef.current = target;
-        hasActivatedRef.current = false;
-        gsap.set(wordRef.current, { '--reveal': target });
-        return;
-      }
-
-      if (hasActivatedRef.current) return;
-      hasActivatedRef.current = true;
-      lastRevealRef.current = 1;
-      if (revealSetterRef.current) {
-        gsap.set(wordRef.current, { '--reveal': 0 });
-        revealSetterRef.current(1);
-      } else {
-        gsap.to(wordRef.current, {
-          '--reveal': 1,
-          duration: 0.2,
-          ease: 'power2.out',
-          delay: wordDelay / 1000,
-          overwrite: true,
-        });
-      }
-    }, [shouldAnimate, wordDelay, isPast, index, activeIndex, easedProgress, isLineActive]);
-
-    return (
-      <span
-        ref={wordRef}
-        data-word={index}
-        style={{
-          ...WORD_STYLE,
-          position: 'relative',
-          display: 'inline-block',
-        }}
-      >
-        {segmentsWithSpace.map((seg, segIdx) => {
-          const isSpace = seg.text === ' ' && !seg.bgColor && !seg.underline && !seg.textColor;
-          if (isSpace) {
-            return (
-              <span key={`${index}-space-${segIdx}`} className="inline-block">
-                {seg.text}
-              </span>
-            );
-          }
-
-          return (
-            <span
-              key={`${index}-segment-${segIdx}`}
-              className="relative inline-block"
-              style={styleCache(seg.textColor, seg.underline)}
-            >
-              {seg.bgColor && (
-                <span
-                  className="absolute inset-0"
-                  aria-hidden="true"
-                  style={{
-                    backgroundColor: seg.bgColor,
-                    transform: 'scaleX(var(--reveal, 0))',
-                    transformOrigin: 'left center',
-                    willChange: 'transform',
-                    zIndex: 0,
-                  }}
-                />
-              )}
-              <span
-                style={{
-                  display: 'inline-block',
-                  position: 'relative',
-                  zIndex: 1,
-                  opacity: 0.6 + (easedProgress * 0.4),
-                  transform: `translateY(${2 - (easedProgress * 2)}px) scaleX(${0.95 + (easedProgress * 0.05)})`,
-                  transformOrigin: 'left center',
-                }}
-              >
-                {seg.text}
-              </span>
-            </span>
-          );
-        })}
-      </span>
-    );
-  });
-
   return (
     <div className="relative inline-block leading-relaxed">
       {words.map((_, index) => (
@@ -217,12 +215,26 @@ export const RhymeWordHighlight = memo(function RhymeWordHighlight({
           key={index}
           index={index}
           segmentsWithSpace={precomputed[index].segmentsWithSpace}
-          totalChars={precomputed[index].totalChars}
           filledWords={filledWords}
           isPast={isPast}
           isActive={isActive}
+          getWordProgress={getWordProgress}
+          styleCache={styleCache}
         />
       ))}
     </div>
   );
+}, (prev, next) => {
+  const sameBase =
+    prev.words === next.words &&
+    prev.wordParts === next.wordParts &&
+    prev.isActive === next.isActive &&
+    prev.isPast === next.isPast &&
+    prev.filledWords === next.filledWords;
+
+  if (!sameBase) return false;
+  if (prev.isActive || next.isActive) {
+    return prev.currentTimeSec === next.currentTimeSec;
+  }
+  return true;
 });

@@ -48,7 +48,7 @@ const SyncedLyrics = ({
   const isWordSynced = wordsByLine.some((line) => line.length > 0);
   const shouldUseWordSync = mode === 'word' || (mode === 'auto' && isWordSynced);
   
-  const { colorMap: rhymeColorMap, wordPartsByLine } = useRhymeColorMap(
+  const { wordPartsByLine } = useRhymeColorMap(
     rhymeEncodedLines,
     lines,
     wordsByLine
@@ -101,6 +101,7 @@ const SyncedLyrics = ({
         const isActive = i === effectiveActiveLineIndex;
         const isPast = effectiveActiveLineIndex !== null && i < effectiveActiveLineIndex;
         const words = wordsByLine[i] || [];
+        const filledWords = isPast ? words.length : isActive ? getFilledWordsForLine(words) : 0;
         
         // When rhymes are toggled and user is not authenticated, show full opacity
         const shouldShowFullOpacity = showRhymes && !isAuthenticated;
@@ -149,10 +150,9 @@ const SyncedLyrics = ({
             {shouldUseWordSync && words.length > 0 && showRhymes ? (
               <RhymeWordHighlight
                 words={words}
-                rhymeColorMap={rhymeColorMap}
                 isActive={isActive}
                 isPast={isPast}
-                filledWords={getFilledWordsForLine(words)}
+                filledWords={filledWords}
                 currentTimeSec={currentPositionSec}
                 wordParts={wordPartsByLine[i]}
               />
