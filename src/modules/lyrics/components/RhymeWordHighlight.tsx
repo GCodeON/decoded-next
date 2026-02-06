@@ -12,6 +12,9 @@ const LIGHT_BG_COLORS = new Set([
   'rgb(255, 167, 167)',
   'rgb(241, 241, 241)',
   'rgb(171, 242, 0)',
+  'rgb(48, 185, 71)',
+  'rgb(209, 178, 255)',
+  'rgb(189, 189, 189)'
 ]);
 
 interface RhymeWordHighlightProps {

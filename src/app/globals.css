@@ -29,7 +29,8 @@ body {
   background: black;
 }
 
-span[style*="background-color: rgb(232, 217, 255)"], span[style*="background-color: rgb(255, 228, 0)"], span[style*="background-color: rgb(255, 228, 0)"], span[style*="background-color: rgb(255, 167, 167)"], span[style*="background-color: rgb(241, 241, 241)"], [style*="background-color: rgb(171, 242, 0)"] {
+span[style*="background-color: rgb(232, 217, 255)"], span[style*="background-color: rgb(255, 228, 0)"], span[style*="background-color: rgb(255, 228, 0)"], span[style*="background-color: rgb(255, 167, 167)"], span[style*="background-color: rgb(241, 241, 241)"], [style*="background-color: rgb(171, 242, 0)"],
+[style*="background-color: rgb(48, 185, 71)"], [style*="background-color: rgb(209, 178, 255)"], [style*="background-color: rgb(189, 189, 189)"]{
   color: black;
 }
 
