@@ -41,6 +41,7 @@ export default function ActionButtons({
   onEditLyrics,
 }: ActionButtonsProps) {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [adminAvailable, setAdminAvailable] = useState(true);
   
   if (lyricsLoading) {
     return null;
@@ -152,7 +153,7 @@ export default function ActionButtons({
 
       {/* Mobile View */}
       <div className="flex md:hidden flex-col w-full gap-2">
-        {isAdmin && (
+        {isAdmin && adminAvailable && (
           <div className="bg-black border-t border-gray-700 p-2">
             <button
               onClick={() => setShowMobileMenu(true)}
@@ -209,12 +210,15 @@ export default function ActionButtons({
       </div>
 
       {/* Mobile Menu Modal - Admin Only Commands */}
-      {showMobileMenu && isAdmin && (
+      {showMobileMenu && isAdmin && adminAvailable && (
         <div className={`fixed inset-0 z-50 flex items-end md:hidden ${isPlaying ? 'pb-[150px]' : 'pb-[70px]'}`}>
           {/* Backdrop */}
           <div 
             className="absolute inset-0 bg-black/75"
-            onClick={() => setShowMobileMenu(false)}
+            onClick={() => {
+              setShowMobileMenu(false);
+              setAdminAvailable(false);
+            }}
           />
           
           {/* Menu Content */}
@@ -236,6 +240,7 @@ export default function ActionButtons({
                 onClick={() => {
                   onEditSync();
                   setShowMobileMenu(false);
+                  setAdminAvailable(false);
                 }}
                 className={`flex items-center gap-3 w-full cursor-pointer ${hasSynced ? 'text-orange-600 hover:text-orange-700' : 'text-green-600 hover:text-green-700'} font-semibold text-lg p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800`}
               >
@@ -245,6 +250,7 @@ export default function ActionButtons({
                 onClick={() => {
                   onEditLyrics();
                   setShowMobileMenu(false);
+                  setAdminAvailable(false);
                 }}
                 className="flex items-center gap-3 w-full text-blue-600 hover:text-blue-700 cursor-pointer font-semibold text-lg p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
               >
