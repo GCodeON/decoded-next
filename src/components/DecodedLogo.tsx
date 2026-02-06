@@ -3,20 +3,35 @@ import { motion } from "framer-motion";
 
 const letters = "DECODED".split("");
 
-const DecodeLogo = () => {
+type DecodeLogoProps = {
+  className?: string;
+  textClassName?: string;
+  fullSize?: boolean;
+  loopOnHover?: boolean;
+};
+
+const DecodeLogo = ({
+  className = "",
+  textClassName = "",
+  fullSize = false,
+  loopOnHover = true,
+}: DecodeLogoProps) => {
   const [cycle, setCycle] = useState(0);
 
   const retrigger = () => setCycle((value) => value + 1);
 
+  const textSizeClass = fullSize ? "text-xl md:text-[100px]" : "text-lg md:text-xl";
+  const containerAlignmentClass = fullSize ? "justify-center w-full text-center" : "justify-left";
+
   return (
     <div
-      className="relative flex justify-left items-center bg-black cursor-pointer"
-      onMouseEnter={retrigger}
+      className={`relative flex items-center bg-black cursor-pointer ${containerAlignmentClass} ${className}`}
+      onMouseEnter={loopOnHover ? retrigger : undefined}
       onClick={retrigger}
     >
       <motion.div
         key={cycle}
-        className="text-lg md:text-xl font-bold tracking-wider text-white"
+        className={`${textSizeClass} font-bold tracking-wider text-white ${textClassName}`}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}

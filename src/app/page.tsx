@@ -6,7 +6,7 @@ import SongHeader from '@/components/SongHeader';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import LatestEncoded from '@/components/LatestEncoded';
 import useAuth from '@/modules/auth/hooks/useAuth';
-
+import DecodeLogo from '@/components/DecodedLogo';
 
 export default function Home() {
   const { isAuthenticated, isChecking } = useAuth();
@@ -43,9 +43,9 @@ export default function Home() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[70vh] space-y-8 px-6 my-12">
         <div className="text-center space-y-4 max-w-2xl">
-          <h2 className="text-5xl md:text-6xl font-bold text-white mb-4 md:mb-12">
-            DECODED
-          </h2>
+          <DecodeLogo 
+            fullSize={true}  
+          />
           <p className="text-xl text-gray-300">
             Explore and create encoded rap lyrics with perfect rhyme highlighting and synchronization.
           </p>
