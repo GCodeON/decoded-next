@@ -39,7 +39,7 @@ interface WordRevealProps {
   isPast: boolean;
   isActive: boolean;
   getWordProgress: (index: number) => number;
-  styleCache: (textColor: string | null, underline: boolean) => React.CSSProperties;
+  styleCache: (textColor: string | null, underline: boolean, isRevealed: boolean) => React.CSSProperties;
 }
 
 const WordReveal = memo(function WordReveal({
@@ -127,7 +127,7 @@ const WordReveal = memo(function WordReveal({
           <span
             key={`${index}-segment-${segIdx}`}
             className="relative inline-block"
-            style={styleCache(seg.textColor, seg.underline)}
+            style={styleCache(seg.textColor, seg.underline, isRevealed)}
           >
             {isLineActive && seg.bgColor && (
               <span
@@ -209,13 +209,13 @@ export const RhymeWordHighlight = memo(function RhymeWordHighlight({
   // Style cache to return stable objects and reduce allocations
   const styleCache = useMemo(() => {
     const cache = new Map<string, React.CSSProperties>();
-    return (textColor: string | null, underline: boolean) => {
-      const key = `${textColor}|${underline}`;
+    return (textColor: string | null, underline: boolean, isRevealed: boolean) => {
+      const key = `${textColor}|${underline}|${isRevealed}`;
       if (!cache.has(key)) {
         cache.set(key, {
           ...SEGMENT_STYLE,
-          color: textColor || undefined,
-          textDecoration: underline ? 'underline' : undefined,
+          color: isRevealed ? textColor || undefined : undefined,
+          textDecoration: isRevealed && underline ? 'underline' : undefined,
         });
       }
       return cache.get(key)!;
