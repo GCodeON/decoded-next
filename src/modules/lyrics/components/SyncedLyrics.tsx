@@ -114,7 +114,7 @@ const SyncedLyrics = ({
               className={`synced-line px-6 py-3 text-center text-gray-500 italic text-md ${
                 shouldShowFullOpacity
                   ? 'opacity-100'
-                  : isActive ? 'opacity-100' : isPast ? 'opacity-70' : 'opacity-40'
+                  : isActive ? 'opacity-100' : isPast ? 'opacity-70' : 'opacity-60'
               }`}
             >
               (instrumental)
@@ -144,7 +144,7 @@ const SyncedLyrics = ({
                 ? ''
                 : isPast
                 ? 'opacity-80'
-                : 'opacity-40'
+                : 'opacity-60'
             } ${onLineClick ? 'cursor-pointer hover:bg-blue-800/20 active:bg-blue-700/30' : ''}`}
           >
             {shouldUseWordSync && words.length > 0 && showRhymes ? (
