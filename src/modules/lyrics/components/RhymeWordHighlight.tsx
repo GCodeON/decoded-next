@@ -6,6 +6,14 @@ import type { WordRhymeParts } from '../types/rhyme';
 import { useWordProgress } from '../hooks/useWordProgress';
 import { WORD_STYLE, SEGMENT_STYLE } from '../config/sync-constants';
 
+const LIGHT_BG_COLORS = new Set([
+  'rgb(232, 217, 255)',
+  'rgb(255, 228, 0)',
+  'rgb(255, 167, 167)',
+  'rgb(241, 241, 241)',
+  'rgb(171, 242, 0)',
+]);
+
 interface RhymeWordHighlightProps {
   words: Word[];
   isActive: boolean;
@@ -49,6 +57,7 @@ const WordReveal = memo(function WordReveal({
   const isLineActive = isActive || isPast;
   const activeIndex = isLineActive ? filledWords : -1;
   const shouldAnimate = isLineActive && !isPast && index === activeIndex;
+  const isRevealed = isLineActive && (isPast || index < activeIndex || (index === activeIndex && progress > 0));
   const wordRef = useRef<HTMLSpanElement>(null);
   const lastRevealRef = useRef(0);
   const hasActivatedRef = useRef(false);
@@ -120,7 +129,7 @@ const WordReveal = memo(function WordReveal({
             className="relative inline-block"
             style={styleCache(seg.textColor, seg.underline)}
           >
-            {seg.bgColor && (
+            {isLineActive && seg.bgColor && (
               <span
                 className="absolute inset-0"
                 aria-hidden="true"
@@ -138,6 +147,10 @@ const WordReveal = memo(function WordReveal({
                 display: 'inline-block',
                 position: 'relative',
                 zIndex: 1,
+                  color:
+                    isRevealed && seg.bgColor && LIGHT_BG_COLORS.has(seg.bgColor)
+                      ? 'black'
+                      : undefined,
                 opacity: 0.6 + (easedProgress * 0.4),
                 transform: `translateY(${2 - (easedProgress * 2)}px) scaleX(${0.95 + (easedProgress * 0.05)})`,
                 transformOrigin: 'left center',
