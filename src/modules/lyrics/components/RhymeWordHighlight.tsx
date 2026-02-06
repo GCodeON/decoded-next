@@ -35,7 +35,7 @@ type Segment = {
 interface WordRevealProps {
   index: number;
   segmentsWithSpace: Segment[];
-  filledWords: number;
+  activeWordIndex: number;
   isPast: boolean;
   isActive: boolean;
   getWordProgress: (index: number) => number;
@@ -45,7 +45,7 @@ interface WordRevealProps {
 const WordReveal = memo(function WordReveal({
   index,
   segmentsWithSpace,
-  filledWords,
+  activeWordIndex,
   isPast,
   isActive,
   getWordProgress,
@@ -55,7 +55,7 @@ const WordReveal = memo(function WordReveal({
   const easedProgress = Math.pow(progress, 0.82);
   const wordDelay = index * 12;
   const isLineActive = isActive || isPast;
-  const activeIndex = isLineActive ? filledWords : -1;
+  const activeIndex = isLineActive ? activeWordIndex : -1;
   const shouldAnimate = isLineActive && !isPast && index === activeIndex;
   const isRevealed = isLineActive && (isPast || index < activeIndex || (index === activeIndex && progress > 0));
   const wordRef = useRef<HTMLSpanElement>(null);
@@ -147,10 +147,10 @@ const WordReveal = memo(function WordReveal({
                 display: 'inline-block',
                 position: 'relative',
                 zIndex: 1,
-                  color:
-                    isRevealed && seg.bgColor && LIGHT_BG_COLORS.has(seg.bgColor)
-                      ? 'black'
-                      : undefined,
+                color:
+                  isLineActive && seg.bgColor && LIGHT_BG_COLORS.has(seg.bgColor) && (isPast || index <= activeIndex)
+                    ? 'black'
+                    : undefined,
                 opacity: 0.6 + (easedProgress * 0.4),
                 transform: `translateY(${2 - (easedProgress * 2)}px) scaleX(${0.95 + (easedProgress * 0.05)})`,
                 transformOrigin: 'left center',
@@ -173,7 +173,8 @@ export const RhymeWordHighlight = memo(function RhymeWordHighlight({
   currentTimeSec,
   wordParts,
 }: RhymeWordHighlightProps) {
-  const getWordProgress = useWordProgress(words, currentTimeSec, isPast, filledWords);
+  const activeWordIndex = (isActive || isPast) ? (filledWords > 0 ? filledWords - 1 : -1) : -1;
+  const getWordProgress = useWordProgress(words, currentTimeSec, isPast, activeWordIndex);
 
   // Precompute per-word segments and totals once per words/wordParts change
   const precomputed = useMemo(() => {
@@ -228,7 +229,7 @@ export const RhymeWordHighlight = memo(function RhymeWordHighlight({
           key={index}
           index={index}
           segmentsWithSpace={precomputed[index].segmentsWithSpace}
-          filledWords={filledWords}
+          activeWordIndex={activeWordIndex}
           isPast={isPast}
           isActive={isActive}
           getWordProgress={getWordProgress}
