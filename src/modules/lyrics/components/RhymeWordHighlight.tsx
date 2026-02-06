@@ -1,5 +1,6 @@
 "use client";
-import { useMemo, memo } from 'react';
+import { useMemo, memo, useLayoutEffect, useRef } from 'react';
+import { gsap } from 'gsap';
 import type { Word } from '../utils/lrcAdvanced';
 import type { WordRhymeParts } from '../types/rhyme';
 import { useWordProgress } from '../hooks/useWordProgress';
@@ -65,16 +66,13 @@ export const RhymeWordHighlight = memo(function RhymeWordHighlight({
   // Style cache to return stable objects and reduce allocations
   const styleCache = useMemo(() => {
     const cache = new Map<string, React.CSSProperties>();
-    return (bgColor: string | null, textColor: string | null, underline: boolean, delayMs: number) => {
-      const key = `${bgColor}|${textColor}|${underline}|${delayMs}`;
+    return (textColor: string | null, underline: boolean) => {
+      const key = `${textColor}|${underline}`;
       if (!cache.has(key)) {
         cache.set(key, {
           ...SEGMENT_STYLE,
-          backgroundColor: bgColor || 'transparent',
           color: textColor || undefined,
           textDecoration: underline ? 'underline' : undefined,
-          transition: 'opacity 160ms ease-out, transform 200ms ease-out, clip-path 200ms ease-out',
-          transitionDelay: `${delayMs}ms`,
         });
       }
       return cache.get(key)!;
@@ -85,6 +83,9 @@ export const RhymeWordHighlight = memo(function RhymeWordHighlight({
     index,
     segmentsWithSpace,
     totalChars,
+    filledWords,
+    isPast,
+    isActive,
   }: {
     index: number;
     segmentsWithSpace: Array<{
@@ -96,40 +97,112 @@ export const RhymeWordHighlight = memo(function RhymeWordHighlight({
       end: number;
     }>;
     totalChars: number;
+    filledWords: number;
+    isPast: boolean;
+    isActive: boolean;
   }) {
     const progress = getWordProgress(index);
     const easedProgress = Math.pow(progress, 0.82);
-    const revealChars = Math.round(totalChars * easedProgress);
     const wordDelay = index * 12;
-    let remaining = revealChars;
+    const isLineActive = isActive || isPast;
+    const activeIndex = isLineActive ? filledWords : -1;
+    const shouldAnimate = isLineActive && !isPast && index === activeIndex;
+    const wordRef = useRef<HTMLSpanElement>(null);
+    const lastRevealRef = useRef(0);
+    const hasActivatedRef = useRef(false);
+    const revealSetterRef = useRef<((value: number) => void) | null>(null);
+
+    useLayoutEffect(() => {
+      if (!wordRef.current) return;
+      if (!revealSetterRef.current) {
+        revealSetterRef.current = gsap.quickTo(wordRef.current, '--reveal', {
+          duration: 0.2,
+          ease: 'power2.out',
+        });
+        gsap.set(wordRef.current, { '--reveal': 0 });
+      }
+      const last = lastRevealRef.current;
+
+      if (!shouldAnimate) {
+        const target = isLineActive
+          ? isPast || index < activeIndex
+            ? 1
+            : 0
+          : 0;
+        lastRevealRef.current = target;
+        hasActivatedRef.current = false;
+        gsap.set(wordRef.current, { '--reveal': target });
+        return;
+      }
+
+      if (hasActivatedRef.current) return;
+      hasActivatedRef.current = true;
+      lastRevealRef.current = 1;
+      if (revealSetterRef.current) {
+        gsap.set(wordRef.current, { '--reveal': 0 });
+        revealSetterRef.current(1);
+      } else {
+        gsap.to(wordRef.current, {
+          '--reveal': 1,
+          duration: 0.2,
+          ease: 'power2.out',
+          delay: wordDelay / 1000,
+          overwrite: true,
+        });
+      }
+    }, [shouldAnimate, wordDelay, isPast, index, activeIndex, easedProgress, isLineActive]);
 
     return (
-      <span data-word={index} style={WORD_STYLE}>
+      <span
+        ref={wordRef}
+        data-word={index}
+        style={{
+          ...WORD_STYLE,
+          position: 'relative',
+          display: 'inline-block',
+        }}
+      >
         {segmentsWithSpace.map((seg, segIdx) => {
-          const segLength = seg.end - seg.start > 0 ? seg.end - seg.start : seg.text.length;
-          const visibleCount = Math.min(Math.max(remaining, 0), segLength);
-          remaining = Math.max(remaining - segLength, 0);
-
-          const visibleText = seg.text.slice(0, visibleCount);
-          const hiddenText = seg.text.slice(visibleCount);
-          const segBgColor = seg.bgColor;
+          const isSpace = seg.text === ' ' && !seg.bgColor && !seg.underline && !seg.textColor;
+          if (isSpace) {
+            return (
+              <span key={`${index}-space-${segIdx}`} className="inline-block">
+                {seg.text}
+              </span>
+            );
+          }
 
           return (
-            <span key={`${index}-${segIdx}`} className="inline-block">
-              {visibleText && (
+            <span
+              key={`${index}-segment-${segIdx}`}
+              className="relative inline-block"
+              style={styleCache(seg.textColor, seg.underline)}
+            >
+              {seg.bgColor && (
                 <span
+                  className="absolute inset-0"
+                  aria-hidden="true"
                   style={{
-                    ...styleCache(segBgColor, seg.textColor, seg.underline, wordDelay),
-                    opacity: 0.6 + (easedProgress * 0.4),
-                    transform: `translateY(${2 - (easedProgress * 2)}px) scaleX(${0.95 + (easedProgress * 0.05)})`,
+                    backgroundColor: seg.bgColor,
+                    transform: 'scaleX(var(--reveal, 0))',
                     transformOrigin: 'left center',
-                    clipPath: `inset(0 ${(1 - easedProgress) * 100}% 0 0)`,
+                    willChange: 'transform',
+                    zIndex: 0,
                   }}
-                >
-                  {visibleText}
-                </span>
+                />
               )}
-              {hiddenText && <span>{hiddenText}</span>}
+              <span
+                style={{
+                  display: 'inline-block',
+                  position: 'relative',
+                  zIndex: 1,
+                  opacity: 0.6 + (easedProgress * 0.4),
+                  transform: `translateY(${2 - (easedProgress * 2)}px) scaleX(${0.95 + (easedProgress * 0.05)})`,
+                  transformOrigin: 'left center',
+                }}
+              >
+                {seg.text}
+              </span>
             </span>
           );
         })}
@@ -145,6 +218,9 @@ export const RhymeWordHighlight = memo(function RhymeWordHighlight({
           index={index}
           segmentsWithSpace={precomputed[index].segmentsWithSpace}
           totalChars={precomputed[index].totalChars}
+          filledWords={filledWords}
+          isPast={isPast}
+          isActive={isActive}
         />
       ))}
     </div>

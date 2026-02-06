@@ -19,6 +19,7 @@
     "eslint": "^9.39.1",
     "eslint-config-next": "^16.0.4",
     "firebase": "^12.5.0",
+    "gsap": "^3.14.2",
     "hamburger-react": "^2.5.0",
     "next": "16.0.10",
     "node-fetch": "^3.3.2",
