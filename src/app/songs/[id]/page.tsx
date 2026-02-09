@@ -237,6 +237,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
           showRhymes={showRhymes}
           isAuthenticated={isAuthenticated}
           onExit={() => setIsPresentationMode(false)}
+          onLineClick={handleSeekToLine}
         />
       </>
     );

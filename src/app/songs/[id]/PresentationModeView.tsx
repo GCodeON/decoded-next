@@ -17,6 +17,7 @@ interface PresentationModeViewProps {
   showRhymes: boolean;
   isAuthenticated: boolean;
   onExit: () => void;
+  onLineClick?: (timeMs: number) => void;
 }
 
 export default function PresentationModeView({
@@ -29,8 +30,9 @@ export default function PresentationModeView({
   showRhymes,
   isAuthenticated,
   onExit,
+  onLineClick,
 }: PresentationModeViewProps) {
-  const [presentationSpeed, setPresentationSpeed] = useState(30);
+  const [presentationSpeed, setPresentationSpeed] = useState(10);
   const [showPresentationControls, setShowPresentationControls] = useState(true);
   const [isPresentationPaused, setIsPresentationPaused] = useState(false);
   const [activeLineIndex, setActiveLineIndex] = useState<number | null>(null);
@@ -71,7 +73,7 @@ export default function PresentationModeView({
     const upperRatio = 0.4;
     const lowerRatio = 0.6;
     const targetRatio = 0.5;
-    const correctionSpeed = 12;
+    const correctionSpeed = presentationSpeed * 3;
     const slowFactor = 0.4;
 
     const step = (time: number) => {
@@ -216,6 +218,7 @@ export default function PresentationModeView({
                 containerId="synced-lyrics-container"
                 isAuthenticated={isAuthenticated}
                 onActiveLineChange={setActiveLineIndex}
+                onLineClick={onLineClick}
               />
             </div>
           )}
