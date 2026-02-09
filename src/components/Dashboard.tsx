@@ -246,7 +246,7 @@ function DashboardUI({ children }: { children: React.ReactNode }) {
 
         <div
           className={`flex-1 grid overflow-hidden ${
-            isPresentationMode ? 'grid-rows-[1fr]' : 'grid-rows-[1fr_auto] lg:grid-rows-[90%_10%]'
+            isPresentationMode ? 'grid-rows-[1fr_0px]' : 'grid-rows-[1fr_auto] lg:grid-rows-[90%_10%]'
           }`}
         >
           <div id="content-scroll-container" className="overflow-y-auto">
@@ -255,11 +255,13 @@ function DashboardUI({ children }: { children: React.ReactNode }) {
             </div>
           </div>
 
-          {!isPresentationMode && (
-            <div className="w-full overflow-hidden">
-              <SpotifyWebPlayer currentTrackId={currentTrackId} />
-            </div>
-          )}
+          <div
+            className={`w-full overflow-hidden transition-opacity duration-200 ${
+              isPresentationMode ? 'h-0 opacity-0 pointer-events-none' : ''
+            }`}
+          >
+            <SpotifyWebPlayer currentTrackId={currentTrackId} />
+          </div>
         </div>
       </main>
       
