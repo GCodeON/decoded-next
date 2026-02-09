@@ -76,9 +76,29 @@ function DashboardUI({ children }: { children: React.ReactNode }) {
   const isPublicPage = ['/', '/login', '/register', '/callback', '/songs'].some(p => pathname.startsWith(p));
   const showMinimalLayout = isPublicPage && !isAuthenticated && !isChecking;
   const isSongPage = pathname.startsWith('/songs/');
+  const [isPresentationMode, setIsPresentationMode] = useState(false);
 
   useEffect(() => {
     if (!isSongPage) {
+      setIsPresentationMode(false);
+      return;
+    }
+
+    const handlePresentationChange = (event: Event) => {
+      const detail = (event as CustomEvent<{ enabled?: boolean }>).detail;
+      if (typeof detail?.enabled === 'boolean') {
+        setIsPresentationMode(detail.enabled);
+      }
+    };
+
+    window.addEventListener('presentation-mode-change', handlePresentationChange);
+    return () => {
+      window.removeEventListener('presentation-mode-change', handlePresentationChange);
+    };
+  }, [isSongPage]);
+
+  useEffect(() => {
+    if (!isSongPage || isPresentationMode) {
       setIsNavCompact(false);
       return;
     }
@@ -101,9 +121,9 @@ function DashboardUI({ children }: { children: React.ReactNode }) {
     const container = document.getElementById('content-scroll-container');
     container?.addEventListener('scroll', onScroll, { passive: true });
     return () => container?.removeEventListener('scroll', onScroll);
-  }, [isSongPage, showMinimalLayout]);
+  }, [isSongPage, isPresentationMode, showMinimalLayout]);
 
-  if (showMinimalLayout) {
+  if (showMinimalLayout && !isPresentationMode) {
     return (
       <div className="flex w-screen">
         {/* Desktop Sidebar */}
@@ -176,6 +196,7 @@ function DashboardUI({ children }: { children: React.ReactNode }) {
           p-5 transition-transform duration-300
           lg:static lg:translate-x-0 
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+          ${isPresentationMode ? 'hidden lg:hidden' : ''}
         `}
       >
         <div className="sticky top-0 flex flex-col flex-grow">
@@ -188,7 +209,7 @@ function DashboardUI({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* Overlay when sidebar is open on mobile */}
-      {isOpen && (
+      {isOpen && !isPresentationMode && (
         <div
           className="fixed inset-0 bg-black/75 z-30 lg:hidden"
           onClick={() => setOpen(false)}
@@ -196,11 +217,12 @@ function DashboardUI({ children }: { children: React.ReactNode }) {
       )}
 
       <main className="relative flex flex-1 flex-col w-full h-[100dvh] lg:h-screen">
-        <div
-          className={`flex items-center justify-between gap-3 shadow-md lg:hidden transition-all duration-100 ${
-            isNavCompact ? 'p-1' : 'p-3'
-          }`}
-        >
+        {!isPresentationMode && (
+          <div
+            className={`flex items-center justify-between gap-3 shadow-md lg:hidden transition-all duration-100 ${
+              isNavCompact ? 'p-1' : 'p-3'
+            }`}
+          >
           <Link href="/">
             <div className={`transition-transform duration-100 ${isNavCompact ? 'scale-90 origin-left' : ''}`}>
               <DecodeLogo />
@@ -211,24 +233,33 @@ function DashboardUI({ children }: { children: React.ReactNode }) {
           <div className="position relative z-50">
             <Hamburger toggled={isOpen} toggle={setOpen} rounded />
           </div>
-        </div>
-
-        <div className="hidden lg:flex items-center justify-center px-6 py-4 border-b border-white/10 bg-black/40">
-          <div className="w-full max-w-2xl">
-            <SpotifySearchBar />
           </div>
-        </div>
+        )}
 
-        <div className="flex-1 grid grid-rows-[1fr_auto] lg:grid-rows-[90%_10%] overflow-hidden">
+        {!isPresentationMode && (
+          <div className="hidden lg:flex items-center justify-center px-6 py-4 border-b border-white/10 bg-black/40">
+            <div className="w-full max-w-2xl">
+              <SpotifySearchBar />
+            </div>
+          </div>
+        )}
+
+        <div
+          className={`flex-1 grid overflow-hidden ${
+            isPresentationMode ? 'grid-rows-[1fr]' : 'grid-rows-[1fr_auto] lg:grid-rows-[90%_10%]'
+          }`}
+        >
           <div id="content-scroll-container" className="overflow-y-auto">
             <div className="mx-auto w-full flex flex-col">
               {children}
             </div>
           </div>
 
-          <div className="w-full overflow-hidden">
-            <SpotifyWebPlayer currentTrackId={currentTrackId} />
-          </div>
+          {!isPresentationMode && (
+            <div className="w-full overflow-hidden">
+              <SpotifyWebPlayer currentTrackId={currentTrackId} />
+            </div>
+          )}
         </div>
       </main>
       

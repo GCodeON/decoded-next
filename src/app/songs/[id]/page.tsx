@@ -1,5 +1,7 @@
 'use client';
-import { use, useEffect, useMemo, useState, useRef } from 'react';
+import { use, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { FaExpand } from 'react-icons/fa';
+import PresentationModeView from './PresentationModeView';
 import SongHeader from '@/components/SongHeader';
 import ActionButtons from '@/modules/lyrics/components/ActionButtons';
 import SyncLyricsEditor from '@/modules/lyrics/components/SyncLyricsEditor';
@@ -18,6 +20,7 @@ import useAuth from '@/modules/auth/hooks/useAuth';
 
 export default function Song({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const [isPresentationMode, setIsPresentationMode] = useState(false);
   const { track, loading: trackLoading, error: trackError } = useSpotifyTrack(id);
   const { user } = useUser();
   const { isAuthenticated, isChecking } = useAuth();
@@ -94,6 +97,11 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
   const canShowWordSyncToggle = hasSpotifyToken && !!deviceId;
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.dispatchEvent(new CustomEvent('presentation-mode-change', { detail: { enabled: isPresentationMode } }));
+  }, [isPresentationMode]);
+
+  useEffect(() => {
     if (isChecking) return;
     if (!isAuthenticated) {
       setHasSpotifyToken(false);
@@ -116,6 +124,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
   }, [isAuthenticated, isChecking]);
 
   useEffect(() => {
+    if (isPresentationMode) return;
     const threshold = 48;
     const updateCompact = () => {
       const container = document.getElementById('content-scroll-container');
@@ -133,7 +142,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
 
     window.addEventListener('scroll', updateCompact, { passive: true });
     return () => window.removeEventListener('scroll', updateCompact);
-  }, []);
+  }, [isPresentationMode]);
   
   const handleToggleRhymeComplete = async () => {
     const newValue = !rhymeColorMappingComplete;
@@ -185,6 +194,10 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
     }, 2000);
   };
 
+  const togglePresentationMode = useCallback(() => {
+    setIsPresentationMode(prev => !prev);
+  }, []);
+
   usePageScroll({
     activeLineIndex: lastActiveLine,
     lyricsContainerId: 'synced-lyrics-container',
@@ -192,8 +205,8 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
       mobile: 70,
       desktop: 75,
     },
-    disabled: disableAutoScroll,
-    onUserScroll: handleUserScroll,
+    disabled: disableAutoScroll || isPresentationMode,
+    onUserScroll: isPresentationMode ? undefined : handleUserScroll,
   });
 
   if (trackLoading) {
@@ -209,6 +222,25 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
   }
 
   if (!track) return null;
+
+  if (isPresentationMode) {
+    return (
+      <>
+        <Toast message={toast?.message || null} />
+        <PresentationModeView
+          scrollContainerId="content-scroll-container"
+          syncConfig={syncConfig}
+          displayHtml={displayHtml}
+          hasSynced={hasSynced}
+          currentPositionMs={currentPositionMs ?? 0}
+          isPlaying={isPlaying}
+          showRhymes={showRhymes}
+          isAuthenticated={isAuthenticated}
+          onExit={() => setIsPresentationMode(false)}
+        />
+      </>
+    );
+  }
 
   return (
     <div className="w-full mx-auto p-1 md:p-6 space-y-1 md:space-y-8 relative">
@@ -295,18 +327,30 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
         )}
 
         {syncConfig && !editMode && !syncMode && (
-          <SyncedLyrics
-            syncedLyrics={syncConfig.lyrics}
-            currentPositionMs={currentPositionMs ?? 0}
-            isPlaying={isPlaying}
-            rhymeEncodedLines={syncConfig.rhymeEncodedLines}
-            showRhymes={showRhymes}
-            mode={syncConfig.mode}
-            onActiveLineChange={setLastActiveLine}
-            onLineClick={handleSeekToLine}
-            containerId="synced-lyrics-container"
-            isAuthenticated={isAuthenticated}
-          />
+          <div className="relative pt-0">
+            <div className="sticky top-10 right-3 z-20 flex justify-end">
+              <button
+                type="button"
+                aria-label="Enter presentation mode"
+                onClick={togglePresentationMode}
+                className="rounded-full border border-white/10 bg-black/60 p-2 text-white shadow-lg transition hover:bg-black/70 cursor-pointer"
+              >
+                <FaExpand />
+              </button>
+            </div>
+            <SyncedLyrics
+              syncedLyrics={syncConfig.lyrics}
+              currentPositionMs={currentPositionMs ?? 0}
+              isPlaying={isPlaying}
+              rhymeEncodedLines={syncConfig.rhymeEncodedLines}
+              showRhymes={showRhymes}
+              mode={syncConfig.mode}
+              onActiveLineChange={setLastActiveLine}
+              onLineClick={handleSeekToLine}
+              containerId="synced-lyrics-container"
+              isAuthenticated={isAuthenticated}
+            />
+          </div>
         )}
 
         {displayLyrics && !editMode && !syncMode && !hasSynced && (
