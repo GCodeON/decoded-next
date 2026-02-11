@@ -4,7 +4,7 @@ import { gsap } from 'gsap';
 import type { Word } from '../utils/lrcAdvanced';
 import type { WordRhymeParts } from '../types/rhyme';
 import { useWordProgress } from '../hooks/useWordProgress';
-import { WORD_STYLE, SEGMENT_STYLE } from '../config/sync-constants';
+import { WORD_STYLE, SEGMENT_STYLE, SEGMENT_ANIMATION } from '../config/sync-constants';
 
 const LIGHT_BG_COLORS = new Set([
   'rgb(232, 217, 255)',
@@ -47,6 +47,33 @@ interface WordRevealProps {
   styleCache: (textColor: string | null, underline: boolean, isRevealed: boolean) => React.CSSProperties;
 }
 
+// Calculate the progress for a specific segment within a word during reveal
+const getSegmentProgress = (
+  wordProgress: number,
+  segmentIndex: number,
+  totalSegments: number,
+  staggerDelay: number,
+  revealDuration: number
+): number => {
+  // Non-colored segments (spaces, non-rhyme text) reveal with the entire word
+  // Only color-coded segments (wordRhymeParts) get staggered animation
+  if (segmentIndex === 0) {
+    return wordProgress;
+  }
+
+  // For staggered segments: calculate individual segment reveal window
+  const segmentStartTime = segmentIndex * staggerDelay;
+  const segmentEndTime = segmentStartTime + revealDuration;
+
+  // Map word progress (0-1) to a time window during the word's reveal
+  const wordRevealWindow = 1; // Total word reveal is normalized to 1
+  const currentTime = wordProgress * wordRevealWindow;
+
+  if (currentTime < segmentStartTime) return 0;
+  if (currentTime >= segmentEndTime) return 1;
+  return (currentTime - segmentStartTime) / revealDuration;
+};
+
 const WordReveal = memo(function WordReveal({
   index,
   segmentsWithSpace,
@@ -67,6 +94,12 @@ const WordReveal = memo(function WordReveal({
   const lastRevealRef = useRef(0);
   const hasActivatedRef = useRef(false);
   const revealSetterRef = useRef<((value: number) => void) | null>(null);
+  const segmentRevealsRef = useRef<Map<number, (value: number) => void>>(new Map());
+
+  // Count colored segments (non-space) for stagger calculation
+  const coloredSegmentCount = useMemo(() => {
+    return segmentsWithSpace.filter(seg => seg.text !== ' ' || seg.bgColor || seg.underline || seg.textColor).length;
+  }, [segmentsWithSpace]);
 
   useLayoutEffect(() => {
     if (!wordRef.current) return;
@@ -108,6 +141,37 @@ const WordReveal = memo(function WordReveal({
     }
   }, [shouldAnimate, wordDelay, isPast, index, activeIndex, easedProgress, isLineActive]);
 
+  // Handle per-segment reveal animation
+  useLayoutEffect(() => {
+    if (!shouldAnimate || !wordRef.current) return;
+
+    const elements = wordRef.current.querySelectorAll('[data-segment]');
+    const staggerDelay = SEGMENT_ANIMATION.STAGGER_DELAY;
+
+    elements.forEach((el, segIdx) => {
+      const htmlElement = el as HTMLElement;
+      let segmentSetter = segmentRevealsRef.current.get(segIdx);
+
+      if (!segmentSetter) {
+        segmentSetter = gsap.quickTo(htmlElement, '--segment-reveal', {
+          duration: SEGMENT_ANIMATION.REVEAL_DURATION,
+          ease: 'power2.out',
+        });
+        segmentRevealsRef.current.set(segIdx, segmentSetter);
+      }
+
+      gsap.set(htmlElement, { '--segment-reveal': 0 });
+      const delay = (segIdx * staggerDelay) / 1000; // Convert to seconds
+      gsap.to(htmlElement, {
+        '--segment-reveal': 1,
+        duration: SEGMENT_ANIMATION.REVEAL_DURATION,
+        ease: 'power2.out',
+        delay,
+        overwrite: true,
+      });
+    });
+  }, [shouldAnimate, segmentsWithSpace, coloredSegmentCount]);
+
   return (
     <span
       ref={wordRef}
@@ -131,8 +195,11 @@ const WordReveal = memo(function WordReveal({
         return (
           <span
             key={`${index}-segment-${segIdx}`}
+            data-segment={segIdx}
             className="relative inline-block"
-            style={styleCache(seg.textColor, seg.underline, isRevealed)}
+            style={{
+              '--segment-reveal': 0,
+            } as React.CSSProperties}
           >
             {isLineActive && seg.bgColor && (
               <span
@@ -140,7 +207,7 @@ const WordReveal = memo(function WordReveal({
                 aria-hidden="true"
                 style={{
                   backgroundColor: seg.bgColor,
-                  transform: 'scaleX(var(--reveal, 0))',
+                  transform: 'scaleX(var(--segment-reveal, var(--reveal, 0)))',
                   transformOrigin: 'left center',
                   willChange: 'transform',
                   zIndex: 0,
@@ -159,6 +226,7 @@ const WordReveal = memo(function WordReveal({
                 opacity: 0.6 + (easedProgress * 0.4),
                 transform: `translateY(${2 - (easedProgress * 2)}px) scaleX(${0.95 + (easedProgress * 0.05)})`,
                 transformOrigin: 'left center',
+                ...styleCache(seg.textColor, seg.underline, isRevealed),
               }}
             >
               {seg.text}
