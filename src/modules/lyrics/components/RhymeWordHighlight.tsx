@@ -16,8 +16,45 @@ const LIGHT_BG_COLORS = new Set([
   'rgb(209, 178, 255)',
   'rgb(189, 189, 189)',
   'rgb(178, 204, 255)',
-  'rgb(0, 216, 255)'
+  'rgb(0, 216, 255)',
 ]);
+
+const parseColorToRgb = (color: string): { r: number; g: number; b: number } | null => {
+  const trimmed = color.trim();
+
+  const rgbMatch = trimmed.match(/rgba?\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+  if (rgbMatch) {
+    return {
+      r: Number(rgbMatch[1]),
+      g: Number(rgbMatch[2]),
+      b: Number(rgbMatch[3]),
+    };
+  }
+
+  const hexMatch = trimmed.replace('#', '');
+  if (/^[0-9a-f]{3}$/i.test(hexMatch)) {
+    const r = parseInt(hexMatch[0] + hexMatch[0], 16);
+    const g = parseInt(hexMatch[1] + hexMatch[1], 16);
+    const b = parseInt(hexMatch[2] + hexMatch[2], 16);
+    return { r, g, b };
+  }
+
+  if (/^[0-9a-f]{6}$/i.test(hexMatch)) {
+    const r = parseInt(hexMatch.slice(0, 2), 16);
+    const g = parseInt(hexMatch.slice(2, 4), 16);
+    const b = parseInt(hexMatch.slice(4, 6), 16);
+    return { r, g, b };
+  }
+
+  return null;
+};
+
+const isLightBackground = (color: string): boolean => {
+  const rgb = parseColorToRgb(color);
+  if (!rgb) return LIGHT_BG_COLORS.has(color);
+  const brightness = (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) / 1000;
+  return brightness > 155;
+};
 
 interface RhymeWordHighlightProps {
   words: Word[];
@@ -271,7 +308,7 @@ const WordReveal = memo(function WordReveal({
                 position: 'relative',
                 zIndex: 1,
                 color:
-                  isLineActive && seg.bgColor && LIGHT_BG_COLORS.has(seg.bgColor) && (isPast || index <= activeIndex)
+                  isLineActive && seg.bgColor && isLightBackground(seg.bgColor) && (isPast || index <= activeIndex)
                     ? 'black'
                     : undefined,
                 opacity: 0.6 + (easedProgress * 0.4),
@@ -338,11 +375,19 @@ export const RhymeWordHighlight = memo(function RhymeWordHighlight({
     return (textColor: string | null, underline: boolean, isRevealed: boolean) => {
       const key = `${textColor}|${underline}|${isRevealed}`;
       if (!cache.has(key)) {
-        cache.set(key, {
+        const style: React.CSSProperties = {
           ...SEGMENT_STYLE,
-          color: isRevealed ? textColor || undefined : undefined,
-          textDecoration: isRevealed && underline ? 'underline' : undefined,
-        });
+        };
+
+        if (isRevealed && textColor) {
+          style.color = textColor;
+        }
+
+        if (isRevealed && underline) {
+          style.textDecoration = 'underline';
+        }
+
+        cache.set(key, style);
       }
       return cache.get(key)!;
     };
