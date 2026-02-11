@@ -37,6 +37,47 @@ type Segment = {
   end: number;
 };
 
+const normalizeWordSegments = (wordText: string, segments: Segment[]): Segment[] => {
+  if (segments.length === 0) {
+    return [{ text: wordText, bgColor: null, textColor: null, underline: false, start: 0, end: wordText.length }];
+  }
+
+  const joined = segments.map((seg) => seg.text).join('');
+  if (joined === wordText) return segments;
+
+  const makeNeutral = (text: string): Segment => ({
+    text,
+    bgColor: null,
+    textColor: null,
+    underline: false,
+    start: -1,
+    end: -1,
+  });
+
+  if (wordText.endsWith(joined)) {
+    const missingPrefix = wordText.slice(0, wordText.length - joined.length);
+    return [makeNeutral(missingPrefix), ...segments];
+  }
+
+  if (wordText.startsWith(joined)) {
+    const missingSuffix = wordText.slice(joined.length);
+    return [...segments, makeNeutral(missingSuffix)];
+  }
+
+  const idx = wordText.indexOf(joined);
+  if (idx >= 0) {
+    const prefix = wordText.slice(0, idx);
+    const suffix = wordText.slice(idx + joined.length);
+    return [
+      ...(prefix ? [makeNeutral(prefix)] : []),
+      ...segments,
+      ...(suffix ? [makeNeutral(suffix)] : []),
+    ];
+  }
+
+  return [makeNeutral(wordText)];
+};
+
 interface WordRevealProps {
   index: number;
   segmentsWithSpace: Segment[];
@@ -143,10 +184,18 @@ const WordReveal = memo(function WordReveal({
 
   // Handle per-segment reveal animation
   useLayoutEffect(() => {
-    if (!shouldAnimate || !wordRef.current) return;
+    if (!wordRef.current) return;
 
     const elements = wordRef.current.querySelectorAll('[data-segment]');
     const staggerDelay = SEGMENT_ANIMATION.STAGGER_DELAY;
+
+    if (!shouldAnimate) {
+      const target = isLineActive && (isPast || index < activeIndex) ? 1 : 0;
+      elements.forEach((el) => {
+        gsap.set(el, { '--segment-reveal': target });
+      });
+      return;
+    }
 
     elements.forEach((el, segIdx) => {
       const htmlElement = el as HTMLElement;
@@ -170,7 +219,7 @@ const WordReveal = memo(function WordReveal({
         overwrite: true,
       });
     });
-  }, [shouldAnimate, segmentsWithSpace, coloredSegmentCount]);
+  }, [shouldAnimate, segmentsWithSpace, coloredSegmentCount, isLineActive, isPast, index, activeIndex]);
 
   return (
     <span
@@ -192,13 +241,15 @@ const WordReveal = memo(function WordReveal({
           );
         }
 
+        const segmentRevealDefault = isLineActive && (isPast || index < activeIndex) ? 1 : 0;
+
         return (
           <span
             key={`${index}-segment-${segIdx}`}
             data-segment={segIdx}
             className="relative inline-block"
             style={{
-              '--segment-reveal': 0,
+              '--segment-reveal': segmentRevealDefault,
             } as React.CSSProperties}
           >
             {isLineActive && seg.bgColor && (
@@ -252,7 +303,7 @@ export const RhymeWordHighlight = memo(function RhymeWordHighlight({
   // Precompute per-word segments and totals once per words/wordParts change
   const precomputed = useMemo(() => {
     return words.map((word, index) => {
-      const segments =
+      const baseSegments =
         wordParts && wordParts[index] && wordParts[index].length > 0
           ? wordParts[index]
           : [
@@ -265,6 +316,8 @@ export const RhymeWordHighlight = memo(function RhymeWordHighlight({
                 end: word.text.length,
               },
             ];
+
+      const segments = normalizeWordSegments(word.text, baseSegments);
 
       // Add a space between words (except last) for proper spacing
       const addSpace = index < words.length - 1;
