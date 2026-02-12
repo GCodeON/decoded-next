@@ -173,6 +173,9 @@ const WordReveal = memo(function WordReveal({
   const hasActivatedRef = useRef(false);
   const revealSetterRef = useRef<((value: number) => void) | null>(null);
   const segmentRevealsRef = useRef<Map<number, (value: number) => void>>(new Map());
+  const lastSegmentAnimateRef = useRef(false);
+  const lastSegmentKeyRef = useRef<string | null>(null);
+  const lastSegmentTargetRef = useRef<number | null>(null);
 
   // Count colored segments (non-space) for stagger calculation
   const coloredSegmentCount = useMemo(() => {
@@ -225,14 +228,27 @@ const WordReveal = memo(function WordReveal({
 
     const elements = wordRef.current.querySelectorAll('[data-segment]');
     const staggerDelay = SEGMENT_ANIMATION.STAGGER_DELAY;
+    const segmentKey = segmentsWithSpace
+      .map((seg) => `${seg.text}|${seg.bgColor}|${seg.textColor}|${seg.underline}`)
+      .join('||');
 
     if (!shouldAnimate) {
       const target = isLineActive && (isPast || index < activeIndex) ? 1 : 0;
-      elements.forEach((el) => {
-        gsap.set(el, { '--segment-reveal': target });
-      });
+      if (lastSegmentAnimateRef.current || lastSegmentTargetRef.current !== target) {
+        elements.forEach((el) => {
+          gsap.set(el, { '--segment-reveal': target });
+        });
+        lastSegmentTargetRef.current = target;
+      }
+      lastSegmentAnimateRef.current = false;
+      lastSegmentKeyRef.current = segmentKey;
       return;
     }
+
+    if (lastSegmentAnimateRef.current && lastSegmentKeyRef.current === segmentKey) return;
+
+    lastSegmentAnimateRef.current = true;
+    lastSegmentKeyRef.current = segmentKey;
 
     elements.forEach((el, segIdx) => {
       const htmlElement = el as HTMLElement;
@@ -256,7 +272,7 @@ const WordReveal = memo(function WordReveal({
         overwrite: true,
       });
     });
-  }, [shouldAnimate, segmentsWithSpace, coloredSegmentCount, isLineActive, isPast, index, activeIndex]);
+  }, [shouldAnimate, segmentsWithSpace, isLineActive, isPast, index, activeIndex]);
 
   return (
     <span

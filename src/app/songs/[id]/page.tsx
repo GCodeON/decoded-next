@@ -21,6 +21,7 @@ import useAuth from '@/modules/auth/hooks/useAuth';
 export default function Song({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [isPresentationMode, setIsPresentationMode] = useState(false);
+  const [adminControlsHidden, setAdminControlsHidden] = useState(false);
   const { track, loading: trackLoading, error: trackError } = useSpotifyTrack(id);
   const { user } = useUser();
   const { isAuthenticated, isChecking } = useAuth();
@@ -285,6 +286,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
               onToggleRhymeComplete={handleToggleRhymeComplete}
               onEditSync={() => setSyncMode(true)}
               onEditLyrics={() => setEditMode(true)}
+              onAdminControlsHiddenChange={setAdminControlsHidden}
             />
           )}
         </div>
@@ -329,16 +331,18 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
 
         {syncConfig && !editMode && !syncMode && (
           <div className="relative pt-0">
-            <div className="sticky top-10 right-3 z-20 flex justify-end">
-              <button
-                type="button"
-                aria-label="Enter presentation mode"
-                onClick={togglePresentationMode}
-                className="rounded-full border border-white/10 bg-black/60 p-2 text-white shadow-lg transition hover:bg-black/70 cursor-pointer"
-              >
-                <FaExpand />
-              </button>
-            </div>
+            {!adminControlsHidden && (
+              <div className="sticky top-10 right-3 z-20 flex justify-end">
+                <button
+                  type="button"
+                  aria-label="Enter presentation mode"
+                  onClick={togglePresentationMode}
+                  className="rounded-full border border-white/10 bg-black/60 p-2 text-white shadow-lg transition hover:bg-black/70 cursor-pointer"
+                >
+                  <FaExpand />
+                </button>
+              </div>
+            )}
             <SyncedLyrics
               syncedLyrics={syncConfig.lyrics}
               currentPositionMs={currentPositionMs ?? 0}

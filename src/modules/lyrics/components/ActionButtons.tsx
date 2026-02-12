@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FaClock, FaEdit, FaCog, FaTimes } from 'react-icons/fa';
 
 export type ActionButtonsProps = {
@@ -20,6 +20,7 @@ export type ActionButtonsProps = {
   onToggleRhymeComplete: () => void;
   onEditSync: () => void;
   onEditLyrics: () => void;
+  onAdminControlsHiddenChange?: (hidden: boolean) => void;
 };
 
 export default function ActionButtons({
@@ -39,9 +40,15 @@ export default function ActionButtons({
   onToggleRhymeComplete,
   onEditSync,
   onEditLyrics,
+  onAdminControlsHiddenChange,
 }: ActionButtonsProps) {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [adminAvailable, setAdminAvailable] = useState(true);
+
+  useEffect(() => {
+    if (!isAdmin || !onAdminControlsHiddenChange) return;
+    onAdminControlsHiddenChange(!adminAvailable);
+  }, [adminAvailable, isAdmin, onAdminControlsHiddenChange]);
   
   if (lyricsLoading) {
     return null;
