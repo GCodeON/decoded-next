@@ -252,7 +252,7 @@ export default function PresentationModeView({
         <label className="text-xs uppercase tracking-wide text-gray-300">Scroll speed</label>
         <input
           type="range"
-          min={10}
+          min={15}
           max={60}
           step={1}
           value={presentationSpeed}

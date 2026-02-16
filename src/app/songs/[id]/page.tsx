@@ -60,7 +60,6 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
 
   useEffect(() => {
     setRhymeColorMappingComplete(!!savedSong?.lyrics?.rhymeColorMappingComplete);
-    // Initialize lead adjustment from saved song
     if (savedSong?.leadAdjustmentMs !== undefined) {
       setLeadAdjustmentSec(savedSong.leadAdjustmentMs / 1000);
     }
