@@ -414,7 +414,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
           />
         )}
 
-        {hasSynced && !syncMode && !editMode && isAdmin && (
+        {hasSynced && !syncMode && !editMode && isAdmin && !adminControlsHidden && (
           <details className="mt-6 border-t pt-4">
             <summary className="cursor-pointer text-sm font-medium text-gray-600 hover:text-gray-800">
               View synced timestamps
