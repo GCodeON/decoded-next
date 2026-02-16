@@ -291,7 +291,7 @@ const WordReveal = memo(function WordReveal({
         '--word-opacity': 0.6,
         '--word-translate': 2,
         '--word-scale': 0.95,
-      }}
+      } as React.CSSProperties}
     >
       {segmentsWithSpace.map((seg, segIdx) => {
         const isSpace = seg.text === ' ' && !seg.bgColor && !seg.underline && !seg.textColor;
