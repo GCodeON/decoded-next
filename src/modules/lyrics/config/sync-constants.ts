@@ -5,9 +5,7 @@ export const WORD_STYLE = {
   display: 'inline-block' as const,
 };
 
-export const SEGMENT_STYLE = {
-  transition: 'background-color 0.35s ease',
-};
+export const SEGMENT_STYLE = {};
 
 export const DEFAULT_WORD_DURATION = {
   MIN: 0.4,
