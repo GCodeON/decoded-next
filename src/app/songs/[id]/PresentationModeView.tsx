@@ -16,6 +16,9 @@ interface PresentationModeViewProps {
   isPlaying: boolean;
   showRhymes: boolean;
   isAuthenticated: boolean;
+  isAdmin?: boolean;
+  leadAdjustmentSec?: number;
+  onLeadAdjustmentChange?: (value: number) => void;
   onExit: () => void;
   onLineClick?: (timeMs: number) => void;
 }
@@ -29,6 +32,9 @@ export default function PresentationModeView({
   isPlaying,
   showRhymes,
   isAuthenticated,
+  isAdmin = false,
+  leadAdjustmentSec = 0,
+  onLeadAdjustmentChange,
   onExit,
   onLineClick,
 }: PresentationModeViewProps) {
@@ -217,6 +223,9 @@ export default function PresentationModeView({
                 mode={syncConfig.mode}
                 containerId="synced-lyrics-container"
                 isAuthenticated={isAuthenticated}
+                isAdmin={isAdmin}
+                leadAdjustmentSec={leadAdjustmentSec}
+                onLeadAdjustmentChange={onLeadAdjustmentChange}
                 onActiveLineChange={setActiveLineIndex}
                 onLineClick={onLineClick}
               />

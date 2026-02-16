@@ -12,6 +12,9 @@ interface SyncedLyricsWithActiveLine extends SyncedLyricsProps {
   onActiveLineChange?: (line: number) => void;
   onLineClick?: (timeMs: number) => void;
   containerId?: string;
+  isAdmin?: boolean;
+  leadAdjustmentSec?: number;
+  onLeadAdjustmentChange?: (value: number) => void;
 }
 
 const SyncedLyrics = ({
@@ -25,6 +28,9 @@ const SyncedLyrics = ({
   onLineClick,
   containerId = 'synced-lyrics-container',
   isAuthenticated = false,
+  isAdmin = false,
+  leadAdjustmentSec = 0,
+  onLeadAdjustmentChange,
 }: SyncedLyricsWithActiveLine) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const currentPositionSec = currentPositionMs / 1000;
@@ -54,7 +60,7 @@ const SyncedLyrics = ({
     wordsByLine
   );
 
-  const leadAdjustedTime = currentPositionSec;
+  const leadAdjustedTime = currentPositionSec + leadAdjustmentSec;
 
   const getFilledWordsForLine = (lineWords: typeof wordsByLine[number]) => {
     if (lineWords.length === 0) return 0;
@@ -91,11 +97,27 @@ const SyncedLyrics = ({
   }, [effectiveActiveLineIndex]);
 
   return (
-    <div
-      ref={containerRef}
-      id={containerId}
-      className="bg-zinc-900 rounded-xl py-5 md:space-y-2"
-    >
+    <div className="space-y-3">
+      {isAdmin && (
+        <div className="flex items-center gap-2 px-5 md:px-6">
+          <label htmlFor="lead-adjust" className="text-sm text-gray-400">
+            Lead Adjustment (ms):
+          </label>
+          <input
+            id="lead-adjust"
+            type="number"
+            value={Math.round(leadAdjustmentSec * 1000)}
+            onChange={(e) => onLeadAdjustmentChange?.(Number(e.target.value) / 1000)}
+            step={50}
+            className="w-24 rounded bg-zinc-800 px-2 py-1 text-white text-sm"
+          />
+        </div>
+      )}
+      <div
+        ref={containerRef}
+        id={containerId}
+        className="bg-zinc-900 rounded-xl py-5 md:space-y-2"
+      >
       {lines.map((line, i) => {
         const text = line.trim();
         const isActive = i === effectiveActiveLineIndex;
@@ -170,6 +192,7 @@ const SyncedLyrics = ({
           </div>
         );
       })}
+      </div>
     </div>
   );
 };

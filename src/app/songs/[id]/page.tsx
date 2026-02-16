@@ -22,6 +22,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [isPresentationMode, setIsPresentationMode] = useState(false);
   const [adminControlsHidden, setAdminControlsHidden] = useState(false);
+  const [leadAdjustmentSec, setLeadAdjustmentSec] = useState(0);
   const { track, loading: trackLoading, error: trackError } = useSpotifyTrack(id);
   const { user } = useUser();
   const { isAuthenticated, isChecking } = useAuth();
@@ -237,6 +238,9 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
           isPlaying={isPlaying}
           showRhymes={showRhymes}
           isAuthenticated={isAuthenticated}
+          isAdmin={isAdmin}
+          leadAdjustmentSec={leadAdjustmentSec}
+          onLeadAdjustmentChange={setLeadAdjustmentSec}
           onExit={() => setIsPresentationMode(false)}
           onLineClick={handleSeekToLine}
         />
@@ -354,6 +358,9 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
               onLineClick={handleSeekToLine}
               containerId="synced-lyrics-container"
               isAuthenticated={isAuthenticated}
+              isAdmin={isAdmin}
+              leadAdjustmentSec={leadAdjustmentSec}
+              onLeadAdjustmentChange={setLeadAdjustmentSec}
             />
           </div>
         )}
@@ -378,7 +385,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
           />
         )}
 
-        {hasSynced && !syncMode && !editMode && (
+        {hasSynced && !syncMode && !editMode && isAdmin && (
           <details className="mt-6 border-t pt-4">
             <summary className="cursor-pointer text-sm font-medium text-gray-600 hover:text-gray-800">
               View synced timestamps
