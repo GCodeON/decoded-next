@@ -226,6 +226,7 @@ export default function PresentationModeView({
                 isAdmin={isAdmin}
                 leadAdjustmentSec={leadAdjustmentSec}
                 onLeadAdjustmentChange={onLeadAdjustmentChange}
+                showLeadAdjustment={false}
                 onActiveLineChange={setActiveLineIndex}
                 onLineClick={onLineClick}
               />

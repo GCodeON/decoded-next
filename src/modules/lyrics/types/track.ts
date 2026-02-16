@@ -11,6 +11,7 @@ export interface SavedSong {
     rhymeEncodedLines?: string[] | null;
     rhymeColorMappingComplete?: boolean;
   };
+  leadAdjustmentMs?: number;
 }
 export interface SyncedLine {
   time: number;

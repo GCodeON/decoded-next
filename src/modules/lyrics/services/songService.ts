@@ -55,6 +55,12 @@ export class SongService {
     });
   }
 
+  async updateLeadAdjustment(trackId: string, leadAdjustmentMs: number): Promise<void> {
+    await updateDoc(doc(db, this.collection, trackId), {
+      leadAdjustmentMs,
+    });
+  }
+
   async updatePublishMetadata(trackId: string, signature: string, timestamp: number): Promise<void> {
     await updateDoc(doc(db, this.collection, trackId), {
       'lrclib.published': true,

@@ -15,6 +15,7 @@ interface SyncedLyricsWithActiveLine extends SyncedLyricsProps {
   isAdmin?: boolean;
   leadAdjustmentSec?: number;
   onLeadAdjustmentChange?: (value: number) => void;
+  showLeadAdjustment?: boolean;
 }
 
 const SyncedLyrics = ({
@@ -31,6 +32,7 @@ const SyncedLyrics = ({
   isAdmin = false,
   leadAdjustmentSec = 0,
   onLeadAdjustmentChange,
+  showLeadAdjustment = true,
 }: SyncedLyricsWithActiveLine) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const currentPositionSec = currentPositionMs / 1000;
@@ -98,7 +100,7 @@ const SyncedLyrics = ({
 
   return (
     <div className="space-y-3">
-      {isAdmin && (
+      {isAdmin && showLeadAdjustment && (
         <div className="flex items-center gap-2 px-5 md:px-6">
           <label htmlFor="lead-adjust" className="text-sm text-gray-400">
             Lead Adjustment (ms):

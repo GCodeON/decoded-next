@@ -78,6 +78,7 @@ export function useSavedSong({ track, trackId, allowWrite = true }: UseSavedSong
             rhymeEncodedLines: data.lyrics?.rhymeEncodedLines || null,
             rhymeColorMappingComplete: data.lyrics?.rhymeColorMappingComplete || false,
           },
+          leadAdjustmentMs: data.leadAdjustmentMs || 0,
         });
         setShouldFetchLyrics(false); // Song exists, no need to fetch
       } else {

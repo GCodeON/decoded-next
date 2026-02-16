@@ -23,6 +23,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
   const [isPresentationMode, setIsPresentationMode] = useState(false);
   const [adminControlsHidden, setAdminControlsHidden] = useState(false);
   const [leadAdjustmentSec, setLeadAdjustmentSec] = useState(0);
+  const leadSaveDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const { track, loading: trackLoading, error: trackError } = useSpotifyTrack(id);
   const { user } = useUser();
   const { isAuthenticated, isChecking } = useAuth();
@@ -59,7 +60,11 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
 
   useEffect(() => {
     setRhymeColorMappingComplete(!!savedSong?.lyrics?.rhymeColorMappingComplete);
-  }, [savedSong?.lyrics?.rhymeColorMappingComplete]);
+    // Initialize lead adjustment from saved song
+    if (savedSong?.leadAdjustmentMs !== undefined) {
+      setLeadAdjustmentSec(savedSong.leadAdjustmentMs / 1000);
+    }
+  }, [savedSong?.lyrics?.rhymeColorMappingComplete, savedSong?.leadAdjustmentMs]);
 
   const isViewMode = hasSynced && !editMode && !syncMode;
   const { isPlaying, currentPosition, currentPositionMs, togglePlayback, seekTo } = usePlaybackSync(id, !!track, syncMode, isViewMode);
@@ -199,6 +204,29 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
   const togglePresentationMode = useCallback(() => {
     setIsPresentationMode(prev => !prev);
   }, []);
+
+  // Debounced save of lead adjustment to Firestore
+  useEffect(() => {
+    if (!isAdmin || leadAdjustmentSec === undefined) return;
+
+    if (leadSaveDebounceRef.current) {
+      clearTimeout(leadSaveDebounceRef.current);
+    }
+
+    leadSaveDebounceRef.current = setTimeout(async () => {
+      try {
+        await songService.updateLeadAdjustment(id, Math.round(leadAdjustmentSec * 1000));
+      } catch (err) {
+        console.error('Failed to save lead adjustment:', err);
+      }
+    }, 1000); // Save 1 second after user stops adjusting
+
+    return () => {
+      if (leadSaveDebounceRef.current) {
+        clearTimeout(leadSaveDebounceRef.current);
+      }
+    };
+  }, [leadAdjustmentSec, isAdmin, id]);
 
   usePageScroll({
     activeLineIndex: lastActiveLine,
@@ -361,6 +389,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
               isAdmin={isAdmin}
               leadAdjustmentSec={leadAdjustmentSec}
               onLeadAdjustmentChange={setLeadAdjustmentSec}
+              showLeadAdjustment={true}
             />
           </div>
         )}
