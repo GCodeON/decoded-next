@@ -362,7 +362,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
 
         {syncConfig && !editMode && !syncMode && (
           <div className="relative pt-0">
-            {!adminControlsHidden && (
+            {!adminControlsHidden && isAuthenticated && (
               <div className="sticky top-10 right-3 z-20 flex justify-end">
                 <button
                   type="button"
