@@ -1,5 +1,5 @@
 'use client';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { FaClock } from 'react-icons/fa';
 import { TimestampDisplay, formatTime } from '@/modules/lyrics';
 import { parseLrcTime } from '@/modules/lyrics/utils/lrc';
@@ -9,6 +9,12 @@ interface WordTimestampState {
   lineIndex: number;
   wordIndex: number;
   editValue: string;
+}
+
+interface WordSpan {
+  text: string;
+  start: number;
+  end: number;
 }
 
 interface WordEditorProps {
@@ -50,12 +56,43 @@ export default function WordEditor({
   onSaveWordTime,
   onDisableAutoScroll
 }: WordEditorProps) {
-  const lineWords = line?.trim() ? line.trim().split(/\s+/) : [];
+  const lineText = line?.trim() ?? '';
+  const lineWordSpans = useMemo<WordSpan[]>(() => {
+    if (!lineText) return [];
+
+    const spans: WordSpan[] = [];
+    const tokenRegex = /[^\s]+/g;
+    let match: RegExpExecArray | null;
+
+    while ((match = tokenRegex.exec(lineText)) !== null) {
+      spans.push({
+        text: match[0],
+        start: match.index,
+        end: match.index + match[0].length
+      });
+    }
+
+    return spans;
+  }, [lineText]);
+
+  const wordTimestampLookup = useMemo(() => {
+    const lookup = new Map<string, Word>();
+    for (const wordTimestamp of wordTimestamps) {
+      if (
+        wordTimestamp &&
+        wordTimestamp.start !== undefined &&
+        wordTimestamp.end !== undefined
+      ) {
+        lookup.set(`${wordTimestamp.start}:${wordTimestamp.end}`, wordTimestamp);
+      }
+    }
+    return lookup;
+  }, [wordTimestamps]);
+
   const [wordTimestampState, setWordTimestampState] = useState<WordTimestampState | null>(null);
 
   const handleStartWordEdit = useCallback(
-    (e: React.MouseEvent, lineIdx: number, wordIdx: number, wordTime: number) => {
-      e.stopPropagation();
+    (lineIdx: number, wordIdx: number, wordTime: number) => {
       onDisableAutoScroll?.();
       setWordTimestampState({
         lineIndex: lineIdx,
@@ -116,37 +153,15 @@ export default function WordEditor({
         />
 
         <div className="flex-1 font-medium text-sm md:text-lg text-black">
-          {line?.trim() ? line : '(instrumental)'}
+          {lineText ? line : '(instrumental)'}
         </div>
       </div>
 
       {/* Word-level controls */}
-      {line?.trim() && (
+      {lineText && (
         <div className="flex flex-wrap gap-1 md:gap-2 pt-2 border-t border-gray-200">
-          {lineWords.map((word, wi) => {
-            // Calculate the position of this specific word instance
-            const lineText = line.trim();
-            let cursor = 0;
-            let wordStart = 0;
-            let wordEnd = 0;
-            
-            for (let i = 0; i < lineWords.length; i++) {
-              const token = lineWords[i];
-              const slice = lineText.slice(cursor);
-              const rel = slice.indexOf(token);
-              wordStart = rel >= 0 ? cursor + rel : cursor;
-              wordEnd = wordStart + token.length;
-              
-              if (i === wi) {
-                break;
-              }
-              cursor = wordEnd + 1;
-            }
-            
-            // Find word timestamp by position, not by text match
-            const wordTime = wordTimestamps.find((wt) => {
-              return wt && wt.start === wordStart && wt.end === wordEnd;
-            });
+          {lineWordSpans.map((wordSpan, wi) => {
+            const wordTime = wordTimestampLookup.get(`${wordSpan.start}:${wordSpan.end}`);
             const hasTime = wordTime !== undefined && wordTime.time !== undefined;
             const isCurrent = isActive && wi === currentWordIndex;
             const isWordEditing =
@@ -171,14 +186,7 @@ export default function WordEditor({
                       isEditing={!!wordTimestampState}
                       editValue={wordTimestampState?.editValue || ''}
                       onEditChange={handleWordEditChange}
-                      onStartEdit={(index) =>
-                        handleStartWordEdit(
-                          new MouseEvent('click') as any,
-                          lineIndex,
-                          wi,
-                          wordTime.time
-                        )
-                      }
+                      onStartEdit={() => handleStartWordEdit(lineIndex, wi, wordTime.time)}
                       onSaveEdit={handleSaveWordTime}
                       onCancelEdit={handleCancelWordEdit}
                       editIndex={wordTimestampState?.wordIndex}
@@ -192,7 +200,7 @@ export default function WordEditor({
                 <button
                   onClick={(e) => {
                     if (!isWordEditing) {
-                      onStampWord(wi, word);
+                      onStampWord(wi, wordSpan.text);
                     }
                   }}
                   disabled={isWordEditing}
@@ -205,7 +213,7 @@ export default function WordEditor({
                       : 'Click to stamp word time'
                   }
                 >
-                  {word}
+                  {wordSpan.text}
                 </button>
 
                 {isWordEditing && (
