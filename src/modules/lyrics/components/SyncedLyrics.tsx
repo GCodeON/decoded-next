@@ -69,8 +69,20 @@ const SyncedLyrics = ({
 
   const getFilledWordsForLine = (lineWords: typeof wordsByLine[number]) => {
     if (lineWords.length === 0) return 0;
-    const idx = lineWords.findIndex((w) => w.time > leadAdjustedTime);
-    return idx === -1 ? lineWords.length : idx;
+
+    let low = 0;
+    let high = lineWords.length;
+
+    while (low < high) {
+      const mid = low + Math.floor((high - low) / 2);
+      if (lineWords[mid].time <= leadAdjustedTime) {
+        low = mid + 1;
+      } else {
+        high = mid;
+      }
+    }
+
+    return low;
   };
 
   const hasWordTiming = wordsByLine.length > 0 && wordsByLine.some((line) => line.length > 0);
