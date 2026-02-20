@@ -27,7 +27,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
   const { track, loading: trackLoading, error: trackError } = useSpotifyTrack(id);
   const { user } = useUser();
   const { isAuthenticated, isChecking } = useAuth();
-  const { deviceId } = useSpotifyPlayer();
+  const { deviceId, globalTrackId, webLastTrack } = useSpotifyPlayer();
   const canWrite = !!user;
   const { savedSong, isSaving, lyricsLoading, lyricsError, updateLyrics, updateSynced, updateWordSynced } = useSavedSong({ track, trackId: id, allowWrite: canWrite });
 
@@ -67,6 +67,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
 
   const isViewMode = hasSynced && !editMode && !syncMode;
   const { isPlaying, currentPosition, currentPositionMs, togglePlayback, seekTo } = usePlaybackSync(id, !!track, syncMode, isViewMode);
+  const isTrackActive = globalTrackId ? globalTrackId === id : webLastTrack === id;
 
   const syncConfig = useMemo(() => {
     if (!displayLyrics || !hasSynced) return null;
@@ -234,7 +235,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
       mobile: 70,
       desktop: 75,
     },
-    disabled: disableAutoScroll || isPresentationMode,
+    disabled: disableAutoScroll || isPresentationMode || !isTrackActive,
     onUserScroll: isPresentationMode ? undefined : handleUserScroll,
   });
 
@@ -268,6 +269,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
           isAdmin={isAdmin}
           leadAdjustmentSec={leadAdjustmentSec}
           onLeadAdjustmentChange={setLeadAdjustmentSec}
+          isTrackActive={isTrackActive}
           onExit={() => setIsPresentationMode(false)}
           onLineClick={handleSeekToLine}
         />
@@ -389,6 +391,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
               leadAdjustmentSec={leadAdjustmentSec}
               onLeadAdjustmentChange={setLeadAdjustmentSec}
               showLeadAdjustment={true}
+              isTrackActive={isTrackActive}
             />
           </div>
         )}

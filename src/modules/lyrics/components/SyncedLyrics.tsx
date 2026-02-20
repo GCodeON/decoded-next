@@ -16,6 +16,7 @@ interface SyncedLyricsWithActiveLine extends SyncedLyricsProps {
   leadAdjustmentSec?: number;
   onLeadAdjustmentChange?: (value: number) => void;
   showLeadAdjustment?: boolean;
+  isTrackActive?: boolean;
 }
 
 const SyncedLyrics = ({
@@ -33,9 +34,11 @@ const SyncedLyrics = ({
   leadAdjustmentSec = 0,
   onLeadAdjustmentChange,
   showLeadAdjustment = true,
+  isTrackActive = true,
 }: SyncedLyricsWithActiveLine) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const currentPositionSec = currentPositionMs / 1000;
+  const playbackActive = isTrackActive === true;
+  const currentPositionSec = playbackActive ? currentPositionMs / 1000 : 0;
 
   const { lines, wordsByLine } = useMemo(() => {
     const parsed = parseEnhancedLrc(syncedLyrics);
@@ -49,7 +52,7 @@ const SyncedLyrics = ({
     existingLrc: syncedLyrics,
     currentPosition: currentPositionSec,
     currentPositionMs,
-    isPlaying,
+    isPlaying: isPlaying && playbackActive,
     autoScroll: false,
   });
 
@@ -73,6 +76,7 @@ const SyncedLyrics = ({
   const hasWordTiming = wordsByLine.length > 0 && wordsByLine.some((line) => line.length > 0);
   
   const predictedActiveLineIndex = useMemo(() => {
+    if (!playbackActive) return null;
     if (!hasWordTiming) return activeLineIndex;
     
     // Find which line the playback is currently in by checking first word times
@@ -92,11 +96,11 @@ const SyncedLyrics = ({
   const effectiveActiveLineIndex = hasWordTiming ? predictedActiveLineIndex : activeLineIndex;
 
   useEffect(() => {
-    if (typeof effectiveActiveLineIndex === 'number' && onActiveLineChange) {
+    if (playbackActive && typeof effectiveActiveLineIndex === 'number' && onActiveLineChange) {
       onActiveLineChange(effectiveActiveLineIndex);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [effectiveActiveLineIndex]);
+  }, [effectiveActiveLineIndex, playbackActive]);
 
   return (
     <div className="space-y-3">

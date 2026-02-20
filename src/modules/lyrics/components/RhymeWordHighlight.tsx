@@ -17,6 +17,7 @@ const LIGHT_BG_COLORS = new Set([
   'rgb(189, 189, 189)',
   'rgb(178, 204, 255)',
   'rgb(0, 216, 255)',
+  
 ]);
 
 const parseColorToRgb = (color: string): { r: number; g: number; b: number } | null => {

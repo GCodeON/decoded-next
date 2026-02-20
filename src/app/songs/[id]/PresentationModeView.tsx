@@ -19,6 +19,7 @@ interface PresentationModeViewProps {
   isAdmin?: boolean;
   leadAdjustmentSec?: number;
   onLeadAdjustmentChange?: (value: number) => void;
+  isTrackActive?: boolean;
   onExit: () => void;
   onLineClick?: (timeMs: number) => void;
 }
@@ -35,6 +36,7 @@ export default function PresentationModeView({
   isAdmin = false,
   leadAdjustmentSec = 0,
   onLeadAdjustmentChange,
+  isTrackActive = true,
   onExit,
   onLineClick,
 }: PresentationModeViewProps) {
@@ -70,6 +72,7 @@ export default function PresentationModeView({
   }, []);
 
   useEffect(() => {
+    if (!isTrackActive) return;
     if (isPresentationPaused) return;
 
     const scrollContainer = document.getElementById(scrollContainerId);
@@ -143,9 +146,10 @@ export default function PresentationModeView({
         cancelAnimationFrame(followAnimationRef.current);
       }
     };
-  }, [activeLineIndex, isPresentationPaused, presentationSpeed, scrollContainerId]);
+  }, [activeLineIndex, isPresentationPaused, presentationSpeed, scrollContainerId, isTrackActive]);
 
   useEffect(() => {
+    if (!isTrackActive) return;
     const scrollContainer = document.getElementById(scrollContainerId);
     if (!scrollContainer) return;
 
@@ -157,7 +161,7 @@ export default function PresentationModeView({
 
     scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
     return () => scrollContainer.removeEventListener('scroll', handleScroll);
-  }, [scrollContainerId, pausePresentationAutoScroll, showControlsTemporarily]);
+  }, [scrollContainerId, pausePresentationAutoScroll, showControlsTemporarily, isTrackActive]);
 
   useEffect(() => {
     showControlsTemporarily();
@@ -229,6 +233,7 @@ export default function PresentationModeView({
                 showLeadAdjustment={false}
                 onActiveLineChange={setActiveLineIndex}
                 onLineClick={onLineClick}
+                isTrackActive={isTrackActive}
               />
             </div>
           )}
