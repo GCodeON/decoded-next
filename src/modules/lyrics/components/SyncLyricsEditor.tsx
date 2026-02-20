@@ -55,6 +55,7 @@ export default function SyncLyricsEditor({
   const [wordTimingMode, setWordTimingMode] = useState(false);
   const [wordTimestamps, setWordTimestamps] = useState<Map<number, Word[]>>(new Map());
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
+  const currentWordIndexRef = useRef(0);
 
   useEffect(() => {
     if (existingWordLrc) {
@@ -80,6 +81,10 @@ export default function SyncLyricsEditor({
     currentPositionMsRef.current = currentPositionMs;
     currentPositionRef.current = currentPosition;
   }, [currentPositionMs, currentPosition]);
+
+  useEffect(() => {
+    currentWordIndexRef.current = currentWordIndex;
+  }, [currentWordIndex]);
 
   const { lines, timestamps, setTimestamps, allStamped, activeLine } = useLyricSync({
     plainLyrics,
@@ -213,7 +218,10 @@ export default function SyncLyricsEditor({
       typeof currentPositionMs === 'number' ? currentPositionMs / 1000 : currentPosition;
 
     const activeWord = getActiveWordIndex(lineWords, currentTimeSec);
-    setCurrentWordIndex(activeWord ?? -1);
+    const nextWordIndex = activeWord ?? -1;
+    if (nextWordIndex !== currentWordIndexRef.current) {
+      setCurrentWordIndex(nextWordIndex);
+    }
   }, [isPlaying, wordTimingMode, manualNavigation, currentPosition, currentPositionMs, currentLine, wordTimestamps]);
 
 

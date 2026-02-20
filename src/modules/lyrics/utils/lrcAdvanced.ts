@@ -195,13 +195,38 @@ export function generateEnhancedLrc(
 // ──────────────────────────────────────────────────────────────
 export function getActiveWordIndex(words: Word[], currentTime: number): number | null {
   if (words.length === 0) return null;
-  
+
+  let low = 0;
+  let high = words.length - 1;
+  let result = -1;
+
+  while (low <= high) {
+    const mid = low + Math.floor((high - low) / 2);
+    const midTime = words[mid]?.time;
+
+    if (typeof midTime !== 'number') {
+      break;
+    }
+
+    if (midTime <= currentTime) {
+      result = mid;
+      low = mid + 1;
+    } else {
+      high = mid - 1;
+    }
+  }
+
+  if (result >= 0) {
+    return result;
+  }
+
   for (let i = words.length - 1; i >= 0; i--) {
-    if (currentTime >= words[i].time) {
+    const wordTime = words[i]?.time;
+    if (typeof wordTime === 'number' && currentTime >= wordTime) {
       return i;
     }
   }
-  
+
   return null;
 }
 
