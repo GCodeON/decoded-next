@@ -86,24 +86,52 @@ const SyncedLyrics = ({
   };
 
   const hasWordTiming = wordsByLine.length > 0 && wordsByLine.some((line) => line.length > 0);
+
+  const timedLineStarts = useMemo(() => {
+    const lineIndices: number[] = [];
+    const startTimes: number[] = [];
+
+    for (let i = 0; i < wordsByLine.length; i++) {
+      const lineWords = wordsByLine[i];
+      if (lineWords.length === 0) continue;
+
+      const firstWordTime = lineWords[0]?.time;
+      if (typeof firstWordTime !== 'number') continue;
+
+      lineIndices.push(i);
+      startTimes.push(firstWordTime);
+    }
+
+    return { lineIndices, startTimes };
+  }, [wordsByLine]);
   
   const predictedActiveLineIndex = useMemo(() => {
     if (!playbackActive) return null;
     if (!hasWordTiming) return activeLineIndex;
-    
-    // Find which line the playback is currently in by checking first word times
-    for (let i = 0; i < wordsByLine.length; i++) {
-      const lineWords = wordsByLine[i];
-      if (lineWords.length === 0) continue;
-      
-      // If current time is before this line's first word, active line is previous
-      if (lineWords[0].time > leadAdjustedTime) {
-        return i > 0 ? i - 1 : 0;
+
+    const { lineIndices, startTimes } = timedLineStarts;
+    if (startTimes.length === 0) {
+      return activeLineIndex;
+    }
+
+    let low = 0;
+    let high = startTimes.length;
+    while (low < high) {
+      const mid = low + Math.floor((high - low) / 2);
+      if (startTimes[mid] > leadAdjustedTime) {
+        high = mid;
+      } else {
+        low = mid + 1;
       }
+    }
+
+    if (low < lineIndices.length) {
+      const currentTimedLineIndex = lineIndices[low];
+      return currentTimedLineIndex > 0 ? currentTimedLineIndex - 1 : 0;
     }
     
     return wordsByLine.length > 0 ? wordsByLine.length - 1 : activeLineIndex;
-  }, [wordsByLine, leadAdjustedTime, hasWordTiming, activeLineIndex]);
+  }, [timedLineStarts, wordsByLine.length, leadAdjustedTime, hasWordTiming, activeLineIndex, playbackActive]);
 
   const effectiveActiveLineIndex = hasWordTiming ? predictedActiveLineIndex : activeLineIndex;
 
