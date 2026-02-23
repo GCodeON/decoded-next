@@ -2,7 +2,7 @@
 
 import { use, useState, useEffect } from 'react';
 import Image from 'next/image';
-import { useSpotifyApi } from '@/modules/spotify';
+import { useSpotifyApi, useSimplePlayback } from '@/modules/spotify';
 import { SpotifyAlbum, SpotifyTrack } from '@/modules/spotify/types/spotify';
 import { useUserPremium } from '@/modules/auth/hooks/useUserPremium';
 import { AlbumTrackRow } from '@/modules/player/components/AlbumTrackRow';
@@ -15,8 +15,6 @@ export default function Album({ params }: { params: Promise<{ id: string }> }) {
   const [album, setAlbum] = useState<SpotifyAlbum | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
-  const [playingTrackId, setPlayingTrackId] = useState<string | null>(null);
-  const [showRhymes, setShowRhymes] = useState(true);
   const spotify = useSpotifyApi();
   const isPremium = useUserPremium();
 
@@ -41,10 +39,6 @@ export default function Album({ params }: { params: Promise<{ id: string }> }) {
 
   const handleTrackSelect = (trackId: string) => {
     setSelectedTrackId(selectedTrackId === trackId ? null : trackId);
-  };
-
-  const handleTogglePlay = (trackId: string) => {
-    setPlayingTrackId(playingTrackId === trackId ? null : trackId);
   };
 
   if (loading) {
@@ -127,10 +121,7 @@ export default function Album({ params }: { params: Promise<{ id: string }> }) {
               album={album}
               trackNumber={index + 1}
               isSelected={selectedTrackId === track.id}
-              isPlaying={playingTrackId === track.id}
               onSelect={() => handleTrackSelect(track.id)}
-              onTogglePlay={() => handleTogglePlay(track.id)}
-              showRhymes={showRhymes}
               isPremium={isPremium}
             />
           ))}
@@ -148,22 +139,18 @@ function AlbumTrackRowWithRhymes({
   album,
   trackNumber,
   isSelected,
-  isPlaying,
   onSelect,
-  onTogglePlay,
-  showRhymes,
   isPremium,
 }: {
   track: SpotifyTrack;
   album: SpotifyAlbum;
   trackNumber: number;
   isSelected: boolean;
-  isPlaying: boolean;
   onSelect: () => void;
-  onTogglePlay: () => void;
-  showRhymes: boolean;
   isPremium: boolean;
 }) {
+  const { isPlaying, togglePlayback } = useSimplePlayback(track.id);
+
   // Enhance track with album data for useSavedSong hook
   const enhancedTrack: SpotifyTrack = {
     ...track,
@@ -186,7 +173,7 @@ function AlbumTrackRowWithRhymes({
       isSelected={isSelected}
       isPlaying={isPlaying}
       onSelect={onSelect}
-      onTogglePlay={onTogglePlay}
+      onTogglePlay={togglePlayback}
     />
   );
 }
