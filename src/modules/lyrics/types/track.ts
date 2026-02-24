@@ -3,6 +3,7 @@ export interface SavedSong {
   artist: string;
   artists?: { name: string; id: string }[];
   spotify: string;
+  youtubeUrl?: string | null;
   lyrics: {
     plain: string;
     synced: string | null;

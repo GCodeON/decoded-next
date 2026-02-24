@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import Link from 'next/link';
 import { SpotifyTrack } from '@/modules/spotify/types/spotify';
 import { FiPlay, FiPause, FiChevronDown, FiChevronUp, FiMusic } from 'react-icons/fi';
 
@@ -67,9 +67,30 @@ export function AlbumTrackRow({
 
         {/* Track Info */}
         <div className="flex-1 min-w-0">
-          <div className="font-medium text-gray-900 truncate">{track.name}</div>
+          <Link
+            href={`/songs/${track.id}`}
+            onClick={(e) => e.stopPropagation()}
+            className="block font-medium text-gray-900 truncate hover:underline"
+          >
+            {track.name}
+          </Link>
           <div className="text-sm text-gray-600 truncate">
-            {track.artists.map((a) => a.name).join(', ')}
+            {track.artists.map((artist, index) => (
+              <span key={artist.id ?? `${artist.name}-${index}`}>
+                {index > 0 && ', '}
+                {artist.id ? (
+                  <Link
+                    href={`/artists/${artist.id}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="hover:underline"
+                  >
+                    {artist.name}
+                  </Link>
+                ) : (
+                  artist.name
+                )}
+              </span>
+            ))}
           </div>
         </div>
 

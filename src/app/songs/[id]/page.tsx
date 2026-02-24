@@ -24,6 +24,8 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
   const [adminControlsHidden, setAdminControlsHidden] = useState(false);
   const [leadAdjustmentSec, setLeadAdjustmentSec] = useState(0);
   const leadSaveDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const [youtubeUrl, setYoutubeUrl] = useState('');
+  const youtubeSaveDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const { track, loading: trackLoading, error: trackError } = useSpotifyTrack(id);
   const { user } = useUser();
   const { isAuthenticated, isChecking } = useAuth();
@@ -63,7 +65,8 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
     if (savedSong?.leadAdjustmentMs !== undefined) {
       setLeadAdjustmentSec(savedSong.leadAdjustmentMs / 1000);
     }
-  }, [savedSong?.lyrics?.rhymeColorMappingComplete, savedSong?.leadAdjustmentMs]);
+    setYoutubeUrl(savedSong?.youtubeUrl || '');
+  }, [savedSong?.lyrics?.rhymeColorMappingComplete, savedSong?.leadAdjustmentMs, savedSong?.youtubeUrl]);
 
   const isViewMode = hasSynced && !editMode && !syncMode;
   const { isPlaying, currentPosition, currentPositionMs, togglePlayback, seekTo } = usePlaybackSync(id, !!track, syncMode, isViewMode);
@@ -228,6 +231,29 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
     };
   }, [leadAdjustmentSec, isAdmin, id]);
 
+  // Debounced save of YouTube URL to Firestore
+  useEffect(() => {
+    if (!isAdmin) return;
+
+    if (youtubeSaveDebounceRef.current) {
+      clearTimeout(youtubeSaveDebounceRef.current);
+    }
+
+    youtubeSaveDebounceRef.current = setTimeout(async () => {
+      try {
+        await songService.updateYoutubeUrl(id, youtubeUrl.trim() || null);
+      } catch (err) {
+        console.error('Failed to save YouTube URL:', err);
+      }
+    }, 1000);
+
+    return () => {
+      if (youtubeSaveDebounceRef.current) {
+        clearTimeout(youtubeSaveDebounceRef.current);
+      }
+    };
+  }, [youtubeUrl, isAdmin, id]);
+
   usePageScroll({
     activeLineIndex: lastActiveLine,
     lyricsContainerId: 'synced-lyrics-container',
@@ -390,6 +416,8 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
               isAdmin={isAdmin}
               leadAdjustmentSec={leadAdjustmentSec}
               onLeadAdjustmentChange={setLeadAdjustmentSec}
+              youtubeUrl={youtubeUrl}
+              onYoutubeUrlChange={setYoutubeUrl}
               showLeadAdjustment={true}
               isTrackActive={isTrackActive}
             />

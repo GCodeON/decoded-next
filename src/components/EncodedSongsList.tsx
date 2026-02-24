@@ -1,11 +1,12 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type MouseEvent } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { songService, SavedSong } from '@/modules/lyrics';
 import { useSpotifyApi } from '@/modules/spotify';
 import type { SpotifyTrack } from '@/modules/spotify/types/spotify';
+import { FaYoutube } from 'react-icons/fa';
 
 type SongWithId = SavedSong & { id: string };
 type SongWithTrack = SongWithId & { track?: SpotifyTrack };
@@ -69,6 +70,22 @@ export default function EncodedSongsList({
 
     fetchSongs();
   }, [limit, spotify, randomize]);
+
+  const handleYoutubeIconClick = (event: MouseEvent<HTMLSpanElement>, url: string | null | undefined) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (!url) return;
+
+    const trimmedUrl = url.trim();
+    if (!trimmedUrl) return;
+
+    const normalizedUrl = /^https?:\/\//i.test(trimmedUrl)
+      ? trimmedUrl
+      : `https://${trimmedUrl}`;
+
+    window.open(normalizedUrl, '_blank', 'noopener,noreferrer');
+  };
 
   if (loading) {
     return <LoadingSpinner message="Loading songs..." fullHeight />;
@@ -150,13 +167,23 @@ export default function EncodedSongsList({
                   )}
                 </div>
                 
-                {showCompleteTag && (
-                  <div className="flex-shrink-0">
+                <div className="flex-shrink-0 flex items-center gap-2">
+                  {typeof song.youtubeUrl === 'string' && song.youtubeUrl.trim() !== '' && (
+                    <span
+                      className="inline-flex items-center text-red-500 cursor-pointer"
+                      title="YouTube URL available"
+                      aria-label="YouTube URL available"
+                      onClick={(event) => handleYoutubeIconClick(event, song.youtubeUrl)}
+                    >
+                      <FaYoutube size={24} />
+                    </span>
+                  )}
+                  {showCompleteTag && (
                     <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full bg-teal-600 text-white">
                       ✓
                     </span>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
           </Link>

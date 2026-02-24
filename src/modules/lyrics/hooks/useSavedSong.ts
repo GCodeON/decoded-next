@@ -40,6 +40,7 @@ export function useSavedSong({ track, trackId, allowWrite = true }: UseSavedSong
         artist: artistName,
         artists: track.artists,
         spotify: trackId,
+        youtubeUrl: null,
         lyrics: { plain, synced, wordSynced: null, rhymeEncoded },
       };
 
@@ -70,6 +71,7 @@ export function useSavedSong({ track, trackId, allowWrite = true }: UseSavedSong
           artist: data.artist || artistName,
           artists: data.artists,
           spotify: trackId,
+          youtubeUrl: data.youtubeUrl || null,
           lyrics: {
             plain: data.lyrics?.plain || '',
             synced: data.lyrics?.synced || null,
@@ -104,6 +106,7 @@ export function useSavedSong({ track, trackId, allowWrite = true }: UseSavedSong
         artist: artistName,
         artists: track.artists,
         spotify: trackId,
+        youtubeUrl: null,
         lyrics: { plain, synced, wordSynced: null, rhymeEncoded },
       });
       setShouldFetchLyrics(false);

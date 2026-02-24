@@ -15,6 +15,8 @@ interface SyncedLyricsWithActiveLine extends SyncedLyricsProps {
   isAdmin?: boolean;
   leadAdjustmentSec?: number;
   onLeadAdjustmentChange?: (value: number) => void;
+  youtubeUrl?: string;
+  onYoutubeUrlChange?: (value: string) => void;
   showLeadAdjustment?: boolean;
   isTrackActive?: boolean;
 }
@@ -33,6 +35,8 @@ const SyncedLyrics = ({
   isAdmin = false,
   leadAdjustmentSec = 0,
   onLeadAdjustmentChange,
+  youtubeUrl = '',
+  onYoutubeUrlChange,
   showLeadAdjustment = true,
   isTrackActive = true,
 }: SyncedLyricsWithActiveLine) => {
@@ -86,6 +90,26 @@ const SyncedLyrics = ({
   };
 
   const hasWordTiming = wordsByLine.length > 0 && wordsByLine.some((line) => line.length > 0);
+
+  const normalizedYoutubeUrl = youtubeUrl.trim();
+  const youtubeHref = useMemo(() => {
+    if (!normalizedYoutubeUrl) return null;
+
+    try {
+      const parsedUrl = new URL(normalizedYoutubeUrl);
+      const hostname = parsedUrl.hostname.toLowerCase();
+      const isYoutubeHost =
+        hostname === 'youtube.com' ||
+        hostname === 'www.youtube.com' ||
+        hostname === 'm.youtube.com' ||
+        hostname === 'youtu.be' ||
+        hostname === 'www.youtu.be';
+
+      return isYoutubeHost ? parsedUrl.toString() : null;
+    } catch {
+      return null;
+    }
+  }, [normalizedYoutubeUrl]);
 
   const timedLineStarts = useMemo(() => {
     const lineIndices: number[] = [];
@@ -145,18 +169,43 @@ const SyncedLyrics = ({
   return (
     <div className="space-y-3">
       {isAdmin && showLeadAdjustment && (
-        <div className="flex items-center gap-2 px-5 md:px-6">
-          <label htmlFor="lead-adjust" className="text-sm text-gray-400">
-            Lead Adjustment (ms):
-          </label>
-          <input
-            id="lead-adjust"
-            type="number"
-            value={Math.round(leadAdjustmentSec * 1000)}
-            onChange={(e) => onLeadAdjustmentChange?.(Number(e.target.value) / 1000)}
-            step={50}
-            className="w-24 rounded bg-zinc-800 px-2 py-1 text-white text-sm"
-          />
+        <div className="flex flex-wrap items-center gap-3 px-5 md:px-6">
+          <div className="flex items-center gap-2">
+            <label htmlFor="lead-adjust" className="text-sm text-gray-400 whitespace-nowrap">
+              Lead Adjustment (ms):
+            </label>
+            <input
+              id="lead-adjust"
+              type="number"
+              value={Math.round(leadAdjustmentSec * 1000)}
+              onChange={(e) => onLeadAdjustmentChange?.(Number(e.target.value) / 1000)}
+              step={50}
+              className="w-24 rounded bg-zinc-800 px-2 py-1 text-white text-sm"
+            />
+          </div>
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <label htmlFor="youtube-url" className="text-sm text-gray-400 whitespace-nowrap">
+              YouTube URL:
+            </label>
+            <input
+              id="youtube-url"
+              type="url"
+              value={youtubeUrl}
+              onChange={(e) => onYoutubeUrlChange?.(e.target.value)}
+              placeholder="https://www.youtube.com/watch?v=..."
+              className="w-full rounded bg-zinc-800 px-2 py-1 text-white text-sm"
+            />
+            {youtubeHref && (
+              <a
+                href={youtubeHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded bg-zinc-700 px-2 py-1 text-xs text-white whitespace-nowrap hover:bg-zinc-600"
+              >
+                Open
+              </a>
+            )}
+          </div>
         </div>
       )}
       <div

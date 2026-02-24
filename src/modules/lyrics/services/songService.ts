@@ -61,6 +61,12 @@ export class SongService {
     });
   }
 
+  async updateYoutubeUrl(trackId: string, youtubeUrl: string | null): Promise<void> {
+    await updateDoc(doc(db, this.collection, trackId), {
+      youtubeUrl: youtubeUrl || null,
+    });
+  }
+
   async updatePublishMetadata(trackId: string, signature: string, timestamp: number): Promise<void> {
     await updateDoc(doc(db, this.collection, trackId), {
       'lrclib.published': true,
