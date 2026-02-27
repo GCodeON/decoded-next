@@ -183,8 +183,8 @@ const SyncedLyrics = ({
               className="w-24 rounded bg-zinc-800 px-2 py-1 text-white text-sm"
             />
           </div>
-          <div className="flex items-center gap-2 min-w-0 flex-1">
-            <label htmlFor="youtube-url" className="text-sm text-gray-400 whitespace-nowrap">
+          <div className="flex flex-col items-stretch gap-2 min-w-0 flex-1 md:flex-row md:items-center">
+            <label htmlFor="youtube-url" className="text-sm text-gray-400 md:whitespace-nowrap">
               YouTube URL:
             </label>
             <input
@@ -200,7 +200,7 @@ const SyncedLyrics = ({
                 href={youtubeHref}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="rounded bg-zinc-700 px-2 py-1 text-xs text-white whitespace-nowrap hover:bg-zinc-600"
+                className="rounded bg-zinc-700 px-2 py-1 text-xs text-white whitespace-nowrap hover:bg-zinc-600 self-start md:self-auto"
               >
                 Open
               </a>
