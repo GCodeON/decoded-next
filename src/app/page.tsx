@@ -47,7 +47,7 @@ export default function Home() {
             fullSize={true}  
           />
           <p className="text-xl text-gray-300">
-            Explore and create encoded rap lyrics with perfect rhyme highlighting and synchronization.
+            Explore highlighted rhyme encoded rap lyrics with playback synchronization.
           </p>
         </div>
 
