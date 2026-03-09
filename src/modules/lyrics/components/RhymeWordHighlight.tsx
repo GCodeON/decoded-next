@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, memo, useLayoutEffect, useRef, useState, useEffect } from 'react';
+import { useMemo, memo, useLayoutEffect, useRef } from 'react';
 import { gsap } from 'gsap';
 import type { Word } from '../utils/lrcAdvanced';
 import type { WordRhymeParts } from '../types/rhyme';
@@ -371,20 +371,7 @@ export const RhymeWordHighlight = memo(function RhymeWordHighlight({
   wordParts,
 }: RhymeWordHighlightProps) {
   const activeWordIndex = (isActive || isPast) ? (filledWords > 0 ? filledWords - 1 : -1) : -1;
-  const getWordProgress = useWordProgress(words, currentTimeSec, isPast, activeWordIndex);
-
-  // Throttle currentTimeSec updates to reduce render churn on active line
-  const [throttledTimeSec, setThrottledTimeSec] = useState(currentTimeSec);
-  useEffect(() => {
-    const timer = requestAnimationFrame(() => {
-      setThrottledTimeSec(currentTimeSec);
-    });
-    return () => cancelAnimationFrame(timer);
-  }, [currentTimeSec]);
-
-  // Use throttled time for render, but keep full precision for segment animation
-  const renderTimeSec = isActive ? throttledTimeSec : currentTimeSec;
-  const renderWordProgress = useWordProgress(words, renderTimeSec, isPast, activeWordIndex);
+  const renderWordProgress = useWordProgress(words, currentTimeSec, isPast, activeWordIndex);
 
   // Precompute per-word segments and totals once per words/wordParts change
   const precomputed = useMemo(() => {

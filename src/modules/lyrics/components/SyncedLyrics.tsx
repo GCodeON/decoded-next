@@ -1,5 +1,5 @@
 'use client';
-import { useRef, useEffect, useMemo } from 'react';
+import { useRef, useEffect, useMemo, useState } from 'react';
 import { useLyricSync } from '@/modules/lyrics/hooks/useLyricSync';
 import { useRhymeColorMap } from '@/modules/lyrics/hooks/useRhymeColorMap';
 import { parseEnhancedLrc } from '@/modules/lyrics/utils/lrcAdvanced';
@@ -157,7 +157,90 @@ const SyncedLyrics = ({
     return wordsByLine.length > 0 ? wordsByLine.length - 1 : activeLineIndex;
   }, [timedLineStarts, wordsByLine.length, leadAdjustedTime, hasWordTiming, activeLineIndex, playbackActive]);
 
-  const effectiveActiveLineIndex = hasWordTiming ? predictedActiveLineIndex : activeLineIndex;
+  const [stabilizedWordActiveLine, setStabilizedWordActiveLine] = useState<number | null>(null);
+  const activeLineStabilityRef = useRef<{ line: number | null; lastSwitchAtMs: number }>({
+    line: null,
+    lastSwitchAtMs: 0,
+  });
+
+  useEffect(() => {
+    if (!playbackActive || !hasWordTiming) {
+      activeLineStabilityRef.current = { line: null, lastSwitchAtMs: 0 };
+      setStabilizedWordActiveLine(activeLineIndex);
+      return;
+    }
+
+    if (predictedActiveLineIndex == null) {
+      return;
+    }
+
+    const state = activeLineStabilityRef.current;
+    const nowMs = performance.now();
+
+    if (state.line == null) {
+      state.line = predictedActiveLineIndex;
+      state.lastSwitchAtMs = nowMs;
+      setStabilizedWordActiveLine(predictedActiveLineIndex);
+      return;
+    }
+
+    if (state.line === predictedActiveLineIndex) {
+      return;
+    }
+
+    const currentLine = state.line;
+    const targetLine = predictedActiveLineIndex;
+    const jumpDistance = Math.abs(targetLine - currentLine);
+
+    if (jumpDistance > 1) {
+      state.line = targetLine;
+      state.lastSwitchAtMs = nowMs;
+      setStabilizedWordActiveLine(targetLine);
+      return;
+    }
+
+    const minDwellMs = 70;
+    if (nowMs - state.lastSwitchAtMs < minDwellMs) {
+      return;
+    }
+
+    const targetLineWords = wordsByLine[targetLine] || [];
+    const currentLineWords = wordsByLine[currentLine] || [];
+
+    const movingForward = targetLine > currentLine;
+    const forwardDeadbandSec = 0.02;
+    const backwardDeadbandSec = 0.04;
+
+    let canSwitch = false;
+    if (movingForward) {
+      const nextLineStart = targetLineWords[0]?.time;
+      canSwitch = typeof nextLineStart === 'number'
+        ? leadAdjustedTime >= nextLineStart + forwardDeadbandSec
+        : true;
+    } else {
+      const currentLineEnd = currentLineWords[currentLineWords.length - 1]?.time;
+      canSwitch = typeof currentLineEnd === 'number'
+        ? leadAdjustedTime <= currentLineEnd - backwardDeadbandSec
+        : true;
+    }
+
+    if (!canSwitch) {
+      return;
+    }
+
+    state.line = targetLine;
+    state.lastSwitchAtMs = nowMs;
+    setStabilizedWordActiveLine(targetLine);
+  }, [
+    playbackActive,
+    hasWordTiming,
+    activeLineIndex,
+    predictedActiveLineIndex,
+    wordsByLine,
+    leadAdjustedTime,
+  ]);
+
+  const effectiveActiveLineIndex = hasWordTiming ? stabilizedWordActiveLine : activeLineIndex;
 
   useEffect(() => {
     if (playbackActive && typeof effectiveActiveLineIndex === 'number' && onActiveLineChange) {
@@ -254,7 +337,7 @@ const SyncedLyrics = ({
             key={i}
             {...tapHandlers}
             style={{ touchAction: 'manipulation' }}
-            className={`px-5 py-0.75 md:px-3 md:px-6 md:py-0.5  rounded-lg transition-all md:text-xl 2xl:text-2xl ${
+            className={`px-5 py-0.75 md:px-3 md:px-6 md:py-0.5  rounded-lg transition-opacity md:text-xl 2xl:text-2xl ${
               shouldShowFullOpacity
                 ? 'opacity-100'
                 : isActive

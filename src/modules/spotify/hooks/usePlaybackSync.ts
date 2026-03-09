@@ -68,7 +68,7 @@ export function usePlaybackSync(
     if (globalTrackId === trackId) return !!globalIsPlaying;
     if (webLastTrack === trackId) return !!webIsPlaying;
     return false;
-  }, [enabled, globalTrackId, trackId, globalIsPlaying, webLastTrack, webIsPlaying, syncMode, viewMode, currentInterpolatedMs]);
+  }, [enabled, globalTrackId, trackId, globalIsPlaying, webLastTrack, webIsPlaying, syncMode, viewMode]);
 
   const isPlayingThisTrack = isPlaying && globalTrackId === trackId;
 
@@ -176,9 +176,10 @@ export function usePlaybackSync(
         const shouldInterpolate = (syncMode || viewMode) && effectiveIsPlaying;
         
         // When interpolating, check if new sample would cause backwards jump
-        if (shouldInterpolate && prev != null && currentInterpolatedMs != null) {
-          const currentInterpolatedValue = currentInterpolatedMs;
+        const currentInterpolatedValue = currentInterpolatedMsRef.current;
+        if (shouldInterpolate && prev != null && currentInterpolatedValue != null) {
           const diff = newMs - prev;
+          const interpolationAheadMs = newMs - currentInterpolatedValue;
           
           // Large backward jump -> seek/restart; accept immediately
           if (diff < -2000) {
@@ -188,6 +189,10 @@ export function usePlaybackSync(
           } else if (newMs <= currentInterpolatedValue) {
             // Poll sample is at or behind interpolation - reject to prevent any backwards movement
             return;
+          } else if (interpolationAheadMs > 350) {
+            // Non-seek forward corrections can visually stutter the reveal; cap jump size
+            lastSampleMsRef.current = currentInterpolatedValue + 220;
+            lastSampleAtRef.current = now;
           } else {
             // Sample is ahead of interpolation - use it
             lastSampleMsRef.current = newMs;
