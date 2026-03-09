@@ -7,6 +7,20 @@ const BASE_DELAY_MS = 500;
 const MAX_DELAY_MS = 8000;
 const JITTER_FACTOR = 0.5;
 
+class SpotifyTokenError extends Error {
+  status?: number;
+  code?: string;
+  retriable: boolean;
+
+  constructor(message: string, options?: { status?: number; code?: string; retriable?: boolean }) {
+    super(message);
+    this.name = 'SpotifyTokenError';
+    this.status = options?.status;
+    this.code = options?.code;
+    this.retriable = options?.retriable ?? false;
+  }
+}
+
 function sleep(ms: number) {
   return new Promise((res) => setTimeout(res, ms));
 }
@@ -28,12 +42,31 @@ function parseRetryAfter(header: string | null): number | null {
   return null;
 }
 
-async function postTokenForm(params: URLSearchParams): Promise<TokenResponse> {
-  if (!process.env.SPOTIFY_CLIENT_ID || !process.env.SPOTIFY_CLIENT_SECRET) {
+function normalizeEnv(value?: string): string {
+  return (value || '').trim().replace(/^['\"]|['\"]$/g, '');
+}
+
+function getSpotifyCredentials() {
+  const serverClientId = normalizeEnv(process.env.SPOTIFY_CLIENT_ID);
+  const publicClientId = normalizeEnv(process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID);
+  const clientSecret = normalizeEnv(process.env.SPOTIFY_CLIENT_SECRET);
+
+  if (!serverClientId || !clientSecret) {
     throw new Error('Missing Spotify client credentials');
   }
 
-  const authHeader = `Basic ${Buffer.from(`${process.env.SPOTIFY_CLIENT_ID}:${process.env.SPOTIFY_CLIENT_SECRET}`).toString('base64')}`;
+  if (publicClientId && publicClientId !== serverClientId) {
+    throw new Error(
+      'Spotify client ID mismatch: SPOTIFY_CLIENT_ID and NEXT_PUBLIC_SPOTIFY_CLIENT_ID must match the same Spotify app'
+    );
+  }
+
+  return { clientId: serverClientId, clientSecret };
+}
+
+async function postTokenForm(params: URLSearchParams): Promise<TokenResponse> {
+  const { clientId, clientSecret } = getSpotifyCredentials();
+  const authHeader = `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`;
 
   let lastError: any = null;
 
@@ -67,7 +100,14 @@ async function postTokenForm(params: URLSearchParams): Promise<TokenResponse> {
 
       if (!retriable) {
         const snippet = (typeof text === 'string' ? text : JSON.stringify(data || {})).slice(0, 200);
-        throw new Error(data.error_description || data.error || `Token request failed: ${status} ${snippet}`);
+        throw new SpotifyTokenError(
+          data.error_description || data.error || `Token request failed: ${status} ${snippet}`,
+          {
+            status,
+            code: data?.error,
+            retriable: false,
+          }
+        );
       }
 
       let delayMs: number;
@@ -86,16 +126,25 @@ async function postTokenForm(params: URLSearchParams): Promise<TokenResponse> {
 
       if (attempt === MAX_ATTEMPTS) {
         const snippet = (typeof text === 'string' ? text : JSON.stringify(data || {})).slice(0, 200);
-        lastError = new Error(data.error_description || data.error || `Token request failed after ${MAX_ATTEMPTS} attempts: ${status} ${snippet}`);
+        lastError = new SpotifyTokenError(
+          data.error_description || data.error || `Token request failed after ${MAX_ATTEMPTS} attempts: ${status} ${snippet}`,
+          {
+            status,
+            code: data?.error,
+            retriable: true,
+          }
+        );
         break;
       }
 
       await sleep(finalDelay);
       continue;
     } catch (err: any) {
- 
+      if (err instanceof SpotifyTokenError && !err.retriable) {
+        throw err;
+      }
+
       lastError = err;
-      const isNetwork = true;
       if (attempt === MAX_ATTEMPTS) break;
 
       const delayMs = Math.min(BASE_DELAY_MS * Math.pow(2, attempt - 1), MAX_DELAY_MS);

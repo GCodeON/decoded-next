@@ -158,7 +158,10 @@ export async function GET(request: NextRequest) {
   // Track in-flight request
   if (cacheKey) {
     inFlightRequests.set(cacheKey, requestPromise);
-    requestPromise.finally(() => inFlightRequests.delete(cacheKey));
+    requestPromise.then(
+      () => inFlightRequests.delete(cacheKey),
+      () => inFlightRequests.delete(cacheKey)
+    );
   }
 
   try {

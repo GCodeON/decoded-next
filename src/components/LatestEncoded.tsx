@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { songService, SavedSong } from '@/modules/lyrics';
@@ -39,6 +40,7 @@ export default function LatestEncoded({
   const [error, setError] = useState<string | null>(null);
   const [itemsToShow, setItemsToShow] = useState(itemsPerPage.mobile || 1);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const router = useRouter();
   const spotify = useSpotifyApi();
 
   const [emblaRef, emblaApi] = useEmblaCarousel({
@@ -188,11 +190,19 @@ export default function LatestEncoded({
                                 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
                                 }`}>
                                     {group.map((song) => (
-                                        <Link
+                                        <div
                                         key={song.id}
-                                    href={`/songs/${song.id}`}
-                                    className="block p-4 bg-gray-900 hover:bg-gray-800 rounded-lg transition-all duration-200 border border-gray-800 hover:border-teal-600 hover:scale-[1.02]"
-                                    >
+                                        role="link"
+                                        tabIndex={0}
+                                        onClick={() => router.push(`/songs/${song.id}`)}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter' || e.key === ' ') {
+                                            e.preventDefault();
+                                            router.push(`/songs/${song.id}`);
+                                          }
+                                        }}
+                                        className="block p-4 bg-gray-900 hover:bg-gray-800 rounded-lg transition-all duration-200 border border-gray-800 hover:border-teal-600 hover:scale-[1.02] cursor-pointer"
+                                        >
                                     <div className="flex flex-col items-start gap-4">
                                         {/* Album Image */}
                                         {song.track?.album?.images?.[0] && (
@@ -248,7 +258,7 @@ export default function LatestEncoded({
                                         )}
                                     </div>
                                 </div>
-                            </Link> 
+                              </div>
                         ))}
                     </div>
                 </div>

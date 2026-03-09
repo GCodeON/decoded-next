@@ -42,6 +42,33 @@ export async function POST(request: NextRequest) {
     return res;
   } catch (err) {
     console.error('Token refresh failed:', err);
+
+    const message = err instanceof Error ? err.message : 'Refresh failed';
+    const lower = message.toLowerCase();
+
+    if (lower.includes('invalid client') || lower.includes('missing spotify client credentials')) {
+      return NextResponse.json(
+        { error: 'Spotify client credentials are invalid or missing' },
+        { status: 500 }
+      );
+    }
+
+    if (lower.includes('invalid_grant')) {
+      const res = NextResponse.json({ error: 'Invalid refresh token' }, { status: 401 });
+      const cookieOptions = {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax' as const,
+        path: '/',
+        maxAge: 0,
+      };
+
+      res.cookies.set('spotify_access_token', '', cookieOptions);
+      res.cookies.set('spotify_refresh_token', '', cookieOptions);
+      res.cookies.set('spotify_expires_at', '', cookieOptions);
+      return res;
+    }
+
     return NextResponse.json({ error: 'Refresh failed' }, { status: 502 });
   }
 }
