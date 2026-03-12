@@ -21,6 +21,11 @@ export type ActionButtonsProps = {
   onEditSync: () => void;
   onEditLyrics: () => void;
   onAdminControlsHiddenChange?: (hidden: boolean) => void;
+  leadAdjustmentSec?: number;
+  onLeadAdjustmentChange?: (value: number) => void;
+  youtubeUrl?: string;
+  onYoutubeUrlChange?: (value: string) => void;
+  showLeadAdjustment?: boolean;
 };
 
 export default function ActionButtons({
@@ -41,6 +46,11 @@ export default function ActionButtons({
   onEditSync,
   onEditLyrics,
   onAdminControlsHiddenChange,
+  leadAdjustmentSec = 0,
+  onLeadAdjustmentChange,
+  youtubeUrl = '',
+  onYoutubeUrlChange,
+  showLeadAdjustment = true,
 }: ActionButtonsProps) {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [adminAvailable, setAdminAvailable] = useState(true);
@@ -74,30 +84,32 @@ export default function ActionButtons({
 
   return (
     <>
-      {/* Desktop View */}
-      <div className={`hidden md:flex ${(isAdmin && hasToggleButtons) ? 'justify-between' : (hasToggleButtons ? 'justify-end' : 'justify-center')} items-center gap-8 w-full`}>
-        {/* Center: Action Buttons (Edit Sync, Edit Lyrics) - Admin Only */}
-        {isAdmin && (
-          <div className="flex flex-row gap-4 items-center justify-center flex-1 md:order-1">
-            <button
-              onClick={onEditSync}
-              className={`flex items-center gap-2 cursor-pointer ${hasSynced ? 'text-orange-600 hover:text-orange-700' : 'text-green-600 hover:text-green-700'} font-semibold`}
-            >
-              <FaClock /> {hasSynced ? 'Edit Sync' : 'Sync Lyrics'}
-            </button>
-            <button
-              onClick={onEditLyrics}
-              className="flex items-center gap-2 text-blue-600 hover:text-blue-700 cursor-pointer font-semibold"
-            >
-              <FaEdit /> Edit Lyrics
-            </button>
-          </div>
-        )}
+      {/* Desktop View - Action buttons only (inputs are on page level) */}
+      <div className="hidden md:flex flex-col w-full gap-0">
+        {/* Action Controls Row */}
+        <div className={`flex ${(isAdmin && hasToggleButtons) ? 'justify-between' : (hasToggleButtons ? 'justify-end' : 'justify-center')} items-center gap-8 w-full`}>
+          {/* Center: Action Buttons (Edit Sync, Edit Lyrics) - Admin Only */}
+          {isAdmin && (
+            <div className="flex flex-row gap-4 items-center justify-center flex-1">
+              <button
+                onClick={onEditSync}
+                className={`flex items-center gap-2 cursor-pointer ${hasSynced ? 'text-orange-600 hover:text-orange-700' : 'text-green-600 hover:text-green-700'} font-semibold`}
+              >
+                <FaClock /> {hasSynced ? 'Edit Sync' : 'Sync Lyrics'}
+              </button>
+              <button
+                onClick={onEditLyrics}
+                className="flex items-center gap-2 text-blue-600 hover:text-blue-700 cursor-pointer font-semibold"
+              >
+                <FaEdit /> Edit Lyrics
+              </button>
+            </div>
+          )}
 
-        {/* Right: Toggles */}
-        {hasToggleButtons && (
-          <div className="flex flex-row gap-4 items-center justify-end md:order-2">
-            {canShowWordSync && (
+          {/* Right: Toggles */}
+          {hasToggleButtons && (
+            <div className="flex flex-row gap-4 items-center justify-end">
+              {canShowWordSync && (
               <label className="flex items-center gap-2 cursor-pointer">
                 <div className="relative inline-block w-11 h-6">
                   <input
@@ -115,8 +127,8 @@ export default function ActionButtons({
                   Word Sync
                 </span>
               </label>
-            )}
-            {hasRhymeColors && (
+              )}
+              {hasRhymeColors && (
               <label className="flex items-center gap-2 cursor-pointer">
                 <div className="relative inline-block w-11 h-6">
                   <input
@@ -134,8 +146,8 @@ export default function ActionButtons({
                   Rhymes
                 </span>
               </label>
-            )}
-            {hasRhymeColors && isAdmin && (
+              )}
+              {hasRhymeColors && isAdmin && (
               <label className="flex items-center gap-2 cursor-pointer">
                 <div className="relative inline-block w-11 h-6">
                   <input
@@ -153,9 +165,10 @@ export default function ActionButtons({
                   Mapping Complete
                 </span>
               </label>
-            )}
-          </div>
-        )}
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Mobile View */}
@@ -243,6 +256,38 @@ export default function ActionButtons({
                 <FaTimes className="text-xl cursor-pointer" />
               </button>
             </div>
+
+            {/* Admin Inputs Section - Lead Adjustment & YouTube URL */}
+            {showLeadAdjustment && (
+              <div className="flex flex-col gap-3 pb-4 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex flex-col gap-1">
+                  <label htmlFor="lead-adjust-mobile" className="text-sm text-gray-600 dark:text-gray-400 font-medium">
+                    Lead Adjustment (ms):
+                  </label>
+                  <input
+                    id="lead-adjust-mobile"
+                    type="number"
+                    value={Math.round((leadAdjustmentSec || 0) * 1000)}
+                    onChange={(e) => onLeadAdjustmentChange?.(Number(e.target.value) / 1000)}
+                    step={50}
+                    className="w-full rounded bg-gray-100 dark:bg-gray-800 px-3 py-2 text-gray-900 dark:text-white text-sm"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label htmlFor="youtube-url-mobile" className="text-sm text-gray-600 dark:text-gray-400 font-medium">
+                    YouTube URL:
+                  </label>
+                  <input
+                    id="youtube-url-mobile"
+                    type="url"
+                    value={youtubeUrl || ''}
+                    onChange={(e) => onYoutubeUrlChange?.(e.target.value)}
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    className="w-full rounded bg-gray-100 dark:bg-gray-800 px-3 py-2 text-gray-900 dark:text-white text-sm"
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Admin Action Buttons - Mobile */}
             <div className="space-y-3">

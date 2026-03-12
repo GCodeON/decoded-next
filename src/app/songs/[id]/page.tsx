@@ -321,12 +321,47 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
         />
       </div>
 
+      {!editMode && !syncMode && isAdmin && (
+        <div className="hidden md:flex md:flex-row gap-4 w-full px-5 md:px-6 py-3 border-b border-gray-700 bg-black items-center">
+          {leadAdjustmentSec !== undefined && (
+            <>
+              <div className="flex items-center gap-2">
+                <label htmlFor="lead-adjust-page" className="text-sm text-gray-400 whitespace-nowrap">
+                  Lead Adjustment (ms):
+                </label>
+                <input
+                  id="lead-adjust-page"
+                  type="number"
+                  value={Math.round(leadAdjustmentSec * 1000)}
+                  onChange={(e) => setLeadAdjustmentSec(Number(e.target.value) / 1000)}
+                  step={50}
+                  className="w-24 rounded bg-zinc-800 px-2 py-1 text-white text-sm"
+                />
+              </div>
+              <div className="flex items-center gap-2 flex-1">
+                <label htmlFor="youtube-url-page" className="text-sm text-gray-400 whitespace-nowrap">
+                  YouTube URL:
+                </label>
+                <input
+                  id="youtube-url-page"
+                  type="url"
+                  value={youtubeUrl}
+                  onChange={(e) => setYoutubeUrl(e.target.value)}
+                  placeholder="https://www.youtube.com/watch?v=..."
+                  className="flex-1 rounded bg-zinc-800 px-2 py-1 text-white text-sm"
+                />
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
       <div
         className={`sticky top-0 z-20 bg-black shadow-lg mb-2 transition-all duration-200 ${
           isHeaderCompact ? 'p-0.5 md:p-2' : 'p-1 md:p-2'
         }`}
       >
-        <div className="flex justify-around items-center">
+        <div className="flex justify-between items-center w-full gap-4">
           {!editMode && !syncMode && (
             <ActionButtons
               hasSynced={hasSynced}
@@ -346,7 +381,22 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
               onEditSync={() => setSyncMode(true)}
               onEditLyrics={() => setEditMode(true)}
               onAdminControlsHiddenChange={setAdminControlsHidden}
+              leadAdjustmentSec={leadAdjustmentSec}
+              onLeadAdjustmentChange={setLeadAdjustmentSec}
+              youtubeUrl={youtubeUrl}
+              onYoutubeUrlChange={setYoutubeUrl}
+              showLeadAdjustment={true}
             />
+          )}
+          {!adminControlsHidden && isAuthenticated && !editMode && !syncMode && (
+            <button
+              type="button"
+              aria-label="Enter presentation mode"
+              onClick={togglePresentationMode}
+              className="hidden md:inline-flex rounded-lg border border-white/10 bg-black/60 p-2 text-white shadow-lg transition hover:bg-black/70 cursor-pointer hover:border-white/20"
+            >
+              <FaExpand />
+            </button>
           )}
         </div>
 
@@ -390,18 +440,6 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
 
         {syncConfig && !editMode && !syncMode && (
           <div className="relative pt-0">
-            {!adminControlsHidden && isAuthenticated && (
-              <div className="sticky top-10 right-3 z-20 flex justify-end">
-                <button
-                  type="button"
-                  aria-label="Enter presentation mode"
-                  onClick={togglePresentationMode}
-                  className="rounded-full border border-white/10 bg-black/60 p-2 text-white shadow-lg transition hover:bg-black/70 cursor-pointer"
-                >
-                  <FaExpand />
-                </button>
-              </div>
-            )}
             <SyncedLyrics
               syncedLyrics={syncConfig.lyrics}
               currentPositionMs={currentPositionMs ?? 0}
@@ -415,10 +453,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
               isAuthenticated={isAuthenticated}
               isAdmin={isAdmin}
               leadAdjustmentSec={leadAdjustmentSec}
-              onLeadAdjustmentChange={setLeadAdjustmentSec}
               youtubeUrl={youtubeUrl}
-              onYoutubeUrlChange={setYoutubeUrl}
-              showLeadAdjustment={true}
               isTrackActive={isTrackActive}
             />
           </div>
