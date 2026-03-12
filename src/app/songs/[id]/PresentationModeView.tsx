@@ -229,8 +229,6 @@ export default function PresentationModeView({
                 isAuthenticated={isAuthenticated}
                 isAdmin={isAdmin}
                 leadAdjustmentSec={leadAdjustmentSec}
-                onLeadAdjustmentChange={onLeadAdjustmentChange}
-                showLeadAdjustment={false}
                 onActiveLineChange={setActiveLineIndex}
                 onLineClick={onLineClick}
                 isTrackActive={isTrackActive}
