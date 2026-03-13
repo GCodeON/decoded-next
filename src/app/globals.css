@@ -52,3 +52,19 @@ span[style*="background-color: rgb(232, 217, 255)"], span[style*="background-col
 .animate-slide-up {
   animation: slide-up 0.3s ease-out;
 }
+
+@media (min-width: 768px) {
+  .lyrics-editor-panel .sun-editor .se-wrapper,
+  .lyrics-editor-panel .sun-editor .se-wrapper-inner {
+    max-height: none !important;
+  }
+
+  .lyrics-editor-panel .sun-editor .se-wrapper-inner,
+  .lyrics-editor-panel .sun-editor .sun-editor-editable {
+    min-height: calc(100vh - 20rem) !important;
+  }
+
+  .lyrics-editor-legend {
+    max-height: calc(100vh - 0rem);
+  }
+}
