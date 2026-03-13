@@ -9,6 +9,7 @@ type DecodeLogoProps = {
   fullSize?: boolean;
   loopOnHover?: boolean;
   autoAnimateOnMobile?: boolean;
+  animateOnClick?: boolean;
 };
 
 const DecodeLogo = ({
@@ -17,6 +18,7 @@ const DecodeLogo = ({
   fullSize = false,
   loopOnHover = true,
   autoAnimateOnMobile = true,
+  animateOnClick = false,
 }: DecodeLogoProps) => {
   const [cycle, setCycle] = useState(0);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
@@ -50,9 +52,9 @@ const DecodeLogo = ({
 
   return (
     <div
-      className={`relative flex touch-manipulation items-center bg-black cursor-pointer ${containerAlignmentClass} ${className}`}
-      onMouseEnter={loopOnHover ? retrigger : undefined}
-      onClick={retrigger}
+      className={`relative flex touch-manipulation items-center bg-black ${containerAlignmentClass} ${className}`}
+      onMouseEnter={loopOnHover && !isTouchDevice ? retrigger : undefined}
+      onClick={animateOnClick ? retrigger : undefined}
     >
       <motion.div
         key={cycle}
