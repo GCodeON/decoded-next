@@ -1,0 +1,14 @@
+{
+  "updatedAt": "2026-03-17T00:33:03.039Z",
+  "nextOffset": 18,
+  "scopeTotal": 18,
+  "scopeMissing": 18,
+  "lastRun": {
+    "selected": 18,
+    "updated": 18,
+    "failed": 0,
+    "onlyComplete": true,
+    "limit": 0,
+    "delayMs": 1500
+  }
+}

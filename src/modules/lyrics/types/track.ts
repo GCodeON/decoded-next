@@ -4,6 +4,7 @@ export interface SavedSong {
   artists?: { name: string; id: string }[];
   spotify: string;
   youtubeUrl?: string | null;
+  albumImageUrl?: string | null;
   lyrics: {
     plain: string;
     synced: string | null;

@@ -4,12 +4,10 @@ import Link from 'next/link';
 import Image from 'next/image';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { songService, SavedSong } from '@/modules/lyrics';
-import { useSpotifyApi } from '@/modules/spotify';
-import type { SpotifyTrack } from '@/modules/spotify/types/spotify';
 import { FaYoutube } from 'react-icons/fa';
+import { useEncodedSongsFilter } from '@/hooks/useEncodedSongsFilter';
 
 type SongWithId = SavedSong & { id: string };
-type SongWithTrack = SongWithId & { track?: SpotifyTrack };
 
 interface EncodedSongsListProps {
   limit?: number;
@@ -18,6 +16,7 @@ interface EncodedSongsListProps {
   showCompleteTag?: boolean;
   showCount?: boolean;
   randomize?: boolean;
+  pageSize?: number;
 }
 
 export default function EncodedSongsList({ 
@@ -26,12 +25,21 @@ export default function EncodedSongsList({
   title = "All Encoded Songs",
   showCompleteTag = true,
   showCount = true,
-  randomize = false
+  randomize = false,
+  pageSize = 5,
 }: EncodedSongsListProps) {
-  const [songs, setSongs] = useState<SongWithTrack[]>([]);
+  const [songs, setSongs] = useState<SongWithId[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const spotify = useSpotifyApi();
+  const {
+    activeFilter,
+    changeFilter,
+    pageSongs,
+    currentPage,
+    totalPages,
+    prevPage,
+    nextPage,
+  } = useEncodedSongsFilter(songs, pageSize);
 
   useEffect(() => {
     const fetchSongs = async () => {
@@ -40,25 +48,12 @@ export default function EncodedSongsList({
       
       try {
         const completeSongs = await songService.getSongsWithRhymeComplete(limit);
-        
-        // Fetch Spotify track data for each song to get album images
-        const songsWithTracks = await Promise.all(
-          completeSongs.map(async (song) => {
-            try {
-              const track = await spotify.getTrack(song.id);
-              return { ...song, track };
-            } catch (err) {
-              console.error(`Failed to fetch track ${song.id}:`, err);
-              return song;
-            }
-          })
-        );
-        
+
         // Randomize if needed
-        const finalSongs = randomize 
-          ? songsWithTracks.sort(() => Math.random() - 0.5)
-          : songsWithTracks;
-        
+        const finalSongs = randomize
+          ? completeSongs.sort(() => Math.random() - 0.5)
+          : completeSongs;
+
         setSongs(finalSongs);
       } catch (err) {
         console.error('Failed to fetch songs:', err);
@@ -69,7 +64,7 @@ export default function EncodedSongsList({
     };
 
     fetchSongs();
-  }, [limit, spotify, randomize]);
+  }, [limit, randomize]);
 
   const handleYoutubeIconClick = (event: MouseEvent<HTMLSpanElement>, url: string | null | undefined) => {
     event.preventDefault();
@@ -121,8 +116,51 @@ export default function EncodedSongsList({
         </div>
       )}
 
-      <div className="flex flex-col gap-2">
-        {songs.map((song) => (
+      {/* Filter buttons */}
+      <div className="flex items-center gap-2 mb-4">
+        <button
+          onClick={() => changeFilter('all')}
+          className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+            activeFilter === 'all'
+              ? 'bg-gray-600 text-white'
+              : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'
+          }`}
+        >
+          All
+        </button>
+        <button
+          onClick={() => changeFilter('youtube')}
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+            activeFilter === 'youtube'
+              ? 'bg-red-600 text-white'
+              : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'
+          }`}
+        >
+          <FaYoutube size={16} />
+          YT
+        </button>
+        {showCompleteTag && (
+          <button
+            onClick={() => changeFilter('complete')}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+              activeFilter === 'complete'
+                ? 'bg-teal-600 text-white'
+                : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'
+            }`}
+          >
+            ✓ Complete
+          </button>
+        )}
+      </div>
+
+      {pageSongs.length === 0 ? (
+        <p className="text-gray-400 text-sm py-6 text-center">
+          No songs match this filter.
+        </p>
+      ) : (
+          <>
+          <div className="flex flex-col gap-2">
+            {pageSongs.map((song) => (
           <Link
             key={song.id}
             href={`/songs/${song.id}`}
@@ -130,10 +168,10 @@ export default function EncodedSongsList({
           >
             <div className="flex items-center gap-3 md:gap-4">
               {/* Album Image */}
-              {song.track?.album?.images?.[0] && (
+              {song.albumImageUrl && (
                 <div className="w-16 h-16 md:w-20 md:h-20 flex-shrink-0 relative">
                   <Image
-                    src={song.track.album.images[0].url}
+                    src={song.albumImageUrl}
                     alt={song.title || 'Album artwork'}
                     fill
                     className="object-cover rounded-md"
@@ -188,7 +226,31 @@ export default function EncodedSongsList({
             </div>
           </Link>
         ))}
-      </div>
+          </div>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 pt-4">
+              <button
+                onClick={prevPage}
+                disabled={currentPage === 1}
+                className="px-3 py-1.5 rounded-md text-sm font-medium bg-gray-800 text-gray-300 hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                ← Prev
+              </button>
+              <span className="text-gray-400 text-sm">
+                {currentPage} / {totalPages}
+              </span>
+              <button
+                onClick={nextPage}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1.5 rounded-md text-sm font-medium bg-gray-800 text-gray-300 hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                Next →
+              </button>
+            </div>
+          )}
+          </>
+      )}
     </div>
   );
 }

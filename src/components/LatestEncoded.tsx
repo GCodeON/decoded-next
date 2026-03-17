@@ -6,11 +6,8 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { songService, SavedSong } from '@/modules/lyrics';
-import { useSpotifyApi } from '@/modules/spotify';
-import type { SpotifyTrack } from '@/modules/spotify/types/spotify';
 
 type SongWithId = SavedSong & { id: string };
-type SongWithTrack = SongWithId & { track?: SpotifyTrack };
 
 interface LatestEncodedProps {
   limit?: number;
@@ -35,13 +32,12 @@ export default function LatestEncoded({
   itemsPerPage = { mobile: 1, tablet: 2, desktop: 3 },
   randomize = false
 }: LatestEncodedProps) {
-  const [songs, setSongs] = useState<SongWithTrack[]>([]);
+  const [songs, setSongs] = useState<SongWithId[]>([]);;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [itemsToShow, setItemsToShow] = useState(itemsPerPage.mobile || 1);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const router = useRouter();
-  const spotify = useSpotifyApi();
 
   const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: true,
@@ -74,25 +70,12 @@ export default function LatestEncoded({
       
       try {
         const completeSongs = await songService.getSongsWithRhymeComplete(limit);
-        
-        // Fetch Spotify track data for each song to get album images
-        const songsWithTracks = await Promise.all(
-          completeSongs.map(async (song) => {
-            try {
-              const track = await spotify.getTrack(song.id);
-              return { ...song, track };
-            } catch (err) {
-              console.error(`Failed to fetch track ${song.id}:`, err);
-              return song;
-            }
-          })
-        );
-        
+
         // Randomize if needed
-        const finalSongs = randomize 
-          ? songsWithTracks.sort(() => Math.random() - 0.5)
-          : songsWithTracks;
-        
+        const finalSongs = randomize
+          ? completeSongs.sort(() => Math.random() - 0.5)
+          : completeSongs;
+
         setSongs(finalSongs);
       } catch (err) {
         console.error('Failed to fetch songs:', err);
@@ -103,7 +86,7 @@ export default function LatestEncoded({
     };
 
     fetchSongs();
-  }, [limit, spotify, randomize]);
+  }, [limit, randomize]);
 
   // Embla callbacks
   const onSelect = useCallback(() => {
@@ -205,10 +188,10 @@ export default function LatestEncoded({
                                         >
                                     <div className="flex flex-col items-start gap-4">
                                         {/* Album Image */}
-                                        {song.track?.album?.images?.[0] && (
+                                        {song.albumImageUrl && (
                                         <div className="w-full h-48 flex-shrink-0 relative">
                                             <Image
-                                            src={song.track.album.images[0].url}
+                                            src={song.albumImageUrl}
                                             alt={song.title || 'Album artwork'}
                                             fill
                                             className="object-cover rounded-lg"

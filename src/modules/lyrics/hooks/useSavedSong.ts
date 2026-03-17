@@ -41,6 +41,7 @@ export function useSavedSong({ track, trackId, allowWrite = true }: UseSavedSong
         artists: track.artists,
         spotify: trackId,
         youtubeUrl: null,
+        albumImageUrl: track.album?.images?.[0]?.url ?? null,
         lyrics: { plain, synced, wordSynced: null, rhymeEncoded },
       };
 
@@ -72,6 +73,7 @@ export function useSavedSong({ track, trackId, allowWrite = true }: UseSavedSong
           artists: data.artists,
           spotify: trackId,
           youtubeUrl: data.youtubeUrl || null,
+          albumImageUrl: data.albumImageUrl || track.album?.images?.[0]?.url || null,
           lyrics: {
             plain: data.lyrics?.plain || '',
             synced: data.lyrics?.synced || null,
