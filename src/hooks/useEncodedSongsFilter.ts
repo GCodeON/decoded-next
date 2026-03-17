@@ -12,8 +12,9 @@ export function useEncodedSongsFilter(songs: SongWithId[], pageSize: number) {
 
   const filteredSongs = useMemo(() => {
     return songs.filter((song) => {
-      if (activeFilter === 'youtube') return typeof song.youtubeUrl === 'string' && song.youtubeUrl.trim() !== '';
-      if (activeFilter === 'complete') return song.lyrics?.rhymeColorMappingComplete === true;
+      const hasActiveYoutube = typeof song.youtubeUrl === 'string' && song.youtubeUrl.trim() !== '';
+      if (activeFilter === 'youtube') return hasActiveYoutube;
+      if (activeFilter === 'complete') return !hasActiveYoutube;
       return true;
     });
   }, [songs, activeFilter]);

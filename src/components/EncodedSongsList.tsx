@@ -130,7 +130,7 @@ export default function EncodedSongsList({
         </button>
         <button
           onClick={() => changeFilter('youtube')}
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors cursor-pointer ${
             activeFilter === 'youtube'
               ? 'bg-red-600 text-white'
               : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'
@@ -142,7 +142,7 @@ export default function EncodedSongsList({
         {showCompleteTag && (
           <button
             onClick={() => changeFilter('complete')}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors cursor-pointer ${
               activeFilter === 'complete'
                 ? 'bg-teal-600 text-white'
                 : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'
@@ -198,11 +198,6 @@ export default function EncodedSongsList({
                       song.artist || 'Unknown Artist'
                     )}
                   </p>
-                  {song.track?.album?.name && (
-                    <p className="text-gray-500 text-xs mt-0.5 truncate">
-                      {song.track.album.name}
-                    </p>
-                  )}
                 </div>
                 
                 <div className="flex-shrink-0 flex items-center gap-2">

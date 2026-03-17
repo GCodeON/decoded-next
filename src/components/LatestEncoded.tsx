@@ -116,7 +116,7 @@ export default function LatestEncoded({
   }, [emblaApi]);
 
   // Group songs by itemsToShow
-  const groupedSongs: SongWithTrack[][] = [];
+  const groupedSongs: SongWithId[][] = [];
   for (let i = 0; i < songs.length; i += itemsToShow) {
     groupedSongs.push(songs.slice(i, i + itemsToShow));
   }
@@ -234,11 +234,6 @@ export default function LatestEncoded({
                                             song.artist || 'Unknown Artist'
                                             )}
                                         </p>
-                                        {song.track?.album?.name && (
-                                            <p className="text-gray-500 text-xs mt-1">
-                                            {song.track.album.name}
-                                            </p>
-                                        )}
                                     </div>
                                 </div>
                               </div>
