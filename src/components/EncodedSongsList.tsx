@@ -228,7 +228,7 @@ export default function EncodedSongsList({
               <button
                 onClick={prevPage}
                 disabled={currentPage === 1}
-                className="px-3 py-1.5 rounded-md text-sm font-medium bg-gray-800 text-gray-300 hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="px-3 py-1.5 rounded-md text-sm font-medium bg-gray-800 text-gray-300 hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor pointer"
               >
                 ← Prev
               </button>
@@ -238,7 +238,7 @@ export default function EncodedSongsList({
               <button
                 onClick={nextPage}
                 disabled={currentPage === totalPages}
-                className="px-3 py-1.5 rounded-md text-sm font-medium bg-gray-800 text-gray-300 hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="px-3 py-1.5 rounded-md text-sm font-medium bg-gray-800 text-gray-300 hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
               >
                 Next →
               </button>

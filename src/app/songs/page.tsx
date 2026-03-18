@@ -8,7 +8,7 @@ export default function Songs() {
       {/* Featured Carousel */}
       <div className="w-full max-w-7xl">
         <LatestEncoded 
-          limit={10}
+          limit={15}
           title="Recently Encoded Tracks"
           showCount={false}
           showCompleteTag={false}
