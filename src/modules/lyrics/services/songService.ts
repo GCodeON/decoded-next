@@ -67,6 +67,12 @@ export class SongService {
     });
   }
 
+  async updateAlbumImageUrl(trackId: string, albumImageUrl: string | null): Promise<void> {
+    await updateDoc(doc(db, this.collection, trackId), {
+      albumImageUrl: albumImageUrl || null,
+    });
+  }
+
   async updatePublishMetadata(trackId: string, signature: string, timestamp: number): Promise<void> {
     await updateDoc(doc(db, this.collection, trackId), {
       'lrclib.published': true,

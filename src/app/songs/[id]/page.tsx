@@ -24,6 +24,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
   const [adminControlsHidden, setAdminControlsHidden] = useState(false);
   const [leadAdjustmentSec, setLeadAdjustmentSec] = useState(0);
   const leadSaveDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const lastPersistedLeadMsRef = useRef<number | null>(null);
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const youtubeSaveDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const { track, loading: trackLoading, error: trackError } = useSpotifyTrack(id);
@@ -62,9 +63,9 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
 
   useEffect(() => {
     setRhymeColorMappingComplete(!!savedSong?.lyrics?.rhymeColorMappingComplete);
-    if (savedSong?.leadAdjustmentMs !== undefined) {
-      setLeadAdjustmentSec(savedSong.leadAdjustmentMs / 1000);
-    }
+    const persistedLeadMs = savedSong?.leadAdjustmentMs ?? 0;
+    lastPersistedLeadMsRef.current = persistedLeadMs;
+    setLeadAdjustmentSec(persistedLeadMs / 1000);
     setYoutubeUrl(savedSong?.youtubeUrl || '');
   }, [savedSong?.lyrics?.rhymeColorMappingComplete, savedSong?.leadAdjustmentMs, savedSong?.youtubeUrl]);
 
@@ -157,9 +158,19 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
   const handleToggleRhymeComplete = async () => {
     const newValue = !rhymeColorMappingComplete;
     setRhymeColorMappingComplete(newValue);
-    
     try {
       await songService.updateRhymeColorMappingComplete(id, newValue);
+
+      console.log('Toggled rhyme color mapping complete to', newValue, 'for track', id);
+
+      const hasSavedAlbumImage = !!savedSong?.albumImageUrl?.trim();
+      const trackAlbumImage = track?.album?.images?.[0]?.url ?? null;
+
+      if (!hasSavedAlbumImage && trackAlbumImage) {
+        console.log("Updating album image for track", id);
+        await songService.updateAlbumImageUrl(id, trackAlbumImage);
+      }
+
       showToast(newValue ? 'Marked as Complete' : 'Marked as Incomplete', 2000);
     } catch (err) {
       console.error('Failed to update mapping status:', err);
@@ -210,7 +221,10 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
 
   // Debounced save of lead adjustment to Firestore
   useEffect(() => {
-    if (!isAdmin || leadAdjustmentSec === undefined) return;
+    if (!isAdmin || !savedSong || leadAdjustmentSec === undefined) return;
+
+    const nextLeadMs = Math.round(leadAdjustmentSec * 1000);
+    if (lastPersistedLeadMsRef.current === nextLeadMs) return;
 
     if (leadSaveDebounceRef.current) {
       clearTimeout(leadSaveDebounceRef.current);
@@ -218,7 +232,8 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
 
     leadSaveDebounceRef.current = setTimeout(async () => {
       try {
-        await songService.updateLeadAdjustment(id, Math.round(leadAdjustmentSec * 1000));
+        await songService.updateLeadAdjustment(id, nextLeadMs);
+        lastPersistedLeadMsRef.current = nextLeadMs;
       } catch (err) {
         console.error('Failed to save lead adjustment:', err);
       }
@@ -229,7 +244,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
         clearTimeout(leadSaveDebounceRef.current);
       }
     };
-  }, [leadAdjustmentSec, isAdmin, id]);
+  }, [leadAdjustmentSec, isAdmin, id, savedSong]);
 
   // Debounced save of YouTube URL to Firestore
   useEffect(() => {
