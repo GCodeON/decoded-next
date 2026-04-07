@@ -101,6 +101,11 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
 
   const displayHtml = displayLyrics?.rhymeEncoded || '';
   const plainLyrics = displayLyrics?.plain || '';
+  const canShowPresentationToggle =
+    isAuthenticated &&
+    !lyricsLoading &&
+    !!displayLyrics &&
+    (!!syncConfig || !!displayHtml);
 
   const handleToggleWordSync = () => setWordSyncEnabled(prev => !prev);
   const handleToggleRhymes = () => setShowRhymes(prev => !prev);
@@ -403,12 +408,12 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
               showLeadAdjustment={true}
             />
           )}
-          {!adminControlsHidden && isAuthenticated && !editMode && !syncMode && (
+          {!adminControlsHidden && canShowPresentationToggle && !editMode && !syncMode && (
             <button
               type="button"
               aria-label="Enter presentation mode"
               onClick={togglePresentationMode}
-              className="hidden md:inline-flex rounded-lg border border-white/10 bg-black/60 p-2 text-white shadow-lg transition hover:bg-black/70 cursor-pointer hover:border-white/20"
+              className="inline-flex rounded-lg border border-white/10 bg-black/60 p-2 text-white shadow-lg transition hover:bg-black/70 cursor-pointer hover:border-white/20"
             >
               <FaExpand />
             </button>
