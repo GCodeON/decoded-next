@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { FaClock, FaEdit, FaCog, FaTimes } from 'react-icons/fa';
+import { FaClock, FaEdit, FaCog, FaTimes, FaExpand } from 'react-icons/fa';
 
 export type ActionButtonsProps = {
   hasSynced: boolean;
@@ -26,6 +26,8 @@ export type ActionButtonsProps = {
   youtubeUrl?: string;
   onYoutubeUrlChange?: (value: string) => void;
   showLeadAdjustment?: boolean;
+  showMobilePresentationToggle?: boolean;
+  onTogglePresentationMode?: () => void;
 };
 
 export default function ActionButtons({
@@ -51,6 +53,8 @@ export default function ActionButtons({
   youtubeUrl = '',
   onYoutubeUrlChange,
   showLeadAdjustment = true,
+  showMobilePresentationToggle = false,
+  onTogglePresentationMode,
 }: ActionButtonsProps) {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [adminAvailable, setAdminAvailable] = useState(true);
@@ -172,69 +176,75 @@ export default function ActionButtons({
       </div>
 
       {/* Mobile View */}
-      <div className="flex md:hidden flex-col w-full gap-2">
-        {isAdmin && adminAvailable && (
-          <div>
-            <div className="bg-black border-t border-gray-700 p-2">
-              <button
-                onClick={() => setShowMobileMenu(true)}
-                className="flex items-center justify-center gap-2 w-full text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white font-semibold cursor-pointer bg-gray-200 dark:bg-gray-800 px-4 py-2 rounded-lg"
-              >
-                <FaCog className="text-xl" /> Admin
-              </button>
-            </div>
-            {hasToggleButtons && (
-              <div className="bg-black  border-gray-700">
-                <div className="p-2 flex flex-row gap-3 items-center justify-center flex-wrap w-full">
-                  {canShowWordSync && (
-                    <label className="flex items-center gap-1 cursor-pointer">
-                      <div className="relative inline-block w-10 h-6">
-                        <input
-                          type="checkbox"
-                          checked={wordSyncEnabled}
-                          onChange={onToggleWordSync}
-                          className="sr-only peer"
-                        />
-                        <div className="w-10 h-6 bg-gray-500 rounded-full peer peer-checked:bg-purple-600 transition-colors"></div>
-                        <div className="absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform peer-checked:translate-x-4"></div>
-                      </div>
-                      <span className={`font-semibold text-xs ${
-                        wordSyncEnabled ? 'text-purple-600' : 'text-gray-600'
-                      }`}>
-                        Word Sync
-                      </span>
-                    </label>
-                  )}
-                  {hasRhymeColors && (
-                    <label className="flex items-center gap-1 cursor-pointer">
-                      <div className="relative inline-block w-10 h-6">
-                        <input
-                          type="checkbox"
-                          checked={showRhymes}
-                          onChange={onToggleRhymes}
-                          className="sr-only peer"
-                        />
-                        <div className="w-10 h-6 bg-gray-500 rounded-full peer peer-checked:bg-green-600 transition-colors"></div>
-                        <div className="absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform peer-checked:translate-x-4"></div>
-                      </div>
-                      <span className={`font-semibold text-xs ${
-                        showRhymes ? 'text-green-600' : 'text-gray-600'
-                      }`}>
-                        Rhymes
-                      </span>
-                    </label>
-                  )}
-                </div>
+      <div className="flex md:hidden w-full items-center justify-between gap-3 px-1 py-1">
+        <div className="flex items-center gap-3">
+          {canShowWordSync && (
+            <label className="flex items-center gap-1 cursor-pointer">
+              <div className="relative inline-block w-10 h-6">
+                <input
+                  type="checkbox"
+                  checked={wordSyncEnabled}
+                  onChange={onToggleWordSync}
+                  className="sr-only peer"
+                />
+                <div className="w-10 h-6 bg-gray-500 rounded-full peer peer-checked:bg-purple-600 transition-colors"></div>
+                <div className="absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform peer-checked:translate-x-4"></div>
               </div>
-            )}
-          </div>
-        )}
-        
+              <span className={`font-semibold text-xs ${
+                wordSyncEnabled ? 'text-purple-600' : 'text-gray-600'
+              }`}>
+                Word Sync
+              </span>
+            </label>
+          )}
+          {hasRhymeColors && (
+            <label className="flex items-center gap-1 cursor-pointer">
+              <div className="relative inline-block w-10 h-6">
+                <input
+                  type="checkbox"
+                  checked={showRhymes}
+                  onChange={onToggleRhymes}
+                  className="sr-only peer"
+                />
+                <div className="w-10 h-6 bg-gray-500 rounded-full peer peer-checked:bg-green-600 transition-colors"></div>
+                <div className="absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform peer-checked:translate-x-4"></div>
+              </div>
+              <span className={`font-semibold text-xs ${
+                showRhymes ? 'text-green-600' : 'text-gray-600'
+              }`}>
+                Rhymes
+              </span>
+            </label>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          {isAdmin && adminAvailable && (
+            <button
+              type="button"
+              aria-label="Open admin controls"
+              onClick={() => setShowMobileMenu(true)}
+              className="inline-flex rounded-lg border border-white/10 bg-black/60 p-2 text-white shadow-lg transition hover:bg-black/70 cursor-pointer hover:border-white/20"
+            >
+              <FaCog />
+            </button>
+          )}
+          {showMobilePresentationToggle && (
+            <button
+              type="button"
+              aria-label="Enter presentation mode"
+              onClick={onTogglePresentationMode}
+              className="inline-flex rounded-lg border border-white/10 bg-black/60 p-2 text-white shadow-lg transition hover:bg-black/70 cursor-pointer hover:border-white/20"
+            >
+              <FaExpand />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Mobile Menu Modal - Admin Only Commands */}
       {showMobileMenu && isAdmin && adminAvailable && (
-        <div className={`fixed inset-0 z-50 flex items-end md:hidden ${isPlaying ? 'pb-[150px]' : 'pb-[70px]'}`}>
+        <div className={`fixed inset-0 z-50 flex items-end md:hidden overflow-hidden ${isPlaying ? 'pb-[150px]' : 'pb-[70px]'}`}>
           {/* Backdrop */}
           <div 
             className="absolute inset-0 bg-black/75"
@@ -245,7 +255,7 @@ export default function ActionButtons({
           />
           
           {/* Menu Content */}
-          <div className="relative w-full bg-white dark:bg-gray-900 rounded-t-2xl shadow-lg p-6 space-y-4 animate-slide-up max-h-[70vh] overflow-y-auto">
+          <div className="relative w-full bg-white dark:bg-gray-900 rounded-t-2xl shadow-lg p-6 space-y-4 animate-slide-up max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain pb-[calc(env(safe-area-inset-bottom)+1rem)]">
             {/* Header */}
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white">Admin Options</h3>

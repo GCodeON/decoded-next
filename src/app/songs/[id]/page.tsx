@@ -406,6 +406,8 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
               youtubeUrl={youtubeUrl}
               onYoutubeUrlChange={setYoutubeUrl}
               showLeadAdjustment={true}
+              showMobilePresentationToggle={!adminControlsHidden && canShowPresentationToggle}
+              onTogglePresentationMode={togglePresentationMode}
             />
           )}
           {!adminControlsHidden && canShowPresentationToggle && !editMode && !syncMode && (
@@ -413,7 +415,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
               type="button"
               aria-label="Enter presentation mode"
               onClick={togglePresentationMode}
-              className="inline-flex rounded-lg border border-white/10 bg-black/60 p-2 text-white shadow-lg transition hover:bg-black/70 cursor-pointer hover:border-white/20"
+              className="hidden md:inline-flex rounded-lg border border-white/10 bg-black/60 p-2 text-white shadow-lg transition hover:bg-black/70 cursor-pointer hover:border-white/20"
             >
               <FaExpand />
             </button>
