@@ -56,21 +56,36 @@ export class SongService {
   }
 
   async updateLeadAdjustment(trackId: string, leadAdjustmentMs: number): Promise<void> {
-    await updateDoc(doc(db, this.collection, trackId), {
-      leadAdjustmentMs,
-    });
+    await setDoc(
+      doc(db, this.collection, trackId),
+      {
+        spotify: trackId,
+        leadAdjustmentMs,
+      },
+      { merge: true }
+    );
   }
 
   async updateYoutubeUrl(trackId: string, youtubeUrl: string | null): Promise<void> {
-    await updateDoc(doc(db, this.collection, trackId), {
-      youtubeUrl: youtubeUrl || null,
-    });
+    await setDoc(
+      doc(db, this.collection, trackId),
+      {
+        spotify: trackId,
+        youtubeUrl: youtubeUrl || null,
+      },
+      { merge: true }
+    );
   }
 
   async updateAlbumImageUrl(trackId: string, albumImageUrl: string | null): Promise<void> {
-    await updateDoc(doc(db, this.collection, trackId), {
-      albumImageUrl: albumImageUrl || null,
-    });
+    await setDoc(
+      doc(db, this.collection, trackId),
+      {
+        spotify: trackId,
+        albumImageUrl: albumImageUrl || null,
+      },
+      { merge: true }
+    );
   }
 
   async updatePublishMetadata(trackId: string, signature: string, timestamp: number): Promise<void> {

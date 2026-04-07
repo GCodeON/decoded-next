@@ -24,6 +24,18 @@ export function useSongLyrics(artist: string, song: string, album: string, durat
       );
       const json = await res.json();
 
+      if (json?.error === 'Lyrics not found') {
+        setData(null);
+        setError('Lyrics not found');
+        return;
+      }
+
+      if (!json?.lyrics || typeof json.lyrics !== 'object') {
+        setData(null);
+        setError('Invalid lyrics response');
+        return;
+      }
+
       if (!res.ok) throw new Error(json.error || 'Failed to fetch lyrics');
       setData(json);
     } catch (err: any) {

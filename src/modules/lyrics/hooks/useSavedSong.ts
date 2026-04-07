@@ -98,8 +98,14 @@ export function useSavedSong({ track, trackId, allowWrite = true }: UseSavedSong
   useEffect(() => {
     if (!lyricsData || savedSong || !track) return;
 
-    const plain = lyricsData.lyrics.plain?.trim() || '';
-    const synced = lyricsData.lyrics.synced?.trim() || null;
+    const lyricsPayload = (lyricsData as { lyrics?: { plain?: string | null; synced?: string | null } }).lyrics;
+    if (!lyricsPayload) {
+      setShouldFetchLyrics(false);
+      return;
+    }
+
+    const plain = lyricsPayload.plain?.trim() || '';
+    const synced = lyricsPayload.synced?.trim() || null;
     const rhymeEncoded = lyricsToHtml(plain);
 
     if (!allowWrite) {

@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
   if (anyNotFound) {
     return new Response(
       JSON.stringify({ error: 'Lyrics not found' }),
-      { status: 404 }
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
   }
 
