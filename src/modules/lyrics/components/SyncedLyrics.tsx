@@ -248,7 +248,7 @@ const SyncedLyrics = ({
       <div
         ref={containerRef}
         id={containerId}
-        className="bg-zinc-900 rounded-xl py-5 md:space-y-2"
+        className="bg-zinc-900 text-gray-100 rounded-xl py-5 md:space-y-2"
       >
       {lines.map((line, i) => {
         const text = line.trim();

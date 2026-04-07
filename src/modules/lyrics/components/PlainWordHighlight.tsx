@@ -10,6 +10,7 @@ const GRADIENT_STYLE = {
   background: 'linear-gradient(90deg, #29e2f6, #60e8ff)',
   backgroundClip: 'text',
   WebkitBackgroundClip: 'text',
+  WebkitTextFillColor: 'transparent',
   color: 'transparent',
   transition: 'all 0.25s ease',
 };

@@ -477,7 +477,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
         {displayLyrics && !editMode && !syncMode && !hasSynced && (
           <div className="prose prose-lg max-w-none">
             <div
-              className="whitespace-pre-wrap break-words font-sans text-gray-700 leading-relaxed text-lg md:text-xl text-white dark:text-gray-300 bg-white dark:bg-gray-900 p-4 rounded"
+              className="whitespace-pre-wrap break-words font-sans leading-relaxed text-lg md:text-xl text-gray-100 bg-zinc-900 p-4 rounded"
               dangerouslySetInnerHTML={{ __html: displayHtml }}
             />
           </div>
