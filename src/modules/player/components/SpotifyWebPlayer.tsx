@@ -86,44 +86,46 @@ export default function SpotifyWebPlayer({ currentTrackId }: { currentTrackId?: 
 
   return (
     <PlayerErrorBoundary onRetry={retryPlayer}>
-      <SpotifyPlayer
-        key={playerKeyString}
-        token={token}
-        name="DECODED Web Player"
-        callback={handleCallback}
-        // @ts-ignore - runtime prop accepted by SDK
-        getOAuthToken={(cb: (t: string) => void) => {
-          // Return cached token immediately if available, refresh in background
-          if (token) {
-            cb(token);
-            // Refresh in background to ensure token stays fresh
-            handleToken().catch(() => {});
-          } else {
-            handleToken()
-              .then((t) => {
-                if (t) cb(t);
-                else setAuthError('Token unavailable – please log in again');
-              })
-              .catch((err) => {
-                console.error('SDK token refresh failed:', err);
-                setAuthError('Token refresh failed – please log in again');
-              });
-          }
-        }}
-        syncExternalDeviceInterval={1}
-        persistDeviceSelection={true}
-        syncExternalDevice={true}
-        showSaveIcon={true}
-        styles={{
-            activeColor       : '#fff',
-            bgColor           : '#000',
-            color             : '#fff',
-            loaderColor       : '#fff',
-            trackArtistColor  : '#ccc',
-            trackNameColor    : '#fff',
-            sliderHandleColor : '#fff'
-        }}
-      />
+      <div className="relative z-[60] overflow-visible">
+        <SpotifyPlayer
+          key={playerKeyString}
+          token={token}
+          name="DECODED Web Player"
+          callback={handleCallback}
+          // @ts-ignore - runtime prop accepted by SDK
+          getOAuthToken={(cb: (t: string) => void) => {
+            // Return cached token immediately if available, refresh in background
+            if (token) {
+              cb(token);
+              // Refresh in background to ensure token stays fresh
+              handleToken().catch(() => {});
+            } else {
+              handleToken()
+                .then((t) => {
+                  if (t) cb(t);
+                  else setAuthError('Token unavailable – please log in again');
+                })
+                .catch((err) => {
+                  console.error('SDK token refresh failed:', err);
+                  setAuthError('Token refresh failed – please log in again');
+                });
+            }
+          }}
+          syncExternalDeviceInterval={1}
+          persistDeviceSelection={true}
+          syncExternalDevice={true}
+          showSaveIcon={true}
+          styles={{
+              activeColor       : '#fff',
+              bgColor           : '#000',
+              color             : '#fff',
+              loaderColor       : '#fff',
+              trackArtistColor  : '#ccc',
+              trackNameColor    : '#fff',
+              sliderHandleColor : '#fff'
+          }}
+        />
+      </div>
     </PlayerErrorBoundary>
   );
 }

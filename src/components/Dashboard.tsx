@@ -256,11 +256,13 @@ function DashboardUI({ children }: { children: React.ReactNode }) {
           </div>
 
           <div
-            className={`w-full overflow-hidden transition-opacity duration-200 ${
+            className={`w-full overflow-visible transition-opacity duration-200 ${
               isPresentationMode ? 'h-0 opacity-0 pointer-events-none' : ''
             }`}
           >
-            <SpotifyWebPlayer currentTrackId={currentTrackId} />
+            <div className="relative z-[60] overflow-visible">
+              <SpotifyWebPlayer currentTrackId={currentTrackId} />
+            </div>
           </div>
         </div>
       </main>
