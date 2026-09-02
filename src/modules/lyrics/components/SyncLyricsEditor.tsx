@@ -89,11 +89,14 @@ export default function SyncLyricsEditor({
   const { lines, timestamps, setTimestamps, allStamped, activeLine } = useLyricSync({
     plainLyrics,
     existingLrc,
+    fallbackHtml: displayHtml,
+    fallbackLines: displayLyrics?.rhymeEncodedLines,
     currentPosition,
     currentPositionMs,
     isPlaying,
     autoScroll: true
   });
+  console.log('lines:', lines, 'timestamps:', timestamps, 'activeLine:', activeLine);
 
   const {
     editingIndex,

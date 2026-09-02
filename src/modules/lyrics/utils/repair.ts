@@ -1,5 +1,9 @@
 import { parseEnhancedLrc, type LrcFile, type Word } from './lrcAdvanced';
 import { parseLrcForEditing, matchLrcToPlainLines, generateLrc, isFullyStamped } from './lrc';
+import { normalizeHtmlForPlainText, splitLyricsIntoLines } from './lyrics';
+
+const normalizeLineBreaks = (value: string): string =>
+  value.replace(/\r\n?/g, '\n').replace(/\n{2,}/g, '\n');
 
 export interface DiffSummary {
   lineCountChanged: boolean;
@@ -23,25 +27,18 @@ export interface RepairPreview {
  */
 export function extractPlainLinesFromHtml(htmlOrPlain: string): string[] {
   if (!htmlOrPlain) return [];
+
+  const normalized = normalizeLineBreaks(htmlOrPlain);
   const isHtml = /<[^>]+>/.test(htmlOrPlain);
   if (!isHtml) {
-    return htmlOrPlain.split(/\r?\n/).filter(l => l.trim().length > 0);
+    return splitLyricsIntoLines(normalized, undefined)
+      .map((line) => line.replace(/\s+/g, ' ').trim())
+      .filter((line) => line.length > 0);
   }
-  // Normalize paragraph breaks to newlines, decode HTML entities
-  let text = htmlOrPlain
-    .replace(/<\s*br\s*\/?\s*>/gi, '\n')
-    .replace(/<\s*\/p\s*>/gi, '\n')
-    .replace(/<\s*p\s*>/gi, '')
-    .replace(/<[^>]+>/g, '') // drop remaining tags
-    .replace(/&apos;/g, "'")
-    .replace(/&quot;/g, '"')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/\r/g, '')
-    .trim();
-  const lines = text.split(/\n/).map(l => l.replace(/\s+/g, ' ').trim()).filter(l => l.length > 0);
-  return lines;
+
+  return splitLyricsIntoLines(normalizeHtmlForPlainText(htmlOrPlain), htmlOrPlain)
+    .map((line) => line.replace(/\s+/g, ' ').trim())
+    .filter((line) => line.length > 0);
 }
 
 /**

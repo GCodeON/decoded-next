@@ -52,6 +52,9 @@ export const parseLrcForEditing = (lrc: string): { time: number; text: string }[
       let segment = rawLine.slice(start, end).trim();
       // Remove word-level tags <...>
       segment = segment.replace(/<\d+(?::\d+(?:\.\d+)?)?>/g, '').trim();
+      if (!segment || /^Set Now$/i.test(segment) || /^\[\s*--:\s*--\.\s*--\s*\]$/i.test(segment)) {
+        return;
+      }
       // KEEP EMPTY SEGMENTS - they represent instrumental breaks
       entries.push({
         time: Number((tag.mins * 60 + tag.secs).toFixed(2)),
@@ -69,29 +72,42 @@ export const matchLrcToPlainLines = (
   lrcEntries: { time: number; text: string }[]
 ): (number | null)[] => {
   const result = new Array(plainLines.length).fill(null);
-  let lrcIndex = 0;
+
+  if (lrcEntries.length === 0) return result;
 
   const normalize = (s: string) =>
-    s.replace(/[.,!?…"'’()–—-]/g, '').toLowerCase().trim();
+    s.replace(/[.,!?…"'’()–—-]/g, '').replace(/\s+/g, ' ').toLowerCase().trim();
 
-  for (let i = 0; i < plainLines.length && lrcIndex < lrcEntries.length; i++) {
-    const plain = plainLines[i];
-    const lrc = lrcEntries[lrcIndex];
-
+  const isSafeMatch = (plain: string, entryText: string): boolean => {
     const plainNorm = normalize(plain);
-    const lrcNorm = normalize(lrc.text);
+    const entryNorm = normalize(entryText);
 
-    if (
-      plain === lrc.text ||
-      plainNorm === lrcNorm ||
-      plainNorm.includes(lrcNorm) ||
-      lrcNorm.includes(plainNorm)
-    ) {
-      result[i] = Number(lrc.time.toFixed(2));
-      lrcIndex++;
+    if (!plainNorm || !entryNorm) return false;
+    if (plainNorm === entryNorm) return true;
+
+    // Only allow near-equality for very short, intentionally equivalent lines.
+    const lengthRatio = Math.max(plainNorm.length, entryNorm.length) / Math.min(plainNorm.length, entryNorm.length);
+    if (lengthRatio <= 1.2 && plainNorm.slice(0, Math.min(plainNorm.length, entryNorm.length)) === entryNorm.slice(0, Math.min(plainNorm.length, entryNorm.length))) {
+      return true;
+    }
+
+    return false;
+  };
+
+  // When counts differ, do not use greedy substring matching.
+  // Preserve sequential ordering and only keep exact / near-exact matches.
+  const maxMatchCount = Math.min(plainLines.length, lrcEntries.length);
+  for (let i = 0; i < maxMatchCount; i++) {
+    const plain = plainLines[i];
+    const entry = lrcEntries[i];
+
+    if (isSafeMatch(plain, entry.text)) {
+      result[i] = Number(entry.time.toFixed(2));
     }
   }
 
+  // If the plain line count is larger than the synced entry count, keep the remaining ones null
+  // rather than reusing earlier timestamps for partial fragments.
   return result;
 };
 
@@ -123,4 +139,16 @@ export const isFullyStamped = (lrc: string): boolean => {
     .split(/\r?\n/)
     .filter(Boolean)
     .every((line) => !line.trim() || timestampRegex.test(line));
+};
+
+/**
+ * Sanitize LRC output by removing placeholder rows and regenerating clean LRC.
+ * This ensures malformed editor placeholders like "[--:--.--]" and "Set Now" 
+ * are never persisted to the database.
+ */
+export const sanitizeLrcOutput = (lrc: string | null | undefined): string | null => {
+  if (!lrc?.trim()) return null;
+  const parsed = parseLrcForEditing(lrc);
+  if (parsed.length === 0) return null;
+  return generateLrc(parsed.map(e => e.text), parsed.map(e => e.time));
 };

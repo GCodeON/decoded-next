@@ -1,10 +1,10 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react';
-import { useSongLyrics, cleanTrackName, mstoSeconds, htmlToLyrics, lyricsToHtml, SavedSong, songService, useLrcLibPublish } from '@/modules/lyrics';
+import { useSongLyrics, cleanTrackName, mstoSeconds, htmlToLyrics, lyricsToHtml, SavedSong, songService, useLrcLibPublish, splitLyricsIntoLines } from '@/modules/lyrics';
 import { replaceLyricsInLrc, validateLyricsConsistency, detectTextChanges, countWordOccurrences, findLinesWithWord } from '@/modules/lyrics/utils/lrc-replace';
 import { SpotifyTrack } from '@/modules/spotify';
 import { repairSyncedLyrics, extractPlainLinesFromHtml } from '@/modules/lyrics/utils/repair';
-import { parseLrcForEditing } from '@/modules/lyrics/utils/lrc';
+import { parseLrcForEditing, sanitizeLrcOutput } from '@/modules/lyrics/utils/lrc';
 
 interface UseSavedSongParams {
   track: SpotifyTrack | null;
@@ -67,6 +67,10 @@ export function useSavedSong({ track, trackId, allowWrite = true }: UseSavedSong
       const data = await songService.getSong(trackId);
 
       if (data) {
+        const rawPlain = data.lyrics?.plain || '';
+        const rhymeEncoded = data.lyrics?.rhymeEncoded || lyricsToHtml(rawPlain);
+        const reconstructedPlain = splitLyricsIntoLines(rawPlain, rhymeEncoded).join('\n');
+
         setSavedSong({
           title: data.title || cleanTrackName(track.name),
           artist: data.artist || artistName,
@@ -75,10 +79,10 @@ export function useSavedSong({ track, trackId, allowWrite = true }: UseSavedSong
           youtubeUrl: data.youtubeUrl || null,
           albumImageUrl: data.albumImageUrl || track.album?.images?.[0]?.url || null,
           lyrics: {
-            plain: data.lyrics?.plain || '',
-            synced: data.lyrics?.synced || null,
-            wordSynced: data.lyrics?.wordSynced || null,
-            rhymeEncoded: data.lyrics?.rhymeEncoded || lyricsToHtml(data.lyrics?.plain || ''),
+            plain: reconstructedPlain || rawPlain,
+            synced: sanitizeLrcOutput(data.lyrics?.synced || null),
+            wordSynced: sanitizeLrcOutput(data.lyrics?.wordSynced || null),
+            rhymeEncoded,
             rhymeEncodedLines: data.lyrics?.rhymeEncodedLines || null,
             rhymeColorMappingComplete: data.lyrics?.rhymeColorMappingComplete || false,
           },
@@ -246,17 +250,18 @@ export function useSavedSong({ track, trackId, allowWrite = true }: UseSavedSong
       if (!savedSong) return;
 
       const trimmed = syncedLrc.trim() || null;
+      const sanitized = sanitizeLrcOutput(trimmed);
       const updated = {
         ...savedSong,
-        lyrics: { ...savedSong.lyrics, synced: trimmed },
+        lyrics: { ...savedSong.lyrics, synced: sanitized },
       };
 
       setSavedSong(updated);
 
       try {
-        await songService.updateSyncedLyrics(trackId, trimmed);
-        if (trimmed) {
-          await publishIfReady(savedSong, trimmed);
+        await songService.updateSyncedLyrics(trackId, sanitized);
+        if (sanitized) {
+          await publishIfReady(savedSong, sanitized);
         }
       } catch (err) {
         console.error('Failed to update synced lyrics:', err);
@@ -271,15 +276,16 @@ export function useSavedSong({ track, trackId, allowWrite = true }: UseSavedSong
       if (!savedSong) return;
 
       const trimmed = wordSyncedLrc.trim() || null;
+      const sanitized = sanitizeLrcOutput(trimmed);
       const updated = {
         ...savedSong,
-        lyrics: { ...savedSong.lyrics, wordSynced: trimmed },
+        lyrics: { ...savedSong.lyrics, wordSynced: sanitized },
       };
 
       setSavedSong(updated);
 
       try {
-        await songService.updateWordSyncedLyrics(trackId, trimmed);
+        await songService.updateWordSyncedLyrics(trackId, sanitized);
       } catch (err) {
         console.error('Failed to update word-synced lyrics:', err);
       }

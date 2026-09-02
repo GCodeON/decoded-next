@@ -5,7 +5,7 @@
  *
  * Usage:
  *   node scripts/backfill-album-images.mjs
- *   node scripts/backfill-album-images.mjs --limit=25
+ 
  *   node scripts/backfill-album-images.mjs --offset=50 --limit=25 --delay=500
  *
  * Requires .env.local to be present (or the variables to be in the environment).

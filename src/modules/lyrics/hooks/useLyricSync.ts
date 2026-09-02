@@ -1,10 +1,12 @@
 'use client'
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { parseLrcForEditing } from '@/modules/lyrics';
+import { parseLrcForEditing, splitLyricsIntoLines } from '@/modules/lyrics';
 
 interface UseLyricSyncOptions {
   plainLyrics: string;
   existingLrc?: string | null;
+  fallbackHtml?: string;
+  fallbackLines?: string[];
   currentPosition: number;
   currentPositionMs?: number;
   isPlaying: boolean;
@@ -14,6 +16,8 @@ interface UseLyricSyncOptions {
 export function useLyricSync({
   plainLyrics,
   existingLrc,
+  fallbackHtml,
+  fallbackLines,
   currentPosition,
   currentPositionMs,
   isPlaying,
@@ -21,22 +25,30 @@ export function useLyricSync({
 }: UseLyricSyncOptions) {
 
   const { lines, initialTimestamps } = useMemo(() => {
+    const fallbackLinesResolved = splitLyricsIntoLines(plainLyrics, fallbackHtml, fallbackLines);
+
     if (existingLrc?.trim()) {
       const lrcEntries = parseLrcForEditing(existingLrc);
-      return {
-        lines: lrcEntries.map(e => e.text),
-        initialTimestamps: lrcEntries.map(e => e.time)
-      };
+      const safeEntries = lrcEntries.filter((entry) => entry.text && !/^Set Now$/i.test(entry.text));
+
+      if (safeEntries.length > 0) {
+        const existingLines = safeEntries.map((entry) => entry.text);
+        const comparisonCount = fallbackLinesResolved.length || 1;
+
+        if (existingLines.length <= comparisonCount * 2) {
+          return {
+            lines: existingLines,
+            initialTimestamps: safeEntries.map((entry) => entry.time)
+          };
+        }
+      }
     }
 
-    const plainLines = plainLyrics
-      .split(/\r?\n/)
-      .map(l => l.trim());
     return {
-      lines: plainLines,
-      initialTimestamps: new Array(plainLines.length).fill(null)
+      lines: fallbackLinesResolved,
+      initialTimestamps: new Array(fallbackLinesResolved.length).fill(null)
     };
-  }, [existingLrc, plainLyrics]);
+  }, [existingLrc, plainLyrics, fallbackHtml, fallbackLines]);
 
   const [timestamps, setTimestamps] = useState<(number | null)[]>(initialTimestamps);
   const allStamped = useMemo(() => timestamps.every(t => t !== null), [timestamps]);

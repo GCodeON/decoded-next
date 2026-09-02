@@ -37,20 +37,49 @@ export function parseEnhancedLrc(content: string): LrcFile {
       continue;
     }
 
-    // Find all line-level timestamps
-    const lineTimes = Array.from(raw.matchAll(/\[(\d+):(\d+(?:\.\d+)?)\]/g))
-      .map(m => {
-        const mins = parseInt(m[1], 10);
-        const secs = parseFloat(m[2]);
-        return mins * 60 + secs;
-      });
+    // Find all line-level timestamps AND their positions
+    const timestampMatches = Array.from(raw.matchAll(/\[(\d+):(\d+(?:\.\d+)?)\]/g))
+      .map(m => ({
+        time: parseInt(m[1], 10) * 60 + parseFloat(m[2]),
+        index: m.index,
+        raw: m[0],
+      }));
 
-    if (lineTimes.length === 0) continue;
+    if (timestampMatches.length === 0) continue;
 
-    // Remove all line-level tags to get the rest
+    // When multiple timestamps appear on ONE line (malformed format), 
+    // split into separate lines by extracting text between each timestamp pair
+    if (timestampMatches.length > 1) {
+      for (let i = 0; i < timestampMatches.length; i++) {
+        const currentMatch = timestampMatches[i];
+        const nextMatchIndex = i + 1 < timestampMatches.length 
+          ? timestampMatches[i + 1].index 
+          : raw.length;
+        
+        const textStart = currentMatch.index + currentMatch.raw.length;
+        const textEnd = nextMatchIndex;
+        let segmentText = raw.slice(textStart, textEnd).trim();
+        
+        // Remove word-level tags
+        segmentText = segmentText.replace(/<\d+(?::\d+(?:\.\d+)?)?>/g, '').trim();
+        
+        if (!segmentText) continue; // Skip empty lines
+        
+        const line: TimedLine = {
+          lineTime: Number(currentMatch.time.toFixed(2)),
+          text: segmentText,
+          words: [], // No word-level timing in malformed format
+        };
+        lines.push(line);
+      }
+      continue; // Move to next raw line
+    }
+
+    // Single timestamp on line: normal processing
+    const lineTime = timestampMatches[0].time;
     let rest = raw;
-    for (const m of Array.from(raw.matchAll(/\[(\d+):(\d+(?:\.\d+)?)\]/g))) {
-      rest = rest.replace(m[0], '');
+    for (const m of timestampMatches) {
+      rest = rest.replace(m.raw, '');
     }
 
     // Parse word-level tags <ss.xx> or <mm:ss.xx>
@@ -96,8 +125,8 @@ export function parseEnhancedLrc(content: string): LrcFile {
       if (foundIdx < 0) {
         // If not found, still push with fallback timing
         const fallbackTime = timedIdx < timedWords.length && wordText === timedWords[timedIdx].text
-          ? timedWords[timedIdx].time ?? Number(lineTimes[0].toFixed(3))
-          : Number(lineTimes[0].toFixed(3));
+          ? timedWords[timedIdx].time ?? Number(lineTime.toFixed(3))
+          : Number(lineTime.toFixed(3));
         words.push({ text: wordText, time: fallbackTime });
         if (timedIdx < timedWords.length && wordText === timedWords[timedIdx].text) timedIdx++;
         continue;
@@ -108,8 +137,8 @@ export function parseEnhancedLrc(content: string): LrcFile {
 
       const timedMatch = timedIdx < timedWords.length && wordText === timedWords[timedIdx].text;
       const wordTime = timedMatch
-        ? (timedWords[timedIdx].time ?? Number(lineTimes[0].toFixed(3)))
-        : Number(lineTimes[0].toFixed(3));
+        ? (timedWords[timedIdx].time ?? Number(lineTime.toFixed(3)))
+        : Number(lineTime.toFixed(3));
 
       words.push({ text: wordText, time: wordTime, start: wordStart, end: wordEnd });
       if (timedMatch) timedIdx++;
@@ -117,7 +146,7 @@ export function parseEnhancedLrc(content: string): LrcFile {
     }
 
     const line: TimedLine = {
-      lineTime: lineTimes[0],
+      lineTime: Number(lineTime.toFixed(2)),
       text: finalText,
       words,
     };
