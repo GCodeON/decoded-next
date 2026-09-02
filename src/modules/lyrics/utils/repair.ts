@@ -117,6 +117,19 @@ export function alignLineTimestamps(
   return matchLrcToPlainLines(plainLines, lrcEntries);
 }
 
+export function repairLineSyncedLyrics(
+  plainOrRhymeHtml: string,
+  existingSynced?: string | null
+): string {
+  const plainLines = extractPlainLinesFromHtml(plainOrRhymeHtml);
+  const aligned = alignLineTimestamps(plainLines, existingSynced);
+  const lineTimes = aligned.some((time) => time === null)
+    ? interpolateLineTimesLinear(aligned)
+    : (aligned as number[]);
+
+  return generateLrc(plainLines, lineTimes);
+}
+
 /**
  * Normalize text for matching (lowercase, remove punctuation)
  */

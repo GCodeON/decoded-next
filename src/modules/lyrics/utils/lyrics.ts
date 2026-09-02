@@ -10,7 +10,6 @@ export const normalizeHtmlForPlainText = (html: string): string => {
     html
       .replace(/<\s*br\s*\/?>/gi, '\n')
       .replace(BLOCK_TAG_PATTERN, '\n')
-      .replace(/>\s+</g, '>\n<')
       .replace(/<[^>]+>/g, '')
       .replace(/&nbsp;/gi, ' ')
       .replace(/&apos;/g, "'")

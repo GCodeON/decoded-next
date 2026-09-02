@@ -1,4 +1,4 @@
-import { doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
+import { deleteField, doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import type { SavedSong } from '@/modules/lyrics';
 
@@ -25,6 +25,7 @@ export class SongService {
     const updates: Record<string, any> = {
       'lyrics.plain': plain,
       'lyrics.rhymeEncoded': rhymeEncoded,
+      'lyrics.rhymeEncodedLines': deleteField(),
     };
 
     if (synced !== undefined) {

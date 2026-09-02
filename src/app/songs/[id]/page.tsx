@@ -81,11 +81,13 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
     return {
       lyrics: useWordSync
         ? displayLyrics.wordSynced!
-        : displayLyrics.wordSynced || displayLyrics.synced!,
+        : displayLyrics.synced!,
       mode: (useWordSync ? 'word' : 'line') as 'word' | 'line',
       rhymeEncodedLines: displayLyrics.rhymeEncodedLines || undefined,
     };
   }, [displayLyrics, hasSynced, wordSyncEnabled, hasWordSynced]);
+
+  console.log("lyrics displayed", displayLyrics);
 
   useEffect(() => {
     const onPublished = (e: Event) => {

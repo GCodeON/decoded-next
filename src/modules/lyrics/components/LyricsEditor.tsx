@@ -24,7 +24,7 @@ export default function LyricsEditor({
       <div className="grid grid-cols-1 items-start md:grid-cols-8 md:items-stretch gap-2 mb-8 md:bg-12">
         <div className="lyrics-editor-panel md:col-span-5 xl:col-span-4">
           <SunEditor
-            setContents={content}
+            setContents={initialHtml}
             onChange={setContent}
             setOptions={{
               minHeight: '420px',

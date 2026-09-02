@@ -94,15 +94,27 @@ export const matchLrcToPlainLines = (
     return false;
   };
 
-  // When counts differ, do not use greedy substring matching.
-  // Preserve sequential ordering and only keep exact / near-exact matches.
-  const maxMatchCount = Math.min(plainLines.length, lrcEntries.length);
-  for (let i = 0; i < maxMatchCount; i++) {
-    const plain = plainLines[i];
-    const entry = lrcEntries[i];
+  let entryIndex = 0;
+  for (let lineIndex = 0; lineIndex < plainLines.length && entryIndex < lrcEntries.length; lineIndex++) {
+    const plain = plainLines[lineIndex];
+    const entry = lrcEntries[entryIndex];
 
     if (isSafeMatch(plain, entry.text)) {
-      result[i] = Number(entry.time.toFixed(2));
+      result[lineIndex] = Number(entry.time.toFixed(2));
+      entryIndex++;
+      continue;
+    }
+
+    // An earlier edit can split one visual line into timestamped fragments.
+    // Rejoin only consecutive fragments that exactly recover the canonical line.
+    let combinedText = entry.text;
+    for (let endIndex = entryIndex + 1; endIndex < lrcEntries.length; endIndex++) {
+      combinedText = `${combinedText} ${lrcEntries[endIndex].text}`;
+      if (normalize(combinedText) === normalize(plain)) {
+        result[lineIndex] = Number(entry.time.toFixed(2));
+        entryIndex = endIndex + 1;
+        break;
+      }
     }
   }
 
