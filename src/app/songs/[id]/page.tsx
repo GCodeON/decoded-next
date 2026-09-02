@@ -11,7 +11,7 @@ import { useDisplayLyrics } from '@/modules/lyrics/hooks/useDisplayLyrics';
 import { useHasRhymeColors } from '@/modules/lyrics/hooks/useHasRhymeColors';
 import { usePageScroll } from '@/modules/lyrics/hooks/usePageScroll';
 import { useSeekToLine } from '@/modules/lyrics/hooks/useSeekToLine';
-import { LyricsEditor, SyncedLyrics, useSavedSong, songService } from '@/modules/lyrics';
+import { LyricsEditor, SyncedLyrics, useSavedSong, songService, lyricsToHtml } from '@/modules/lyrics';
 import { usePlaybackSync, useSpotifyTrack } from '@/modules/spotify';
 import { useSpotifyPlayer } from '@/modules/player';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -101,6 +101,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
 
   const displayHtml = displayLyrics?.rhymeEncoded || '';
   const plainLyrics = displayLyrics?.plain || '';
+  const unsyncedDisplayHtml = showRhymes ? displayHtml : lyricsToHtml(plainLyrics);
   const canShowPresentationToggle =
     isAuthenticated &&
     !lyricsLoading &&
@@ -485,7 +486,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
           <div className="prose prose-lg max-w-none">
             <div
               className="whitespace-pre-wrap break-words font-sans leading-relaxed text-lg md:text-xl text-gray-100 bg-zinc-900 p-4 rounded"
-              dangerouslySetInnerHTML={{ __html: displayHtml }}
+              dangerouslySetInnerHTML={{ __html: unsyncedDisplayHtml }}
             />
           </div>
         )}
