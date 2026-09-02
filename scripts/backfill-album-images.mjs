@@ -1,12 +1,16 @@
 /**
- * One-time backfill: reads every song in Firestore that is missing
- * `albumImageUrl`, fetches the album art from the Spotify tracks API
- * using Client Credentials, then writes it back.
+ * One-time backfill: reads songs in Firestore that are missing
+ * `albumImageUrl`, fetches metadata from the Spotify tracks API using
+ * Client Credentials, then writes it back. Missing or placeholder titles and
+ * artists are repaired automatically; --repairTitle=true and --repairArtist=true
+ * replace every saved value of the respective metadata field.
  *
  * Usage:
  *   node scripts/backfill-album-images.mjs
  
  *   node scripts/backfill-album-images.mjs --offset=50 --limit=25 --delay=500
+ *   node scripts/backfill-album-images.mjs --repairTitle=true --limit=25
+ *   node scripts/backfill-album-images.mjs --repairArtist=true --limit=25
  *
  * Requires .env.local to be present (or the variables to be in the environment).
  */
@@ -154,15 +158,34 @@ function normalizeTrackId(rawValue) {
   return rawValue;
 }
 
+function needsTitleBackfill(title) {
+  return !title || title.trim().toLowerCase() === 'untitled';
+}
+
+function needsArtistBackfill(artist, artists) {
+  const hasPlaceholderArtist = !artist || artist.trim().toLowerCase() === 'unknown artist';
+  const hasArtistList = Array.isArray(artists) && artists.some((item) => item?.name?.trim());
+  return hasPlaceholderArtist || !hasArtistList;
+}
+
 // ---------------------------------------------------------------------------
-// Fetch album image URL for one track id, with retries on 429.
+// Fetch track metadata for one track id, with retries on 429.
 // ---------------------------------------------------------------------------
-async function fetchAlbumImageUrl(trackId, token, attempt = 1) {
+async function fetchTrackMetadata(trackId, token, attempt = 1) {
   try {
     const res = await axios.get(`https://api.spotify.com/v1/tracks/${trackId}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    return res.data?.album?.images?.[0]?.url ?? null;
+    return {
+      albumImageUrl: res.data?.album?.images?.[0]?.url ?? null,
+      title: res.data?.name?.trim() || null,
+      artist: res.data?.artists?.[0]?.name?.trim() || null,
+      artists: Array.isArray(res.data?.artists)
+        ? res.data.artists
+          .filter((artist) => artist?.name?.trim() && artist?.id)
+          .map((artist) => ({ name: artist.name.trim(), id: artist.id }))
+        : [],
+    };
   } catch (err) {
     const status = err?.response?.status;
     if (status === 429 && attempt <= MAX_RETRIES) {
@@ -174,7 +197,7 @@ async function fetchAlbumImageUrl(trackId, token, attempt = 1) {
 
       console.log(`⏳ Spotify rate-limited. Retrying in ${Math.ceil(backoffMs / 1000)}s (attempt ${attempt}/${MAX_RETRIES})...`);
       await sleep(backoffMs);
-      return fetchAlbumImageUrl(trackId, token, attempt + 1);
+      return fetchTrackMetadata(trackId, token, attempt + 1);
     }
     throw err;
   }
@@ -189,6 +212,8 @@ async function main() {
   const hasOffsetArg = hasArg('offset');
   const delayMs = parseNumberArg('delay', REQUEST_DELAY_MS);
   const onlyComplete = parseBooleanArg('onlyComplete', ONLY_COMPLETE_DEFAULT);
+  const repairTitle = parseBooleanArg('repairTitle', false);
+  const repairArtist = parseBooleanArg('repairArtist', false);
   const useProgress = parseBooleanArg('useProgress', USE_PROGRESS_DEFAULT);
   const resetProgress = parseBooleanArg('resetProgress', false);
   const progressFile = parseStringArg('progressFile', PROGRESS_FILE_DEFAULT);
@@ -199,7 +224,7 @@ async function main() {
   }
 
   const previousProgress = useProgress ? readProgress(progressFile) : null;
-  const offset = hasOffsetArg
+  let offset = hasOffsetArg
     ? offsetFromArg
     : previousProgress?.nextOffset ?? 0;
 
@@ -217,6 +242,28 @@ async function main() {
     .sort((a, b) => a._docId.localeCompare(b._docId));
 
   const missingAll = allSongs.filter((s) => !s.albumImageUrl);
+  const titlesNeedingBackfill = allSongs.filter((s) => needsTitleBackfill(s.title));
+  const artistsNeedingBackfill = allSongs.filter((s) => needsArtistBackfill(s.artist, s.artists));
+  const requiresBackfill = (song) => (
+    !song.albumImageUrl
+    || needsTitleBackfill(song.title)
+    || needsArtistBackfill(song.artist, song.artists)
+    || repairTitle
+    || repairArtist
+  );
+  const hasOutstandingWork = missingAll.length > 0
+    || titlesNeedingBackfill.length > 0
+    || artistsNeedingBackfill.length > 0
+    || repairTitle
+    || repairArtist;
+  const hasOutstandingWorkAfterOffset = allSongs
+    .slice(offset)
+    .some(requiresBackfill);
+
+  if (!hasOffsetArg && hasOutstandingWork && !hasOutstandingWorkAfterOffset) {
+    console.log('♻️  Saved progress passed outstanding work; rescanning from the start of the current scope.');
+    offset = 0;
+  }
 
   const selected = [];
   let nextOffset = allSongs.length;
@@ -224,10 +271,13 @@ async function main() {
   for (let index = offset; index < allSongs.length; index++) {
     const song = allSongs[index];
 
-    if (!song.albumImageUrl) {
+    if (requiresBackfill(song)) {
       selected.push({
         docId: song._docId,
         trackId: normalizeTrackId(song.spotify || song._docId),
+        title: song.title,
+        artist: song.artist,
+        artists: song.artists,
       });
 
       if (limit > 0 && selected.length >= limit) {
@@ -238,7 +288,9 @@ async function main() {
   }
 
   console.log(`📋 ${allSongs.length} songs in scope, ${missingAll.length} missing albumImageUrl`);
-  console.log(`🎯 Scope filter: onlyComplete=${onlyComplete}`);
+  console.log(`📝 ${titlesNeedingBackfill.length} songs need a title backfill`);
+  console.log(`🎤 ${artistsNeedingBackfill.length} songs need an artist backfill`);
+  console.log(`🎯 Scope filter: onlyComplete=${onlyComplete}, repairTitle=${repairTitle}, repairArtist=${repairArtist}`);
   console.log(`⚙️  Running range: offset=${offset}, limit=${limit || 'all'}, selected=${selected.length}, delay=${delayMs}ms`);
   console.log(`🧠 Progress: useProgress=${useProgress}, file=${progressFile}`);
 
@@ -275,12 +327,27 @@ async function main() {
         console.log(`🎵 Processing song ${i + 1}/${selected.length}...`);
       }
 
-      const imageUrl = await fetchAlbumImageUrl(song.trackId, token);
-      if (imageUrl) {
-        await updateDoc(doc(db, 'songs', song.docId), { albumImageUrl: imageUrl });
+      const metadata = await fetchTrackMetadata(song.trackId, token);
+      const updates = {};
+
+      if (metadata.albumImageUrl) {
+        updates.albumImageUrl = metadata.albumImageUrl;
+      }
+
+      if ((needsTitleBackfill(song.title) || repairTitle) && metadata.title) {
+        updates.title = metadata.title;
+      }
+
+      if ((needsArtistBackfill(song.artist, song.artists) || repairArtist) && metadata.artist) {
+        updates.artist = metadata.artist;
+        updates.artists = metadata.artists;
+      }
+
+      if (Object.keys(updates).length > 0) {
+        await updateDoc(doc(db, 'songs', song.docId), updates);
         updated++;
       } else {
-        console.log(`  ⚠️  ${song.docId} — no image returned by Spotify`);
+        console.log(`  ⚠️  ${song.docId} — no album image, title, or artist returned by Spotify`);
       }
     } catch (err) {
       console.error(`  ❌ ${song.docId} — ${err.message}`);
