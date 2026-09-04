@@ -219,6 +219,25 @@ export function generateEnhancedLrc(
   return result.join('\n');
 }
 
+export function sanitizeEnhancedLrcOutput(content: string | null | undefined): string | null {
+  if (!content?.trim()) return null;
+
+  const parsed = parseEnhancedLrc(content);
+  if (parsed.lines.length === 0) return null;
+
+  const plainLines = parsed.lines.map((line) => line.text);
+  const lineTimestamps = parsed.lines.map((line) => line.lineTime);
+  const wordTimestamps = new Map<number, Word[]>();
+
+  parsed.lines.forEach((line, index) => {
+    if (line.words.length > 0) {
+      wordTimestamps.set(index, line.words);
+    }
+  });
+
+  return generateEnhancedLrc(plainLines, lineTimestamps, wordTimestamps);
+}
+
 // ──────────────────────────────────────────────────────────────
 // 3. Helper: Get active word index for a line at given time
 // ──────────────────────────────────────────────────────────────

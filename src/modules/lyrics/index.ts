@@ -28,7 +28,7 @@ export { songService } from './services/songService';
 export { lyricsToHtml, htmlToLyrics, splitLyricsIntoLines, mapLrcToRhymeHtml } from './utils/lyrics';
 export { cleanTrackName, mstoSeconds, formatTime, parseLrcTime, parseLrcForEditing, matchLrcToPlainLines, generateLrc, isLikelySynced, isFullyStamped, sanitizeLrcOutput } from './utils/lrc';
 export { replaceLyricsInLrc, validateLyricsConsistency, detectCaseVariants, applyCaseTransformation, extractLineText } from './utils/lrc-replace';
-export { parseEnhancedLrc, generateEnhancedLrc, getActiveWordIndex, splitLineIntoSegments } from './utils/lrcAdvanced';
+export { parseEnhancedLrc, generateEnhancedLrc, sanitizeEnhancedLrcOutput, getActiveWordIndex, splitLineIntoSegments } from './utils/lrcAdvanced';
 export { parseRhymeLine, buildWordRanges, sliceSegmentsToWords, buildColorMap } from './utils/rhyme-parser';
 export type { Word, TimedLine, LrcFile, WordSegment } from './utils/lrcAdvanced';
 export { computeSignature } from './utils/signature';

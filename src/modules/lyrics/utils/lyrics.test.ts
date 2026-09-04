@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { mapLrcToRhymeHtml, splitLyricsIntoLines } from './lyrics';
 import { matchLrcToPlainLines } from './lrc';
 import { repairLineSyncedLyrics } from './repair';
+import { sanitizeEnhancedLrcOutput } from './lrcAdvanced';
 
 test('uses explicit fallback line breaks when plain lyrics are a single paragraph', () => {
   const plain = 'J-J-J-JID D-D-D-D D-D-D-D D-D-D, d-damn, said I\'m back again To whoop ass, the blicka blast from the ratchet, man';
@@ -150,4 +151,13 @@ test('uses canonical HTML positions for repaired rhyme previews', () => {
   } finally {
     globalThis.document = previousDocument;
   }
+});
+
+test('preserves word timings when sanitizing word-synced LRC', () => {
+  const result = sanitizeEnhancedLrcOutput(
+    '[00:05.00]<00:05.10>J-J-J-JID <00:05.60>D-D-D-D'
+  );
+
+  assert.match(result || '', /<00:05\.10>J-J-J-JID/);
+  assert.match(result || '', /<00:05\.60>D-D-D-D/);
 });

@@ -5,6 +5,7 @@ import { replaceLyricsInLrc, validateLyricsConsistency, detectTextChanges, count
 import { SpotifyTrack } from '@/modules/spotify';
 import { repairSyncedLyrics, extractPlainLinesFromHtml } from '@/modules/lyrics/utils/repair';
 import { parseLrcForEditing, sanitizeLrcOutput } from '@/modules/lyrics/utils/lrc';
+import { sanitizeEnhancedLrcOutput } from '@/modules/lyrics/utils/lrcAdvanced';
 
 interface UseSavedSongParams {
   track: SpotifyTrack | null;
@@ -81,7 +82,7 @@ export function useSavedSong({ track, trackId, allowWrite = true }: UseSavedSong
           lyrics: {
             plain: reconstructedPlain || rawPlain,
             synced: sanitizeLrcOutput(data.lyrics?.synced || null),
-            wordSynced: sanitizeLrcOutput(data.lyrics?.wordSynced || null),
+            wordSynced: sanitizeEnhancedLrcOutput(data.lyrics?.wordSynced || null),
             rhymeEncoded,
             rhymeEncodedLines: data.lyrics?.rhymeEncodedLines || null,
             rhymeColorMappingComplete: data.lyrics?.rhymeColorMappingComplete || false,
@@ -276,7 +277,7 @@ export function useSavedSong({ track, trackId, allowWrite = true }: UseSavedSong
       if (!savedSong) return;
 
       const trimmed = wordSyncedLrc.trim() || null;
-      const sanitized = sanitizeLrcOutput(trimmed);
+      const sanitized = sanitizeEnhancedLrcOutput(trimmed);
       const updated = {
         ...savedSong,
         lyrics: { ...savedSong.lyrics, wordSynced: sanitized },
