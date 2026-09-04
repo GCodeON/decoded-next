@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { splitLyricsIntoLines } from './lyrics';
+import { mapLrcToRhymeHtml, splitLyricsIntoLines } from './lyrics';
 import { matchLrcToPlainLines } from './lrc';
 import { repairLineSyncedLyrics } from './repair';
 
-test('ignores fragment-heavy fallback lines when plain lyrics are a single paragraph', () => {
+test('uses explicit fallback line breaks when plain lyrics are a single paragraph', () => {
   const plain = 'J-J-J-JID D-D-D-D D-D-D-D D-D-D, d-damn, said I\'m back again To whoop ass, the blicka blast from the ratchet, man';
 
   const fallback = [
@@ -22,8 +22,7 @@ test('ignores fragment-heavy fallback lines when plain lyrics are a single parag
 
   const result = splitLyricsIntoLines(plain, undefined, fallback);
 
-  assert.equal(result.length, 1);
-  assert.equal(result[0], plain.trim());
+  assert.deepEqual(result, fallback);
 });
 
 test('splits merged lyric fragments around lowercase-to-uppercase transitions', () => {
@@ -61,4 +60,94 @@ test('rebuilds split synced lines from canonical rhyme HTML', () => {
     repaired,
     "[00:41.31] Sh- gon' get hard, keep your head strong\n[00:55.79] If I quit now, then I'm dead wrong"
   );
+});
+
+test('maps newline-free synced LRC entries to separate rhyme lines', () => {
+  const previousDocument = globalThis.document;
+  globalThis.document = {
+    createElement: () => {
+      let html = '';
+      return {
+        get innerHTML() {
+          return html;
+        },
+        set innerHTML(value: string) {
+          html = value;
+        },
+      } as HTMLDivElement;
+    },
+  } as unknown as Document;
+
+  try {
+    const result = mapLrcToRhymeHtml(
+      "[01:44.00] Skrrtin', skrrtin', skrrtin', servin', servin', servin' [01:46.00] Everything I done, it comes full circle",
+      '<div>Skrrtin\', skrrtin\', skrrtin\', servin\', servin\', servin\'<br>Everything I done, it comes full circle</div>'
+    );
+
+    assert.deepEqual(result, [
+      "Skrrtin', skrrtin', skrrtin', servin', servin', servin'",
+      'Everything I done, it comes full circle',
+    ]);
+  } finally {
+    globalThis.document = previousDocument;
+  }
+});
+
+test('does not merge rhyme lines across paragraph and div boundaries', () => {
+  const previousDocument = globalThis.document;
+  globalThis.document = {
+    createElement: () => {
+      let html = '';
+      return {
+        get innerHTML() {
+          return html;
+        },
+        set innerHTML(value: string) {
+          html = value;
+        },
+      } as HTMLDivElement;
+    },
+  } as unknown as Document;
+
+  try {
+    const result = mapLrcToRhymeHtml(
+      "[00:05.00] J-J-J-JID [00:10.00] D-D-D-D [00:13.00] D-D-D-D",
+      '<p>J-J-J-JID</p><div>D-D-D-D<br>D-D-D-D</div>'
+    );
+
+    assert.deepEqual(result, ['J-J-J-JID', 'D-D-D-D', 'D-D-D-D']);
+  } finally {
+    globalThis.document = previousDocument;
+  }
+});
+
+test('uses canonical HTML positions for repaired rhyme previews', () => {
+  const previousDocument = globalThis.document;
+  globalThis.document = {
+    createElement: () => {
+      let html = '';
+      return {
+        get innerHTML() {
+          return html;
+        },
+        set innerHTML(value: string) {
+          html = value;
+        },
+      } as HTMLDivElement;
+    },
+  } as unknown as Document;
+
+  try {
+    const result = mapLrcToRhymeHtml(
+      '[00:05.00] Corrected first line\n[00:10.00] Corrected second line',
+      '<p><span>Original first line</span></p><div><span>Original second line</span></div>'
+    );
+
+    assert.deepEqual(result, [
+      '<span>Original first line</span>',
+      '<span>Original second line</span>',
+    ]);
+  } finally {
+    globalThis.document = previousDocument;
+  }
 });

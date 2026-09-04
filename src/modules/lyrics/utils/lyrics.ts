@@ -45,17 +45,6 @@ const sanitizeLineList = (lines: string[]): string[] =>
     .map((line) => line.trim())
     .filter((line) => line.length > 0 && !isPlaceholderLyricLine(line));
 
-const looksLikeFragmentedFallback = (lines: string[]): boolean => {
-  if (lines.length < 6) return false;
-
-  const wordCounts = lines.map((line) => line.split(/\s+/).filter(Boolean).length);
-  const shortLineCount = wordCounts.filter((count) => count <= 2).length;
-  const singleWordCount = wordCounts.filter((count) => count === 1).length;
-  const tinyLineRatio = shortLineCount / lines.length;
-
-  return tinyLineRatio >= 0.35 || singleWordCount >= 4;
-};
-
 const extractHtmlLineEntries = (htmlLike: string | null | undefined): string[] => {
   if (!htmlLike) return [];
   if (!hasExplicitHtmlLineBreaks(htmlLike)) return [];
@@ -84,24 +73,12 @@ export const splitLyricsIntoLines = (
   const htmlFallbackLines = splitMergedLyricFragments(extractHtmlLineEntries(fallbackHtml));
   const structuredFallback = preservedFallback.length > 1 ? preservedFallback : htmlFallbackLines;
   const plainLooksFlattened = plainLines.length <= 1 && !!trimmedPlain && !trimmedPlain.includes('\n');
-  const fallbackIsFragmented = looksLikeFragmentedFallback(structuredFallback);
 
-  if (fallbackIsFragmented) {
-    if (plainLines.length > 0) return plainLines;
-    if (htmlFallbackLines.length > 1 && !looksLikeFragmentedFallback(htmlFallbackLines)) {
-      return htmlFallbackLines;
-    }
-  }
-
-  if (
-    structuredFallback.length > 1 &&
-    !fallbackIsFragmented &&
-    (plainLooksFlattened || plainLines.length <= structuredFallback.length)
-  ) {
+  if (structuredFallback.length > 1 && (plainLooksFlattened || plainLines.length <= structuredFallback.length)) {
     return structuredFallback;
   }
 
-  if (fallbackLines && fallbackLines.length > 1 && preservedFallback.length > 1 && !looksLikeFragmentedFallback(preservedFallback)) {
+  if (fallbackLines && fallbackLines.length > 1 && preservedFallback.length > 1) {
     return preservedFallback;
   }
 
@@ -131,40 +108,76 @@ export const lyricsToHtml = (text: string): string => {
   return '<p>' + lines.join('<br>') + '</p>';
 };
 
+const extractLrcTextEntries = (lrc: string): string[] => {
+  const entries: string[] = [];
+  const timestampPattern = /\[(\d+):(\d+(?:\.\d+)?)\]/g;
+
+  for (const rawLine of lrc.split(/\r?\n/)) {
+    const matches = Array.from(rawLine.matchAll(timestampPattern));
+
+    matches.forEach((match, index) => {
+      const timestampIndex = match.index ?? 0;
+      const nextTimestampIndex = matches[index + 1]?.index ?? rawLine.length;
+      const textStart = timestampIndex + match[0].length;
+
+      entries.push(
+        rawLine
+          .slice(textStart, nextTimestampIndex)
+          .replace(/<\d+(?::\d+(?:\.\d+)?)?>/g, '')
+          .trim()
+      );
+    });
+  }
+
+  return entries;
+};
+
 export function mapLrcToRhymeHtml(lrc: string, rhymeEncoded: string): string[] {
   // Extract text from LRC, preserving empty lines for instrumental breaks
-  const lrcTexts = lrc
-    .split('\n')
-    .map(line => line.replace(/\[[\d:]+\.\d+\]/g, '').trim());
+  const lrcTexts = extractLrcTextEntries(lrc);
   // DON'T filter(Boolean) - we need to keep empty strings!
 
   // Convert rhymeEncoded HTML to array of lines preserving HTML
+  const lineBreakMarker = '__DECODED_LYRIC_LINE_BREAK__';
   const div = document.createElement('div');
   div.innerHTML = rhymeEncoded
-    .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<\/p>\s*<p>/gi, '\n\n')
+    .replace(/<br\s*\/?>/gi, lineBreakMarker)
+    .replace(/<\s*\/?(?:p|div|section|article|header|footer|li|ul|ol|blockquote|pre|tr|table|thead|tbody|tfoot|h[1-6])\b[^>]*>/gi, lineBreakMarker)
     .replace(/<[^>]*>/g, (match) => {
       const lower = match.toLowerCase();
       return lower.includes('span') || lower.startsWith('<u') || lower.startsWith('</u') ? match : '';
     });
 
   const htmlLines = div.innerHTML
-    .split('\n')
+    .split(lineBreakMarker)
     .map(l => l.trim())
     .filter(Boolean); // Keep this filter for HTML lines
 
+  if (lrcTexts.length === htmlLines.length && lrcTexts.every((text) => text.length > 0)) {
+    return htmlLines;
+  }
+
   const result: string[] = [];
   let htmlIndex = 0;
+
+  const normalizeMappedText = (value: string): string =>
+    value.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
 
   for (const lrcText of lrcTexts) {
     if (!lrcText) {
       // Empty LRC line - instrumental break
       result.push('');
     } else if (htmlIndex < htmlLines.length) {
-      const cleanText = htmlLines[htmlIndex].replace(/<[^>]*>/g, '').trim();
-      if (cleanText.includes(lrcText.slice(0, 15)) || lrcText.includes(cleanText.slice(0, 15))) {
-        result.push(htmlLines[htmlIndex]);
-        htmlIndex++;
+      const normalizedLrcText = normalizeMappedText(lrcText);
+      const matchIndex = htmlLines.findIndex((htmlLine, index) => {
+        if (index < htmlIndex) return false;
+        const normalizedHtmlText = normalizeMappedText(htmlLine);
+        return normalizedHtmlText === normalizedLrcText;
+      });
+
+      if (matchIndex >= 0) {
+        result.push(htmlLines[matchIndex]);
+        htmlIndex = matchIndex + 1;
       } else {
         // No matching HTML, use plain text
         result.push(lrcText);
