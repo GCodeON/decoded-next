@@ -42,7 +42,7 @@ export const LyricalQuantificationDashboard: React.FC<LyricalQuantificationDashb
   } = quantification;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-lg animate-fadeIn overflow-y-auto">
+    <div className="fixed inset-0 z-61 flex items-center justify-center p-4 bg-black/80 backdrop-blur-lg animate-fadeIn overflow-y-auto">
       <div className="relative w-full max-w-4xl bg-gray-900 border border-white/10 rounded-2xl p-6 shadow-2xl text-white flex flex-col gap-6 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-white/10 pb-4">
@@ -52,7 +52,7 @@ export const LyricalQuantificationDashboard: React.FC<LyricalQuantificationDashb
             </div>
             <div>
               <h2 className="text-xl font-black tracking-tight text-white flex items-center gap-2">
-                Lyrical Quantification <span className="text-xs bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full border border-purple-500/30"></span>
+                Lyrical Quantification
               </h2>
               <p className="text-xs text-gray-400">
                 Literary Fingerprint & Rhyme Analysis for <span className="text-purple-300 font-semibold">{artist || 'Artist'}</span> — &quot;{title || 'Song'}&quot;
