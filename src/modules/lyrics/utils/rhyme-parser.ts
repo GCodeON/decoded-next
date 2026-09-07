@@ -26,56 +26,85 @@ export const extractStyles = (style: string): Partial<StyleState> => {
   };
 };
 
+const decodeHtmlEntities = (text: string): string =>
+  text
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&apos;/gi, "'")
+    .replace(/&quot;/gi, '"')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&#x([0-9a-f]+);/gi, (_, value: string) => String.fromCodePoint(parseInt(value, 16)))
+    .replace(/&#(\d+);/g, (_, value: string) => String.fromCodePoint(parseInt(value, 10)));
+
 /**
- * Parse HTML line into text segments with color metadata
- * Walks the DOM tree and extracts text segments with their background colors
+ * Parse HTML line into text segments with color metadata.
+ *
+ * This intentionally uses a small tokenizer instead of the DOM so the same
+ * utility can run in browser components and Node.js route handlers.
  */
 export const parseRhymeLine = (html?: string): ParsedRhymeLine | null => {
   if (!html) return null;
 
-  const wrapper = document.createElement('div');
-  wrapper.innerHTML = html;
-
   const segments: RhymeSegment[] = [];
   let cursor = 0;
+  const baseStyle: StyleState = { bgColor: null, textColor: null, underline: false };
+  const styleStack: { tag: string; style: StyleState }[] = [{ tag: '#root', style: baseStyle }];
+  const tokenPattern = /<!--[\s\S]*?-->|<[^>]*>|[^<]+/g;
 
-  const walk = (node: ChildNode, activeStyle: StyleState): void => {
-    if (node.nodeType === Node.TEXT_NODE) {
-      const text = node.textContent || '';
-      if (!text) return;
-      segments.push({
-        text,
-        bgColor: activeStyle.bgColor,
-        textColor: activeStyle.textColor,
-        underline: activeStyle.underline,
-        start: cursor,
-        end: cursor + text.length,
-      });
-      cursor += text.length;
-      return;
-    }
+  for (const token of html.match(tokenPattern) || []) {
+    if (token.startsWith('<!--')) continue;
 
-    if (node.nodeType === Node.ELEMENT_NODE) {
-      const el = node as HTMLElement;
-      const inlineStyles = extractStyles(el.getAttribute('style') || '');
+    if (token.startsWith('<')) {
+      const closingMatch = token.match(/^<\s*\/\s*([\w-]+)/);
+      if (closingMatch) {
+        const tag = closingMatch[1].toLowerCase();
+        for (let index = styleStack.length - 1; index > 0; index -= 1) {
+          if (styleStack[index].tag === tag) {
+            styleStack.length = index;
+            break;
+          }
+        }
+        continue;
+      }
 
+      const openingMatch = token.match(/^<\s*([\w-]+)/);
+      if (!openingMatch) continue;
+
+      const tag = openingMatch[1].toLowerCase();
+      const styleMatch = token.match(/\bstyle\s*=\s*(["'])([\s\S]*?)\1/i);
+      const inlineStyles = extractStyles(styleMatch?.[2] || '');
+      const parentStyle = styleStack[styleStack.length - 1].style;
       const nextStyle: StyleState = {
-        bgColor: inlineStyles.bgColor ?? activeStyle.bgColor,
-        textColor: inlineStyles.textColor ?? activeStyle.textColor,
+        bgColor: inlineStyles.bgColor ?? parentStyle.bgColor,
+        textColor: inlineStyles.textColor ?? parentStyle.textColor,
         underline:
           inlineStyles.underline !== undefined
             ? inlineStyles.underline
-            : el.tagName.toLowerCase() === 'u'
+            : tag === 'u'
             ? true
-            : activeStyle.underline,
+            : parentStyle.underline,
       };
 
-      Array.from(el.childNodes).forEach((child) => walk(child, nextStyle));
+      if (!/\/\s*>$/.test(token) && !['br', 'img', 'input', 'meta', 'link', 'hr'].includes(tag)) {
+        styleStack.push({ tag, style: nextStyle });
+      }
+      continue;
     }
-  };
 
-  const baseStyle: StyleState = { bgColor: null, textColor: null, underline: false };
-  Array.from(wrapper.childNodes).forEach((child) => walk(child, baseStyle));
+    const text = decodeHtmlEntities(token);
+    if (!text) continue;
+    const activeStyle = styleStack[styleStack.length - 1].style;
+    segments.push({
+      text,
+      bgColor: activeStyle.bgColor,
+      textColor: activeStyle.textColor,
+      underline: activeStyle.underline,
+      start: cursor,
+      end: cursor + text.length,
+    });
+    cursor += text.length;
+  }
 
   return {
     text: segments.map((s) => s.text).join(''),

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { FaClock, FaEdit, FaCog, FaTimes, FaExpand } from 'react-icons/fa';
+import { FaClock, FaEdit, FaCog, FaTimes, FaExpand, FaBrain, FaMagic } from 'react-icons/fa';
 
 export type ActionButtonsProps = {
   hasSynced: boolean;
@@ -14,12 +14,15 @@ export type ActionButtonsProps = {
   lyricsLoading: boolean;
   isPlaying?: boolean;
   isAdmin?: boolean;
+  isAutoEncoding?: boolean;
   showWordSyncToggle?: boolean;
   onToggleWordSync: () => void;
   onToggleRhymes: () => void;
   onToggleRhymeComplete: () => void;
   onEditSync: () => void;
   onEditLyrics: () => void;
+  onOpenQuantification?: () => void;
+  onAutoEncode?: () => void;
   onAdminControlsHiddenChange?: (hidden: boolean) => void;
   leadAdjustmentSec?: number;
   onLeadAdjustmentChange?: (value: number) => void;
@@ -41,12 +44,15 @@ export default function ActionButtons({
   lyricsLoading,
   isPlaying = false,
   isAdmin = false,
+  isAutoEncoding = false,
   showWordSyncToggle = true,
   onToggleWordSync,
   onToggleRhymes,
   onToggleRhymeComplete,
   onEditSync,
   onEditLyrics,
+  onOpenQuantification,
+  onAutoEncode,
   onAdminControlsHiddenChange,
   leadAdjustmentSec = 0,
   onLeadAdjustmentChange,
@@ -107,12 +113,34 @@ export default function ActionButtons({
               >
                 <FaEdit /> Edit Lyrics
               </button>
+              {onAutoEncode && (
+                <button
+                  onClick={onAutoEncode}
+                  disabled={isAutoEncoding}
+                  className="flex items-center gap-2 text-purple-400 hover:text-purple-300 cursor-pointer font-semibold bg-purple-950/40 border border-purple-800/50 px-3 py-1 rounded-lg text-sm transition-all hover:scale-105 disabled:opacity-50"
+                  title="Auto-detect rhymes & vowel colors using AI"
+                >
+                  <FaMagic className={isAutoEncoding ? 'animate-spin' : ''} />
+                  {isAutoEncoding ? 'Encoding AI...' : 'Auto-Encode (AI)'}
+                </button>
+              )}
             </div>
           )}
 
-          {/* Right: Toggles */}
-          {hasToggleButtons && (
-            <div className="flex flex-row gap-4 items-center justify-end">
+          {/* Right: Quantification & Toggles */}
+          <div className="flex flex-row gap-4 items-center justify-end">
+            {onOpenQuantification && (
+              <button
+                onClick={onOpenQuantification}
+                className="flex items-center gap-1.5 text-xs font-bold text-amber-300 hover:text-amber-200 bg-amber-950/40 border border-amber-800/50 px-3 py-1.5 rounded-lg transition-all hover:scale-105 cursor-pointer shadow-sm"
+                title="Open RapGenius 2.0 Lyrical Quantification Dashboard"
+              >
+                <FaBrain className="text-sm text-yellow-400" />
+                <span>Quantify (RapGenius 2.0)</span>
+              </button>
+            )}
+
+            {hasToggleButtons && <>
               {canShowWordSync && (
               <label className="flex items-center gap-2 cursor-pointer">
                 <div className="relative inline-block w-11 h-6">
@@ -170,14 +198,23 @@ export default function ActionButtons({
                 </span>
               </label>
               )}
+            </>}
             </div>
-          )}
         </div>
       </div>
 
       {/* Mobile View */}
       <div className="flex md:hidden w-full items-center justify-between gap-3 px-1 py-1">
         <div className="flex items-center gap-3">
+          {onOpenQuantification && (
+            <button
+              onClick={onOpenQuantification}
+              className="p-2 rounded-lg border border-amber-500/30 bg-amber-950/50 text-amber-300 text-xs font-bold flex items-center gap-1"
+              title="Lyrical Quantification"
+            >
+              <FaBrain className="text-yellow-400" />
+            </button>
+          )}
           {canShowWordSync && (
             <label className="flex items-center gap-1 cursor-pointer">
               <div className="relative inline-block w-10 h-6">

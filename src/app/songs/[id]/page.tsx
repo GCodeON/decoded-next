@@ -11,7 +11,16 @@ import { useDisplayLyrics } from '@/modules/lyrics/hooks/useDisplayLyrics';
 import { useHasRhymeColors } from '@/modules/lyrics/hooks/useHasRhymeColors';
 import { usePageScroll } from '@/modules/lyrics/hooks/usePageScroll';
 import { useSeekToLine } from '@/modules/lyrics/hooks/useSeekToLine';
-import { LyricsEditor, SyncedLyrics, useSavedSong, songService, lyricsToHtml } from '@/modules/lyrics';
+import {
+  LyricsEditor,
+  SyncedLyrics,
+  useSavedSong,
+  songService,
+  lyricsToHtml,
+  computeLyricalQuantification,
+  LyricalQuantificationDashboard,
+} from '@/modules/lyrics';
+import type { LyricalQuantification } from '@/modules/lyrics';
 import { usePlaybackSync, useSpotifyTrack } from '@/modules/spotify';
 import { useSpotifyPlayer } from '@/modules/player';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -44,6 +53,8 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
   const [lastActiveLine, setLastActiveLine] = useState<number | null>(null);
   const [disableAutoScroll, setDisableAutoScroll] = useState(false);
   const [isHeaderCompact, setIsHeaderCompact] = useState(false);
+  const [isQuantificationOpen, setIsQuantificationOpen] = useState(false);
+  const [isAutoEncoding, setIsAutoEncoding] = useState(false);
   const scrollDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
   const { toast, show: showToast } = useToast();
@@ -86,6 +97,55 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
       rhymeEncodedLines: displayLyrics.rhymeEncodedLines || undefined,
     };
   }, [displayLyrics, hasSynced, wordSyncEnabled, hasWordSynced]);
+
+  const lyricalQuantification = useMemo<LyricalQuantification | null>(() => {
+    if (!displayLyrics) return null;
+    const lines = displayLyrics.rhymeEncodedLines || (displayLyrics.rhymeEncoded ? displayLyrics.rhymeEncoded.split('\n') : []);
+    if (lines.length === 0 && !displayLyrics.plain) return null;
+
+    return computeLyricalQuantification({
+      rhymeEncodedLines: lines.length > 0 ? lines : (displayLyrics.plain ? displayLyrics.plain.split('\n') : []),
+      syncedLyrics: displayLyrics.synced,
+      trackId: id,
+      artist: track?.artists?.[0]?.name || savedSong?.artist,
+      title: track?.name || savedSong?.title,
+    });
+  }, [displayLyrics, id, track, savedSong]);
+
+  const handleAutoEncode = async () => {
+    if (!displayLyrics?.plain && !plainLyrics) {
+      showToast('No plain lyrics available to encode', 3000);
+      return;
+    }
+
+    setIsAutoEncoding(true);
+    try {
+      const res = await fetch('/api/lyrics/auto-encode', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          trackId: id,
+          artist: track?.artists?.[0]?.name || savedSong?.artist,
+          title: track?.name || savedSong?.title,
+          lyrics: displayLyrics?.plain || plainLyrics,
+          syncedLyrics: displayLyrics?.synced,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Auto-encode failed');
+
+      if (data.rhymeEncoded) {
+        await updateLyrics(data.rhymeEncoded);
+        showToast(`AI Encoded (${data.providerUsed || 'AI'})!`, 3000);
+      }
+    } catch (err: any) {
+      console.error('Auto-encode error:', err);
+      showToast(`Encoding failed: ${err.message}`, 4000);
+    } finally {
+      setIsAutoEncoding(false);
+    }
+  };
 
   console.log("lyrics displayed", displayLyrics);
 
@@ -397,12 +457,15 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
               lyricsLoading={lyricsLoading}
               isPlaying={isPlaying}
               isAdmin={isAdmin}
+              isAutoEncoding={isAutoEncoding}
               showWordSyncToggle={canShowWordSyncToggle}
               onToggleWordSync={handleToggleWordSync}
               onToggleRhymes={handleToggleRhymes}
               onToggleRhymeComplete={handleToggleRhymeComplete}
               onEditSync={() => setSyncMode(true)}
               onEditLyrics={() => setEditMode(true)}
+              onOpenQuantification={lyricalQuantification ? () => setIsQuantificationOpen(true) : undefined}
+              onAutoEncode={isAdmin ? handleAutoEncode : undefined}
               onAdminControlsHiddenChange={setAdminControlsHidden}
               leadAdjustmentSec={leadAdjustmentSec}
               onLeadAdjustmentChange={setLeadAdjustmentSec}
@@ -501,6 +564,18 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
               setEditMode(false);
             }}
             onCancel={() => setEditMode(false)}
+          />
+        )}
+
+        {/* RapGenius 2.0 Lyrical Quantification Modal */}
+        {lyricalQuantification && (
+          <LyricalQuantificationDashboard
+            quantification={lyricalQuantification}
+            isOpen={isQuantificationOpen}
+            onClose={() => setIsQuantificationOpen(false)}
+            currentPositionMs={currentPositionMs ?? 0}
+            durationMs={track?.duration_ms}
+            onSeekToBar={(timeSec) => handleSeekToLine(timeSec * 1000)}
           />
         )}
 
