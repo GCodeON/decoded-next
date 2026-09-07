@@ -52,7 +52,7 @@ export const LyricalQuantificationDashboard: React.FC<LyricalQuantificationDashb
             </div>
             <div>
               <h2 className="text-xl font-black tracking-tight text-white flex items-center gap-2">
-                Lyrical Quantification <span className="text-xs bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full border border-purple-500/30">RapGenius 2.0</span>
+                Lyrical Quantification <span className="text-xs bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full border border-purple-500/30"></span>
               </h2>
               <p className="text-xs text-gray-400">
                 Literary Fingerprint & Rhyme Analysis for <span className="text-purple-300 font-semibold">{artist || 'Artist'}</span> — &quot;{title || 'Song'}&quot;

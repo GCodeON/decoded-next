@@ -567,7 +567,7 @@ export default function Song({ params }: { params: Promise<{ id: string }> }) {
           />
         )}
 
-        {/* RapGenius 2.0 Lyrical Quantification Modal */}
+        {/* Lyrical Quantification Modal */}
         {lyricalQuantification && (
           <LyricalQuantificationDashboard
             quantification={lyricalQuantification}

@@ -133,10 +133,10 @@ export default function ActionButtons({
               <button
                 onClick={onOpenQuantification}
                 className="flex items-center gap-1.5 text-xs font-bold text-amber-300 hover:text-amber-200 bg-amber-950/40 border border-amber-800/50 px-3 py-1.5 rounded-lg transition-all hover:scale-105 cursor-pointer shadow-sm"
-                title="Open RapGenius 2.0 Lyrical Quantification Dashboard"
+                title="Open Lyrical Quantification Dashboard"
               >
                 <FaBrain className="text-sm text-yellow-400" />
-                <span>Quantify (RapGenius 2.0)</span>
+                <span>Quantify</span>
               </button>
             )}
 

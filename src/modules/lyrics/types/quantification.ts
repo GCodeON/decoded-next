@@ -33,7 +33,7 @@ export interface LyricalQuantification {
   title?: string;
   computedAt: string;
   
-  // High level scores (RapGenius 2.0 style)
+  // High level scores
   complexityScore: number; // 0 to 100
   rhymeDensity: number; // 0 to 100 (percentage of rhyming content)
   avgSyllablesPerBar: number;
