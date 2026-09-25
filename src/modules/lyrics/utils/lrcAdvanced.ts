@@ -157,7 +157,31 @@ export function parseEnhancedLrc(content: string): LrcFile {
   // Sort by line time (important!)
   lines.sort((a, b) => a.lineTime - b.lineTime);
 
-  return { metadata, lines };
+  return { metadata, lines: mergeStrayApostropheLines(lines) };
+}
+
+// Heals previously-saved LRC where a leading apostrophe (e.g. 'Cause, 'Til, '80s)
+// was stamped as its own timestamped line, separate from the rest of the word.
+function mergeStrayApostropheLines(lines: TimedLine[]): TimedLine[] {
+  const result: TimedLine[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (/^['’]$/.test(line.text)) {
+      const next = lines[i + 1];
+      if (next) {
+        result.push({ ...line, text: `${line.text}${next.text}`, words: [...line.words, ...next.words] });
+        i++;
+        continue;
+      }
+      const prev = result.length > 0 ? result.pop() : undefined;
+      if (prev) {
+        result.push({ ...prev, text: `${prev.text}${line.text}`, words: [...prev.words, ...line.words] });
+        continue;
+      }
+    }
+    result.push(line);
+  }
+  return result;
 }
 
 // ──────────────────────────────────────────────────────────────

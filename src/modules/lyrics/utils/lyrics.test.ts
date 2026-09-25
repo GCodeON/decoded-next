@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { mapLrcToRhymeHtml, splitLyricsIntoLines } from './lyrics';
-import { matchLrcToPlainLines } from './lrc';
+import { matchLrcToPlainLines, parseLrcForEditing } from './lrc';
 import { repairLineSyncedLyrics } from './repair';
-import { sanitizeEnhancedLrcOutput } from './lrcAdvanced';
+import { sanitizeEnhancedLrcOutput, parseEnhancedLrc } from './lrcAdvanced';
 
 test('uses explicit fallback line breaks when plain lyrics are a single paragraph', () => {
   const plain = 'J-J-J-JID D-D-D-D D-D-D-D D-D-D, d-damn, said I\'m back again To whoop ass, the blicka blast from the ratchet, man';
@@ -34,6 +34,18 @@ test('splits merged lyric fragments around lowercase-to-uppercase transitions', 
   assert.deepEqual(result, [
     "Skrrtin', skrrtin', skrrtin', servin', servin', servin'",
     'Everything I done, it comes full circle',
+  ]);
+});
+
+test('does not split a line that legitimately starts with an apostrophe', () => {
+  const plain = "Take no Ls\n'Cause I am not Noel\n'Til the sun comes up";
+
+  const result = splitLyricsIntoLines(plain);
+
+  assert.deepEqual(result, [
+    'Take no Ls',
+    "'Cause I am not Noel",
+    "'Til the sun comes up",
   ]);
 });
 
@@ -160,4 +172,36 @@ test('preserves word timings when sanitizing word-synced LRC', () => {
 
   assert.match(result || '', /<00:05\.10>J-J-J-JID/);
   assert.match(result || '', /<00:05\.60>D-D-D-D/);
+});
+
+test('does not isolate a leading apostrophe onto its own line', () => {
+  const plain = "But fuck it, all that shit he stay true\n'Cause you a dime, I'm sure you hear that every day, cool";
+
+  const result = splitLyricsIntoLines(plain);
+
+  assert.deepEqual(result, [
+    'But fuck it, all that shit he stay true',
+    "'Cause you a dime, I'm sure you hear that every day, cool",
+  ]);
+});
+
+test('heals previously-saved synced LRC where a leading apostrophe was stamped as its own line', () => {
+  const synced = "[02:07.35] But fuck it, all that shit he stay true\n[02:08.56] '\n[02:09.76] Cause you a dime, I'm sure you hear that every day, cool";
+
+  const result = parseLrcForEditing(synced);
+
+  assert.deepEqual(result, [
+    { time: 127.35, text: 'But fuck it, all that shit he stay true' },
+    { time: 128.56, text: "'Cause you a dime, I'm sure you hear that every day, cool" },
+  ]);
+});
+
+test('heals previously-saved word-synced LRC where a leading apostrophe was stamped as its own line', () => {
+  const wordSynced = "[02:07.35]<02:07.35>true\n[02:08.56]'\n[02:09.76]<02:09.76>Cause <02:09.90>you";
+
+  const result = parseEnhancedLrc(wordSynced);
+
+  assert.equal(result.lines.length, 2);
+  assert.equal(result.lines[1].text, "'Cause you");
+  assert.deepEqual(result.lines[1].words.map((w) => w.text), ['Cause', 'you']);
 });

@@ -63,7 +63,31 @@ export const parseLrcForEditing = (lrc: string): { time: number; text: string }[
     });
   });
 
-  return entries.sort((a, b) => a.time - b.time);
+  return mergeStrayApostropheEntries(entries.sort((a, b) => a.time - b.time));
+};
+
+// Heals previously-saved LRC where a leading apostrophe (e.g. 'Cause, 'Til, '80s)
+// was stamped as its own timestamped entry, separate from the rest of the word.
+const mergeStrayApostropheEntries = <T extends { time: number; text: string }>(entries: T[]): T[] => {
+  const result: T[] = [];
+  for (let i = 0; i < entries.length; i++) {
+    const entry = entries[i];
+    if (/^['’]$/.test(entry.text)) {
+      const next = entries[i + 1];
+      if (next) {
+        result.push({ ...entry, text: `${entry.text}${next.text}` });
+        i++;
+        continue;
+      }
+      const prev = result.length > 0 ? result.pop() : undefined;
+      if (prev) {
+        result.push({ ...prev, text: `${prev.text}${entry.text}` });
+        continue;
+      }
+    }
+    result.push(entry);
+  }
+  return result;
 };
 
 // Advanced Greedy Chronological Matching

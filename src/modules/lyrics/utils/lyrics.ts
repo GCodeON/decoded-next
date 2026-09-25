@@ -36,7 +36,9 @@ const hasExplicitHtmlLineBreaks = (html: string): boolean => {
 
 const splitMergedLyricFragments = (lines: string[]): string[] =>
   lines.flatMap((line) => {
-    const splitLine = line.replace(/([a-z]|['’])(?=[A-Z])/g, '$1\n');
+    // Only split on a lowercase letter (optionally with a trailing apostrophe) directly
+    // preceding an uppercase letter, so leading apostrophes (e.g. 'Cause, 'Til) are untouched.
+    const splitLine = line.replace(/([a-z]['’]?)(?=[A-Z])/g, '$1\n');
     return sanitizeLineList(splitLine.split('\n'));
   });
 
@@ -45,12 +47,36 @@ const sanitizeLineList = (lines: string[]): string[] =>
     .map((line) => line.trim())
     .filter((line) => line.length > 0 && !isPlaceholderLyricLine(line));
 
+// A stray line containing only a leading apostrophe (e.g. from 'Cause, 'Til, '80s
+// getting split from the rest of the word) gets glued back onto the next line.
+const mergeStrayApostropheLines = (lines: string[]): string[] => {
+  const result: string[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (/^['’]$/.test(line)) {
+      const next = lines[i + 1];
+      if (next !== undefined) {
+        result.push(`${line}${next}`);
+        i++;
+        continue;
+      }
+      const prev = result.length > 0 ? result.pop() : undefined;
+      if (prev !== undefined) {
+        result.push(`${prev}${line}`);
+        continue;
+      }
+    }
+    result.push(line);
+  }
+  return result;
+};
+
 const extractHtmlLineEntries = (htmlLike: string | null | undefined): string[] => {
   if (!htmlLike) return [];
   if (!hasExplicitHtmlLineBreaks(htmlLike)) return [];
 
   const text = normalizeHtmlForPlainText(htmlLike);
-  return sanitizeLineList(text.split('\n'));
+  return mergeStrayApostropheLines(sanitizeLineList(text.split('\n')));
 };
 
 export const splitLyricsIntoLines = (
@@ -59,18 +85,20 @@ export const splitLyricsIntoLines = (
   fallbackLines?: string[]
 ): string[] => {
   const trimmedPlain = (plainLyrics ?? '').replace(/\r\n?/g, '\n');
-  const plainLines = splitMergedLyricFragments(sanitizeLineList(trimmedPlain.split('\n')));
+  const plainLines = mergeStrayApostropheLines(splitMergedLyricFragments(sanitizeLineList(trimmedPlain.split('\n'))));
 
   const preservedFallback = (() => {
     if (!fallbackLines || fallbackLines.length <= 1) return [];
-    return splitMergedLyricFragments(
-      fallbackLines
-        .map((line) => line.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/gi, ' ').replace(/\s+/g, ' ').trim())
-        .filter((line) => line.length > 0)
+    return mergeStrayApostropheLines(
+      splitMergedLyricFragments(
+        fallbackLines
+          .map((line) => line.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/gi, ' ').replace(/\s+/g, ' ').trim())
+          .filter((line) => line.length > 0)
+      )
     );
   })();
 
-  const htmlFallbackLines = splitMergedLyricFragments(extractHtmlLineEntries(fallbackHtml));
+  const htmlFallbackLines = mergeStrayApostropheLines(splitMergedLyricFragments(extractHtmlLineEntries(fallbackHtml)));
   const structuredFallback = preservedFallback.length > 1 ? preservedFallback : htmlFallbackLines;
   const plainLooksFlattened = plainLines.length <= 1 && !!trimmedPlain && !trimmedPlain.includes('\n');
 
