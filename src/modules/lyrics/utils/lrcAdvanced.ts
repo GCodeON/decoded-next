@@ -169,7 +169,12 @@ function mergeStrayApostropheLines(lines: TimedLine[]): TimedLine[] {
     if (/^['’]$/.test(line.text)) {
       const next = lines[i + 1];
       if (next) {
-        result.push({ ...line, text: `${line.text}${next.text}`, words: [...line.words, ...next.words] });
+        // Attach the stray apostrophe to the first word of the next line rather
+        // than keeping it as its own separate word entry.
+        const nextWords = next.words.length > 0
+          ? [{ ...next.words[0], text: `${line.text}${next.words[0].text}` }, ...next.words.slice(1)]
+          : next.words;
+        result.push({ ...line, text: `${line.text}${next.text}`, words: nextWords });
         i++;
         continue;
       }
