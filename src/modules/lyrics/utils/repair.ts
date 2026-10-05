@@ -1,4 +1,4 @@
-import { parseEnhancedLrc, type LrcFile, type Word } from './lrcAdvanced';
+import { generateEnhancedLrc, parseEnhancedLrc, type LrcFile, type Word } from './lrcAdvanced';
 import { parseLrcForEditing, matchLrcToPlainLines, generateLrc, isFullyStamped } from './lrc';
 import { normalizeHtmlForPlainText, splitLyricsIntoLines } from './lyrics';
 
@@ -248,6 +248,23 @@ export function buildWordTimestampsMap(
   return map;
 }
 
+export function repairWordSyncedLyrics(
+  plainOrRhymeHtml: string,
+  existingWordSynced: string | null | undefined,
+  lineTimes: number[]
+): string | null {
+  if (!existingWordSynced) return null;
+
+  const plainLines = extractPlainLinesFromHtml(plainOrRhymeHtml);
+  if (plainLines.length !== lineTimes.length) return null;
+
+  const parsedEnhanced = parseEnhancedLrc(existingWordSynced);
+  const wordMap = buildWordTimestampsMap(plainLines, parsedEnhanced, lineTimes);
+  const repaired = generateEnhancedLrc(plainLines, lineTimes, wordMap);
+
+  return repaired || null;
+}
+
 /**
  * Generate a simple diff summary for preview.
  */
@@ -326,13 +343,13 @@ export async function repairSyncedLyrics(
   const lineTimes = hasAnyNull ? interpolateLineTimesLinear(aligned) : (aligned as number[]);
 
   // Parse existing word-synced to preserve timings
-  const parsedEnhanced = existingWordSynced ? parseEnhancedLrc(existingWordSynced) : undefined;
-  const wordMap = buildWordTimestampsMap(plainLines, parsedEnhanced, lineTimes);
-
   // Generate outputs with corrected text
   const repairedSynced = generateLrc(plainLines, lineTimes);
-  const repairedWordSynced = wordMap.size > 0 ?
-    (await import('./lrcAdvanced')).generateEnhancedLrc(plainLines, lineTimes, wordMap) : null;
+  const repairedWordSynced = repairWordSyncedLyrics(
+    plainOrRhymeHtml,
+    existingWordSynced,
+    lineTimes
+  );
 
   // Validation guards
   if (!isFullyStamped(repairedSynced)) {
